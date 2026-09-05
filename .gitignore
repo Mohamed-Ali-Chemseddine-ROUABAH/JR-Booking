@@ -1,0 +1,19 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# AI Directives (do not publish)
+MASTER_SPECIFICATION.md
+MASTER_MOCKUP.md
+
+# Node / Firebase
+node_modules/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
