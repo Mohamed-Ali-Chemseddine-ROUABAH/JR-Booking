@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR Booking Premium</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/glass-theme.css">
+</head>
+<body>
+<main class="auth-screen">
+  <div class="wrap">
+    <div class="auth-layout">
+      <section class="auth-copy">
+        <span class="eyebrow" data-ui="eyebrow"></span>
+        <h1 id="login-title" data-ui="title"></h1>
+        <p data-ui="intro"></p>
+      </section>
+
+      <section class="glass auth-panel" aria-labelledby="login-title">
+        <div class="auth-brand">
+          <div class="auth-brand-mark" aria-hidden="true">JR</div>
+          <span data-ui="brand-small"></span>
+        </div>
+
+        <form class="auth-form" id="login-form">
+          <div class="auth-roles" role="radiogroup" id="role-group">
+            <label><input type="radio" name="role" value="professional" checked><span data-ui="professional-role"></span></label>
+            <label><input type="radio" name="role" value="client"><span data-ui="client-role"></span></label>
+          </div>
+
+          <div class="auth-field">
+            <label for="email" data-ui="email-label"></label>
+            <input id="email" name="email" type="email" autocomplete="email" required>
+          </div>
+
+          <div class="auth-field">
+            <label for="password" data-ui="password-label"></label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+          </div>
+
+          <div class="auth-actions">
+            <button class="btn btn-solid" type="submit" data-ui="submit"></button>
+            <button class="btn btn-ghost" type="button" id="reset-button" data-ui="reset-link"></button>
+          </div>
+
+          <p class="auth-status" id="auth-status" role="status" aria-live="polite"></p>
+          <a class="auth-link" href="register-client.html" data-ui="register-client"></a>
+          <a class="auth-link" href="index.html" data-ui="back-home"></a>
+        </form>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+  import { UI_STRINGS } from './js/core/strings-fr.js';
+  import { getAuthErrorMessage, getRoleHomePath, getUserRole, isAuthConfigured, sendResetLink, signInWithEmail } from './js/core/auth-guard.js';
+  import { showNotification } from './js/shared/notifications.js';
+
+  const strings = UI_STRINGS.auth;
+  const form = document.querySelector('#login-form');
+  const status = document.querySelector('#auth-status');
+  const resetButton = document.querySelector('#reset-button');
+  const submitButton = form.querySelector('button[type="submit"]');
+
+  document.title = strings.login.pageTitle;
+  document.querySelector('#role-group').setAttribute('aria-label', strings.shared.roleGroupLabel);
+  document.querySelector('[data-ui="eyebrow"]').textContent = strings.login.eyebrow;
+  document.querySelector('[data-ui="title"]').textContent = strings.login.title;
+  document.querySelector('[data-ui="intro"]').textContent = strings.login.intro;
+  document.querySelector('[data-ui="brand-small"]').textContent = strings.shared.brandSmall;
+  document.querySelector('[data-ui="professional-role"]').textContent = strings.login.professionalRole;
+  document.querySelector('[data-ui="client-role"]').textContent = strings.login.clientRole;
+  document.querySelector('[data-ui="email-label"]').textContent = strings.shared.emailLabel;
+  document.querySelector('[data-ui="password-label"]').textContent = strings.shared.passwordLabel;
+  document.querySelector('[data-ui="submit"]').textContent = strings.login.submit;
+  document.querySelector('[data-ui="reset-link"]').textContent = strings.login.resetLink;
+  document.querySelector('[data-ui="register-client"]').textContent = strings.login.registerClient;
+  document.querySelector('[data-ui="back-home"]').textContent = strings.shared.backHome;
+
+  if (!isAuthConfigured()) {
+    status.textContent = strings.shared.firebasePending;
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    submitButton.disabled = true;
+    status.textContent = strings.shared.submitting;
+
+    const formData = new FormData(form);
+    const roleLabel = formData.get('role') === 'professional'
+      ? strings.login.professionalRole.toLocaleLowerCase('fr-FR')
+      : strings.login.clientRole.toLocaleLowerCase('fr-FR');
+
+    try {
+      const credential = await signInWithEmail({
+        email: formData.get('email'),
+        password: formData.get('password')
+      });
+      const role = await getUserRole(credential.user);
+      status.textContent = strings.login.success(roleLabel);
+      showNotification(status.textContent, 'success');
+      window.location.assign(getRoleHomePath(role));
+    } catch (error) {
+      status.textContent = getAuthErrorMessage(error);
+      showNotification(status.textContent, 'error');
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+  resetButton.addEventListener('click', async () => {
+    const email = form.elements.email.value.trim();
+    if (!email) {
+      status.textContent = strings.login.missingEmailForReset;
+      return;
+    }
+
+    resetButton.disabled = true;
+    status.textContent = strings.shared.submitting;
+
+    try {
+      await sendResetLink(email);
+      status.textContent = strings.login.resetSent;
+      showNotification(status.textContent, 'success');
+    } catch (error) {
+      status.textContent = getAuthErrorMessage(error);
+      showNotification(status.textContent, 'error');
+    } finally {
+      resetButton.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

@@ -3,6 +3,8 @@
 
 **STRICT STIPULATION ON ICONS:** NEVER use emojis in the UI. They are considered tacky for this project. Always use sleek, professional SVG icons instead.
 
+**TOKEN-EFFICIENT AI WORKFLOW:** For every roadmap phase, use the smallest targeted context needed to identify the owning code path and one falsifiable check. Prefer direct file reads, focused searches, and one narrow validation command. Do not take screenshots, inspect browser pages, repeat searches, or map unrelated files unless the human explicitly requests it or the current check requires it. Keep progress updates and final reports concise. When visual verification is requested, start the local server and provide the direct browser URL or Chrome command; do not capture or analyze screenshots by default.
+
 ---
 
 # JR Booking Premium — Full Specification & Firebase Build Roadmap

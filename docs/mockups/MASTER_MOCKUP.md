@@ -13,7 +13,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JR Booking premium â€” Visual Direction</title>
+<title>JR Booking Premium â€” Visual Direction</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
 <style>
 
 /* ============================================================
-   JR BOOKING premium â€” DESIGN TOKENS
+  JR Booking Premium â€” DESIGN TOKENS
    Direction: instrument-grade monochrome glass.
    Every hue is neutral graphite; the only "colour" move is
    contrast inversion on primary actions. Status is communicated
@@ -635,7 +635,7 @@ hr.hair{border:none; border-top:1px solid var(--hair); margin:36px 0;}
 <section class="screen" id="screen-guide">
   <div class="wrap">
     <span class="eyebrow">Design system</span>
-    <h2 style="font-family:var(--font-display); color:var(--ink-100); font-size:1.8rem; margin:8px 0 0;">JR Booking premium â€” visual tokens</h2>
+    <h2 style="font-family:var(--font-display); color:var(--ink-100); font-size:1.8rem; margin:8px 0 0;">JR Booking Premium â€” visual tokens</h2>
 
     <div class="section-label">Colour â€” monochrome graphite</div>
     <div class="sg-row">
@@ -685,7 +685,7 @@ hr.hair{border:none; border-top:1px solid var(--hair); margin:36px 0;}
     </div>
 
     <hr class="hair">
-    <p style="font-family:var(--font-mono); font-size:.7rem; color:var(--ink-700);">JR BOOKING premium â€” visual direction v1 Â· monochrome glass, instrument-grade scheduling</p>
+    <p style="font-family:var(--font-mono); font-size:.7rem; color:var(--ink-700);">JR Booking Premium â€” visual direction v1 Â· monochrome glass, instrument-grade scheduling</p>
   </div>
 </section>
 

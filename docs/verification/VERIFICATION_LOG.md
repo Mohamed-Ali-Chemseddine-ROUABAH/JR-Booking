@@ -58,6 +58,37 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - **Human result / Resultat humain:** `Pending`
 - **Date, tester, notes / Date, testeur, notes:**
 
+## Completed Implementation Slices / Tranches d'implementation terminees
+
+- [x] **Shared setup and auth checks:** Java 25 verified, emulator rules smoke check passed, professional Auth emulator seed passed, login/reset/client registration/professional redirect checked locally.
+- [x] **Professional dashboard shell:** protected dashboard, responsive sidebar collapse, settings dropdown stacking fix, empty schedule shell, and mobile overflow check.
+- [x] **Working-time configuration:** weekday hours, recurring breaks, timezone, one-to-seven-day setting, repeatable absences, date exceptions, Firestore persistence, and local save/read-back.
+- [x] **Date-aware schedule:** date headers, previous/today/next navigation, one/three/seven-day views, working-hour availability, break/absence/exception rendering.
+- [x] **Professional booking creation:** double-click available slot, pending Firestore booking, client contact fields, time validation, schedule refresh, and booking card rendering.
+- [x] **Booking operations:** sidebar cards, schedule selection, accept/reject/done/no-show transitions, French confirmation, undo notification, functional status filters, filter persistence, and booking modification modal.
+- [x] **Mockup context interaction:** right-click schedule booking menu with status actions, edit action, viewport clamping, and responsive visual checks.
+- [x] **Drag-to-select schedule booking preview:** pointer drag across contiguous available hours in one day column, live preview highlight, overlap handling that stops the range at the first booked or unavailable hour, and multi-hour booking creation prefilled from the drag range.
+- [x] **Personal information, categories, experience, and public-profile mirror (Phase 6):** identity fields, dashboard colors with reset, links, CV-style experience entries, up to ten searchable categories, per-field public-visibility toggles, `proProfiles.personalInfo` persistence, and the `publicProfiles` mirror write (also fixed a `firestore.rules` gap that blocked writing the required `owners` field on `publicProfiles`).
+- [x] **Client dashboard shell (Phase 9):** `client-dashboard.html`, navbar with account settings dropdown and profile editor, bookings sidebar with pending/accepted/rejected filters, professional-made-booking confirmation marking, accept/cancel/request-change actions. No production flow yet sets a real `clientId` on a booking (professional booking creation is still guest-only and there is no client-facing booking flow), so the sidebar shows its empty state until those land.
+- [ ] **Human phase sign-off:** Phase 2, Phase 4, and Phase 5 entries remain `Pending` until a human tester records `Pass`.
+- [ ] **Next implementation slice:** Public profile page (`profile.html`, `profile-view.js`) — anonymous read-only schedule view, visible-field rendering from the `publicProfiles` mirror, and the client-facing booking request flow, since that is what will actually populate a real `clientId` on a booking and let the Phase 9 client dashboard show live data.
+
+### Phase 5 - Working-time configuration / Configuration du temps de travail
+
+- **Mockup reference / Reference mockup:** pro settings menu, working-hours popup, weekday selection, recurring break, date exception, and absence period controls.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/working-hours.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/schedule/schedule-render.js`, `public/assets/css/pro-dashboard.css`, `public/js/core/strings-fr.js`.
+- **Data and rules / Donnees et regles:** `proProfiles/{proId}.workingHours`; owner update/create rule requires the authenticated UID in `owners`.
+- **Feature flag / Feature toggle:** `proBookingOperations`, off until the phase is verified.
+- **Build check / Auto-verification:** `node --check` passes for changed modules; local Firestore save/read-back passes for weekday hours, day count, timezone, recurring break, absence period, and date exception; schedule renders date headers, navigates previous/today/next weeks, applies date-specific absences and exceptions, marks outside-hours and recurring-break cells `Indisponible`, and switches between one, three, and seven visible days.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez `pro-dashboard.html` avec le compte professionnel de test. / Open `pro-dashboard.html` with the test professional account.
+  2. Ouvrez Reglages puis Horaires et absences; ajoutez une absence et une exception de calendrier. / Open Settings then Working hours and absences; add an absence and a calendar exception.
+  3. Enregistrez, fermez puis rouvrez la fenetre; verifiez que les valeurs sont conservees et que le planning affiche le nombre de jours choisi. / Save, close, and reopen the dialog; verify values persist and the schedule shows the selected day count.
+- **Responsive check / Verification responsive:** desktop 1440 px; mobile 375 px; confirm the modal fields remain usable and the schedule has no horizontal overflow beyond its intended scroll area.
+- **Privacy check / Verification confidentialite:** only the owning professional may read or update `proProfiles/{proId}`; absence reasons remain private until a later authorized public schedule flow is implemented.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-07 - AI browser smoke test passed; human confirmation required.
+
 ### Mockup Extraction Preparation - Public Discovery and Anonymous Schedule / Recherche publique et planning anonyme
 
 - **Mockup reference / Reference mockup:** landing search, results, profile public, `Occupé` schedule blocks.
@@ -86,5 +117,58 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
   4. Essayez les actions groupees et le menu contextuel. / Try batch actions and the context menu.
 - **Responsive check / Verification responsive:** 1440 px and 375 px with sidebar expanded/collapsed.
 - **Privacy check / Verification confidentialite:** active pro sees owned profile data only; delegate sees only permitted actions.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:**
+
+## Roadmap Phase Entries / Entrees des phases roadmap
+
+### Phase 2 - Authentication Core / Noyau d'authentification
+
+- **Mockup reference / Reference mockup:** login role preview, client registration form, password-reset feedback.
+- **Production owner / Responsable production:** `public/login.html`, `public/register-client.html`, `public/js/core/auth-guard.js`, `public/js/core/firebase-init.js`, `public/js/core/strings-fr.js`.
+- **Data and rules / Donnees et regles:** Firebase Authentication only; no Firestore or Storage writes in this phase.
+- **Feature flag / Feature toggle:** `authCore`, off until verified.
+- **Build check / Auto-verification:** `node --check` passes for all production JavaScript modules touched in Phase 2.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez `login.html` et verifiez que les choix Professionnel et Client apparaissent. / Open `login.html` and verify the Professional and Client choices appear.
+  2. Creez le compte professionnel de test dans la console Firebase ou lancez `node tests\seed-test-professional.js` avec l'emulateur Auth. / Create the test professional account in the Firebase console or run `node tests\seed-test-professional.js` with the Auth emulator.
+  3. Demandez un lien de reinitialisation avec une adresse courriel de test. / Request a reset link with a test email address.
+  4. Ouvrez `register-client.html`, creez un compte client avec un mot de passe de 6 caracteres ou plus, puis confirmez que le message de succes apparait. / Open `register-client.html`, create a client account with a password of 6 or more characters, then confirm the success message appears.
+  5. Connectez-vous avec le compte professionnel de test cree dans Firebase Authentication. / Sign in with the test professional account created in Firebase Authentication.
+- **Responsive check / Verification responsive:** desktop width 1440 px; mobile width 375 px.
+- **Privacy check / Verification confidentialite:** anonymous users can only access auth forms; protected dashboard access and professional role claims will use `auth-guard.js` when dashboards are introduced.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:**
+
+### Phase 3 - Security and Infrastructure Plumbing / Securite et infrastructure
+
+- **Mockup reference / Reference mockup:** none for rules; Calendar OAuth remains a scaffold only until Phase 14.
+- **Production owner / Responsable production:** `firestore.rules`, `storage.rules`, `functions/index.js`, `functions/package.json`, `docs/database_schema.md`.
+- **Data and rules / Donnees et regles:** `publicProfiles`, `busySlots`, `proProfiles`, `clientAccounts`, `bookings`, `mail`, `logs`, `gcalTokens`, `platformConfig`, `creationLinks`, `supportTickets`, `dataRequests`, `professionalRequests` Storage path.
+- **Feature flag / Feature toggle:** `platformConfig/settings` is available for later feature toggles; no user-facing Phase 3 toggle.
+- **Build check / Auto-verification:** Firestore/Storage rules parse in the Firebase emulator once Java is installed; `node --check functions/index.js` passes.
+- **Human steps / Etapes humaines:**
+  1. Verifiez que `java -version` fonctionne, puis lancez les emulateurs Firestore, Storage et Functions. / Verify that `java -version` works, then start the Firestore, Storage, and Functions emulators.
+  2. Verifiez que les regles se chargent sans erreur. / Verify the rules load without errors.
+  3. Appelez `/api/calendar/google/callback` en local et confirmez une reponse `501` claire. / Call `/api/calendar/google/callback` locally and confirm a clear `501` response.
+- **Responsive check / Verification responsive:** none; infrastructure only.
+- **Privacy check / Verification confidentialite:** anonymous read is limited to `publicProfiles` and anonymous-safe `busySlots`; `logs` and `gcalTokens` deny client writes.
+- **Human result / Resultat humain:** `Pass`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-07 - Firestore/Storage rules loaded successfully, Functions emulator confirmed, Calendar OAuth stub responds with expected 501 error.
+
+### Phase 4 - Professional Dashboard Shell / Structure du tableau professionnel
+
+- **Mockup reference / Reference mockup:** pro dashboard navbar, collapsible sidebar, responsive schedule/sidebar order, empty seven-day schedule grid.
+- **Production owner / Responsable production:** `public/pro-dashboard.html`, `public/assets/css/pro-dashboard.css`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/pro-dashboard/navbar-pro.js`, `public/js/sidebar/sidebar-feed.js`, `public/js/schedule/schedule-render.js`.
+- **Data and rules / Donnees et regles:** Firebase Authentication role gate only; optional local Auth emulator connection through `window.JR_BOOKING_EMULATORS`; no Firestore or Storage reads/writes in this shell phase.
+- **Feature flag / Feature toggle:** `proBookingOperations`, off until booking data operations are implemented.
+- **Build check / Auto-verification:** `node --check` passes for all Phase 4 JavaScript modules; page shell loads after professional authentication.
+- **Human steps / Etapes humaines:**
+  1. Connectez-vous avec un compte professionnel, puis ouvrez `pro-dashboard.html`. / Sign in with a professional account, then open `pro-dashboard.html`.
+  2. Ouvrez le menu Reglages et verifiez les sections attendues. / Open the Settings menu and verify the expected sections.
+  3. Repliez puis affichez la sidebar; verifiez que le planning reste visible. / Collapse then expand the sidebar; verify the schedule remains visible.
+  4. Verifiez que la grille du planning affiche une vue vide sur sept jours sans donnees de client. / Verify the schedule grid shows an empty seven-day view without client data.
+- **Responsive check / Verification responsive:** desktop width 1440 px; mobile width 375 px with schedule first and sidebar below.
+- **Privacy check / Verification confidentialite:** anonymous users are redirected to login; the shell renders no private booking, client, payment, or message fields.
 - **Human result / Resultat humain:** `Pending`
 - **Date, tester, notes / Date, testeur, notes:**

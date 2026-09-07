@@ -2,8 +2,27 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function isAllowedVerificationFile() {
+      return request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType in ["application/pdf", "image/jpeg", "image/png"];
+    }
+
+    match /professionalRequests/{requestId}/{fileName} {
+      allow read: if isAdmin();
+      allow create: if signedIn() && requestId == request.auth.uid && isAllowedVerificationFile();
+      allow update, delete: if false;
+    }
+
     match /{allPaths=**} {
-      allow read, write: if false; // Default deny for Phase 1 scaffolding
+      allow read, write: if false;
     }
   }
 }

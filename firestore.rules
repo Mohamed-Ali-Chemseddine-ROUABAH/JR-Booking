@@ -2,8 +2,164 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(ownerId) {
+      return signedIn() && request.auth.uid == ownerId;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function ownsProfile(profileId) {
+      return signedIn()
+        && (
+          request.auth.uid == profileId
+          || (resource.data.owners is list && request.auth.uid in resource.data.owners)
+        );
+    }
+
+    function willOwnProfile(profileId) {
+      return signedIn()
+        && request.auth.uid == profileId
+        && request.resource.data.owners is list
+        && request.auth.uid in request.resource.data.owners;
+    }
+
+    function hasOnlyPublicProfileFields() {
+      return request.resource.data.keys().hasOnly([
+        "displayName",
+        "name",
+        "idTag",
+        "categories",
+        "shortDescription",
+        "visibleFields",
+        "avatarUrl",
+        "serviceArea",
+        "timezone",
+        "verified",
+        "updatedAt",
+        "owners"
+      ]);
+    }
+
+    function keepsAdminPublicFieldsSafe() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(["verified"]);
+    }
+
+    function isSafeBusySlot() {
+      return request.resource.data.keys().hasOnly(["start", "end", "status"])
+        && request.resource.data.status in ["pending", "accepted", "done", "no-show", "busy"];
+    }
+
+    match /publicProfiles/{proId} {
+      allow read: if true;
+      allow create: if willOwnProfile(proId) && hasOnlyPublicProfileFields() && request.resource.data.verified != true;
+      allow update: if ownsProfile(proId) && hasOnlyPublicProfileFields() && keepsAdminPublicFieldsSafe();
+      allow update: if isAdmin() && hasOnlyPublicProfileFields();
+      allow delete: if isAdmin();
+    }
+
+    match /busySlots/{proId}/slots/{slotId} {
+      allow read: if true;
+      allow create, update: if isOwner(proId) && isSafeBusySlot();
+      allow delete: if isOwner(proId) || isAdmin();
+    }
+
+    match /proProfiles/{proId} {
+      allow read: if ownsProfile(proId) || isAdmin();
+      allow create: if willOwnProfile(proId);
+      allow update: if ownsProfile(proId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /clientAccounts/{clientId} {
+      allow read, create, update: if isOwner(clientId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if signedIn()
+        && (
+          request.auth.uid == resource.data.clientId
+          || request.auth.uid == resource.data.proId
+          || isAdmin()
+        );
+      allow create: if signedIn()
+        && request.resource.data.status == "pending"
+        && (
+          request.auth.uid == request.resource.data.clientId
+          || request.auth.uid == request.resource.data.proId
+        );
+      allow update: if signedIn()
+        && (
+          request.auth.uid == resource.data.clientId
+          || request.auth.uid == resource.data.proId
+          || isAdmin()
+        );
+      allow delete: if isAdmin();
+
+      match /messages/{messageId} {
+        allow read, create: if signedIn()
+          && exists(/databases/$(database)/documents/bookings/$(bookingId))
+          && (
+            request.auth.uid == get(/databases/$(database)/documents/bookings/$(bookingId)).data.clientId
+            || request.auth.uid == get(/databases/$(database)/documents/bookings/$(bookingId)).data.proId
+            || isAdmin()
+          );
+        allow update, delete: if false;
+      }
+    }
+
+    match /proClientRecords/{recordId} {
+      allow read, write: if signedIn()
+        && (
+          request.auth.uid == resource.data.proId
+          || request.auth.uid == request.resource.data.proId
+          || isAdmin()
+        );
+    }
+
+    match /supportTickets/{ticketId} {
+      allow read, update: if isAdmin() || isOwner(resource.data.createdBy);
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /dataRequests/{requestId} {
+      allow read, update: if isAdmin() || isOwner(resource.data.createdBy);
+      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
+    match /platformConfig/{documentId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /creationLinks/{linkId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /mail/{messageId} {
+      allow create: if signedIn();
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /gcalTokens/{proId} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
-      allow read, write: if false; // Default deny for Phase 1 scaffolding
+      allow read, write: if false;
     }
   }
 }

@@ -4,6 +4,10 @@ All internal documentation lives under `docs/`. Paths in this file are repositor
 
 Toute la documentation interne vit sous `docs/`. Les chemins de ce fichier sont relatifs a la racine du depot et sont les emplacements canoniques que les futurs agents et developpeurs doivent utiliser.
 
+## Efficient AI Workflow / Workflow IA efficace
+
+All roadmap work follows the token-efficient execution rule in `requirements/MASTER_SPECIFICATION.md`: use targeted reads and focused searches, avoid screenshots or browser inspection unless explicitly requested, validate with the narrowest useful command, and provide a direct local browser URL for visual checks.
+
 ## Start Here / Commencer ici
 
 1. [Requirements and roadmap](requirements/MASTER_SPECIFICATION.md) / Exigences et roadmap.

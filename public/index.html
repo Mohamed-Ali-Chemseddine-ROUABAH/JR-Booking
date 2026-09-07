@@ -13,7 +13,9 @@
 
     <style>
         /* Landing specific styles extracted from mockup */
-        .screen { min-height: 100vh; padding: 110px 0 80px; }
+        .screen { min-height: 100vh; padding: 110px 0 80px; animation: rise .45s ease; }
+        @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { .screen { animation: none; } }
         .hero {
             min-height: 78vh; display: flex; flex-direction: column;
             align-items: center; justify-content: center; text-align: center;
@@ -39,6 +41,15 @@
         .hero-foot { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--ink-700); margin-top: 2px; }
         .hero-foot a { color: var(--ink-500); border-bottom: 1px dashed var(--ink-700); padding-bottom: 1px; transition: .2s; }
         .hero-foot a:hover { color: var(--ink-100); border-color: var(--ink-100); }
+        .round-cta { display: flex; flex-direction: column; align-items: center; gap: 7px; margin-top: 26px; }
+        .round-cta button {
+          width: 46px; height: 46px; display: grid; place-items: center;
+          color: var(--ink-500); background: var(--panel);
+          border: 1px solid var(--panel-brd); border-radius: 50%;
+        }
+        .round-cta button:hover { color: var(--ink-100); border-color: var(--panel-brd-strong); }
+        .round-cta svg { width: 17px; }
+        .round-cta span { font-family: var(--font-mono); font-size: .62rem; color: var(--ink-700); }
     </style>
 </head>
 <body>
@@ -46,20 +57,31 @@
 <section class="screen">
   <div class="wrap">
     <div class="hero">
-      <span class="eyebrow" id="ui-eyebrow">JR Booking Premium</span>
-      <h1 id="ui-title">Chaque crÃ©neau libre, bien en vue.</h1>
+      <span class="eyebrow" id="ui-eyebrow">JR Booking Premium · version 2</span>
+      <h1 id="ui-title">Chaque créneau libre, à portée de clic.</h1>
 
       <div class="glass search-pill">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="7"/>
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <input type="text" id="search-input" placeholder="Recherchez un nom ou une spÃ©cialitÃ© â€” ex. â€œCamille R.â€ ou â€œPhysiothÃ©rapieâ€">
+        <input type="text" id="search-input" aria-label="Rechercher un professionnel" placeholder="Recherchez un nom ou une spécialité — ex. « Camille R. » ou « Physiothérapie »">
       </div>
+      <p class="search-status" id="search-status" role="status" aria-live="polite"></p>
 
       <div class="hero-foot">
-        <span id="ui-looking">Vous cherchez du travail, pas un crÃ©neau ?</span>
-        <a href="login.html" id="ui-login-link">Je suis un professionnel â€” me connecter</a>
+        <span id="ui-looking">Vous cherchez du travail, pas un créneau ?</span>
+        <a href="login.html" id="ui-login-link">Je suis un professionnel — me connecter</a>
+      </div>
+
+      <div class="round-cta">
+        <button type="button" id="professional-request-button" title="Devenir prestataire" aria-label="Devenir prestataire">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <span>DEVENIR PRESTATAIRE</span>
       </div>
 
     </div>
@@ -69,8 +91,51 @@
 <!-- Core modules loaded purely client-side as specified -->
 <script type="module">
     import { UI_STRINGS } from './js/core/strings-fr.js';
-    // Initialize simple wiring for phase 1
-    console.log("Phase 1: Front page shell loaded.");
+  import { isFirebaseConfigured } from './js/core/firebase-init.js';
+  import { debounce } from './js/core/utils.js';
+  import { findPublicProfiles } from './js/search/search-professional.js';
+  import { showNotification } from './js/shared/notifications.js';
+
+  const searchInput = document.querySelector('#search-input');
+  const searchStatus = document.querySelector('#search-status');
+  const professionalRequestButton = document.querySelector('#professional-request-button');
+
+  document.querySelector('#ui-eyebrow').textContent = UI_STRINGS.landing.eyebrow;
+  document.querySelector('#ui-title').textContent = UI_STRINGS.landing.title;
+  document.querySelector('#search-input').placeholder = UI_STRINGS.landing.searchPlaceholder;
+  document.querySelector('#ui-looking').textContent = UI_STRINGS.landing.lookingForWork;
+  document.querySelector('#ui-login-link').textContent = UI_STRINGS.landing.loginLink;
+  document.querySelector('.round-cta span').textContent = UI_STRINGS.landing.professionalRequest;
+
+  async function updateSearchStatus() {
+    const searchTerm = searchInput.value.trim();
+    if (!searchTerm) {
+      searchStatus.textContent = UI_STRINGS.search.empty;
+      return;
+    }
+
+    if (!isFirebaseConfigured()) {
+      searchStatus.textContent = UI_STRINGS.search.unavailable;
+      return;
+    }
+
+    try {
+      const profiles = await findPublicProfiles(searchTerm);
+      searchStatus.textContent = profiles.length
+        ? UI_STRINGS.search.resultCount(profiles.length)
+        : UI_STRINGS.search.noResults;
+    } catch (error) {
+      searchStatus.textContent = UI_STRINGS.search.error;
+      showNotification(UI_STRINGS.search.error, 'error');
+      console.error(error);
+    }
+  }
+
+  searchInput.addEventListener('input', debounce(updateSearchStatus));
+  professionalRequestButton.addEventListener('click', () => {
+    showNotification(UI_STRINGS.landing.professionalRequestUnavailable, 'info');
+  });
+  searchStatus.textContent = UI_STRINGS.search.empty;
 </script>
 
 </body>
