@@ -3,9 +3,11 @@
 .env.*
 !.env.example
 
-# AI Directives (do not publish)
-MASTER_SPECIFICATION.md
-MASTER_MOCKUP.md
+# Credentials and service accounts
+*.pem
+*.key
+service-account*.json
+firebase-adminsdk*.json
 
 # Node / Firebase
 node_modules/
