@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR Booking Premium</title>
+    <!-- Bootstrap CSS for grid -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+
+    <!-- Application CSS -->
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/glass-theme.css">
+
+    <style>
+        /* Landing specific styles extracted from mockup */
+        .screen { min-height: 100vh; padding: 110px 0 80px; }
+        .hero {
+            min-height: 78vh; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+            gap: 26px; padding: 0 20px;
+        }
+        .hero .eyebrow { margin-bottom: -8px; }
+        .hero h1 {
+            font-family: var(--font-display); font-weight: 600;
+            font-size: clamp(1.9rem, 4.2vw, 3.1rem);
+            color: var(--ink-100); letter-spacing: -.02em; line-height: 1.15;
+            max-width: 16ch; margin: 0;
+        }
+        .search-pill {
+            width: min(560px, 88vw); display: flex; align-items: center; gap: 12px;
+            padding: 17px 22px; border-radius: 999px; margin-top: 6px;
+        }
+        .search-pill svg { width: 17px; opacity: .55; flex-shrink: 0; }
+        .search-pill input {
+            border: none; background: transparent; outline: none; width: 100%;
+            color: var(--ink-100); font-family: var(--font-body); font-size: .95rem;
+        }
+        .search-pill input::placeholder { color: var(--ink-700); }
+        .hero-foot { display: flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--ink-700); margin-top: 2px; }
+        .hero-foot a { color: var(--ink-500); border-bottom: 1px dashed var(--ink-700); padding-bottom: 1px; transition: .2s; }
+        .hero-foot a:hover { color: var(--ink-100); border-color: var(--ink-100); }
+    </style>
+</head>
+<body>
+
+<section class="screen">
+  <div class="wrap">
+    <div class="hero">
+      <span class="eyebrow" id="ui-eyebrow">JR Booking Premium</span>
+      <h1 id="ui-title">Chaque crÃ©neau libre, bien en vue.</h1>
+
+      <div class="glass search-pill">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="7"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="Recherchez un nom ou une spÃ©cialitÃ© â€” ex. â€œCamille R.â€ ou â€œPhysiothÃ©rapieâ€">
+      </div>
+
+      <div class="hero-foot">
+        <span id="ui-looking">Vous cherchez du travail, pas un crÃ©neau ?</span>
+        <a href="login.html" id="ui-login-link">Je suis un professionnel â€” me connecter</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Core modules loaded purely client-side as specified -->
+<script type="module">
+    import { UI_STRINGS } from './js/core/strings-fr.js';
+    // Initialize simple wiring for phase 1
+    console.log("Phase 1: Front page shell loaded.");
+</script>
+
+</body>
+</html>
