@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR Booking Premium - Profil professionnel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
+    <link rel="stylesheet" href="assets/css/glass-theme.css">
+    <link rel="stylesheet" href="assets/css/profile-public.css">
+</head>
+<body>
+<main class="profile-screen">
+  <div class="profile-wrap">
+    <a class="profile-back" href="index.html" data-profile-back></a>
+    <p class="profile-status" data-profile-status role="status" aria-live="polite"></p>
+    <section class="profile-layout" data-profile-content hidden>
+      <article class="glass profile-intro">
+        <span class="eyebrow">JR BOOKING PREMIUM</span>
+        <h1 data-profile-name></h1>
+        <p class="profile-id" data-profile-id></p>
+        <p class="profile-description" data-profile-description></p>
+        <div class="profile-categories" data-profile-categories></div>
+        <div class="profile-details" data-profile-details></div>
+      </article>
+      <section class="glass profile-booking" aria-labelledby="profile-schedule-title">
+        <div class="profile-section-heading">
+          <div>
+            <span class="eyebrow">CALENDRIER</span>
+            <h2 id="profile-schedule-title" data-profile-schedule-title></h2>
+          </div>
+          <p data-profile-schedule-help></p>
+        </div>
+        <div class="profile-schedule" data-profile-schedule></div>
+        <form class="profile-request-form" data-profile-form hidden>
+          <h3 data-profile-request-title></h3>
+          <label><span data-profile-date-label></span><input name="date" type="date" required></label>
+          <div class="profile-time-fields">
+            <label><span data-profile-start-label></span><input name="start" type="time" value="09:00" required></label>
+            <label><span data-profile-end-label></span><input name="end" type="time" value="10:00" required></label>
+          </div>
+          <p class="profile-feedback" data-profile-feedback role="status" aria-live="polite"></p>
+          <button class="btn btn-solid" type="submit" data-profile-request></button>
+        </form>
+        <div class="profile-auth-prompt" data-profile-auth-prompt hidden>
+          <p data-profile-login-required></p>
+          <a class="btn btn-ghost" href="login.html" data-profile-sign-in></a>
+          <a class="btn btn-ghost" href="register-client.html" data-profile-register></a>
+        </div>
+      </section>
+    </section>
+  </div>
+</main>
+<script type="module" src="js/profile-public/profile-view.js?v=client-address-20260909"></script>
+</body>
+</html>

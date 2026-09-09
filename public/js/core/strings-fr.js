@@ -13,7 +13,8 @@ export const UI_STRINGS = {
         noResults: "Aucun professionnel ne correspond à cette recherche.",
         unavailable: "La recherche sera disponible après la configuration Firebase.",
         error: "La recherche est momentanément indisponible.",
-        resultCount: (count) => `${count} professionnel(s) trouvé(s).`
+        resultCount: (count) => `${count} professionnel(s) trouvé(s).`,
+        openProfile: "Voir le profil"
     },
     auth: {
         shared: {
@@ -139,6 +140,58 @@ export const UI_STRINGS = {
             removeCategory: "Supprimer cette catégorie",
             defaultCategories: ["Coaching sportif", "Yoga", "Musique", "Cours particuliers", "Bien-être", "Photographie", "Langues", "Nutrition", "Beauté", "Consultation juridique"]
         },
+        paymentInfo: {
+            title: "Informations de paiement",
+            close: "Fermer",
+            enabledLabel: "Proposer des options de paiement",
+            ribLabel: "RIB ou coordonnées bancaires",
+            bankTransferLabel: "Virement bancaire accepté",
+            weroLabel: "Wero accepté",
+            weroPhoneLabel: "Numéro Wero",
+            rateLabel: "Tarif par unité de temps (€)",
+            banksTitle: "Banques acceptées",
+            bankCreditAgricole: "Crédit Agricole",
+            bankCreditMutuel: "Crédit Mutuel",
+            bankBnp: "BNP Paribas",
+            bankSocieteGenerale: "Société Générale",
+            customBankTitle: "Autre banque ou lien de paiement",
+            customBankNameLabel: "Nom de la banque",
+            customBankUrlLabel: "Lien de paiement",
+            save: "Enregistrer les paiements",
+            saved: "Informations de paiement enregistrées.",
+            loadError: "Les informations de paiement n'ont pas pu être chargées.",
+            saveError: "Les informations de paiement n'ont pas pu être enregistrées."
+        },
+        movementInfo: {
+            title: "Type de travail et déplacements",
+            close: "Fermer",
+            onlineLabel: "Proposer des rendez-vous en ligne",
+            movementLabel: "Se déplacer chez le client",
+            addressLabel: "Adresse de départ",
+            addressHelp: "Cette adresse reste privée et sert uniquement au calcul des trajets.",
+            addressVisibleLabel: "Afficher mon adresse exacte aux clients",
+            transportationLabel: "Moyen de transport principal",
+            transportationVisibleLabel: "Afficher le moyen de transport aux clients",
+            transportationCar: "Voiture",
+            transportationTransit: "Transports en commun",
+            transportationBike: "Vélo",
+            transportationWalk: "À pied",
+            zonesTitle: "Zones de déplacement",
+            zonesHelp: "Ajoutez une distance maximale et le supplément correspondant.",
+            zoneMinLabel: "De (km)",
+            zoneMaxLabel: "À (km)",
+            zoneFeeLabel: "Supplément (€)",
+            addZone: "Ajouter une zone",
+            removeZone: "Supprimer cette zone",
+            mapTitle: "Carte de déplacement",
+            locate: "Mettre à jour la carte",
+            save: "Enregistrer le type de travail",
+            saved: "Type de travail enregistré.",
+            loadError: "Le type de travail n'a pas pu être chargé.",
+            saveError: "Le type de travail n'a pas pu être enregistré.",
+            mapUnavailable: "La carte sera disponible après le chargement de Leaflet.",
+            addressMissing: "Saisissez une adresse pour afficher la carte."
+        },
         bookingCreation: {
             title: "Créer une réservation",
             close: "Fermer",
@@ -218,21 +271,47 @@ export const UI_STRINGS = {
                 "no-show": "Absence"
             },
             days: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
-            summary: "Vue {days} jours · aucune donnée privée chargée"
+            summary: "Vue {days} jours"
         }
     },
     clientDashboard: {
         pageTitle: "JR Booking Premium - Tableau client",
         brandSmall: "Espace client",
         loading: "Chargement du tableau de bord...",
+        schedule: {
+            title: "Mon planning",
+            summary: "Semaine actuelle",
+            empty: "Aucun rendez-vous cette semaine.",
+            pending: "En attente",
+            accepted: "Acceptée",
+            done: "Terminée",
+            noShow: "Absence",
+            locked: "Indisponible",
+            days: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+        },
         navbar: {
             print: "Imprimer",
             logout: "Déconnexion",
             settings: "Mon compte",
             settingsLabel: "Options du compte client",
             editProfile: "Modifier mon profil",
-            payments: "Paiements (bientôt disponible)",
-            paymentsUnavailable: "Les paiements seront disponibles dans une prochaine phase."
+            payments: "Paiements",
+            paymentsUnavailable: "Aucun paiement actif pour le moment."
+        },
+        paymentContext: {
+            title: "Paiement de la réservation",
+            close: "Fermer",
+            chooseBooking: "Choisissez une réservation active",
+            reference: "Réservation",
+            balance: "Solde à régler",
+            duration: "Durée",
+            hours: "heure(s)",
+            bankTransfer: "Virement bancaire",
+            wero: "Wero",
+            acceptedBanks: "Banques acceptées",
+            externalLink: "Ouvrir le lien de paiement",
+            noOptions: "Aucune option de paiement n'est encore disponible pour cette réservation.",
+            noActiveBooking: "Aucune réservation active ne propose de paiement."
         },
         bookings: {
             title: "Mes réservations",
@@ -243,6 +322,8 @@ export const UI_STRINGS = {
             emptyBody: "Réservez avec un professionnel depuis son profil public pour la voir apparaître ici.",
             bookingDate: "Date",
             bookingTime: "Horaire",
+            movementDistance: "Déplacement",
+            movementSurcharge: "Supplément",
             bookingFallbackName: "Professionnel",
             awaitingConfirmation: "Réservation proposée par le professionnel — confirmation requise",
             acceptBooking: "Accepter",
@@ -273,11 +354,49 @@ export const UI_STRINGS = {
             title: "Modifier mon profil",
             close: "Fermer",
             fullNameLabel: "Nom complet",
+            addressLabel: "Adresse de déplacement",
             timezoneLabel: "Fuseau horaire",
             save: "Enregistrer",
             saved: "Profil enregistré.",
             loadError: "Le profil n'a pas pu être chargé.",
             saveError: "Le profil n'a pas pu être enregistré."
+        },
+        professionalSearch: {
+            title: "Rechercher un professionnel",
+            placeholder: "Nom du professionnel...",
+            noResults: "Aucun professionnel trouvé.",
+            lock: "Voir le planning",
+            save: "Ajouter aux favoris",
+            favorite: "Ajouter aux favoris",
+            unfavorite: "Retirer des favoris",
+            idLabel: "Identifiant :",
+            savedEmpty: "Aucun professionnel enregistré pour le moment."
         }
+    },
+    publicProfile: {
+        pageTitle: "JR Booking Premium - Profil professionnel",
+        backHome: "Retour à l'accueil",
+        loading: "Chargement du profil...",
+        unavailable: "Ce profil n'est pas disponible.",
+        noName: "Professionnel",
+        categories: "Spécialités",
+        experience: "Expérience",
+        links: "Liens",
+        scheduleTitle: "Disponibilités",
+        scheduleHelp: "Choisissez un créneau encore libre.",
+        dateLabel: "Date",
+        startLabel: "Début",
+        endLabel: "Fin",
+        requestTitle: "Demander ce créneau",
+        request: "Envoyer la demande",
+        loginRequired: "Connectez-vous ou créez un compte client pour réserver ce créneau.",
+        signIn: "Se connecter",
+        register: "Créer un compte",
+        signedOut: "Réservation : compte client requis",
+        saved: "Demande envoyée. Vous la retrouverez dans votre tableau client.",
+        error: "La demande n'a pas pu être envoyée.",
+        invalidRange: "La fin doit être après le début.",
+        occupied: "Ce créneau est déjà pris.",
+        noSchedule: "Aucune disponibilité publique n'est encore affichée."
     }
 };

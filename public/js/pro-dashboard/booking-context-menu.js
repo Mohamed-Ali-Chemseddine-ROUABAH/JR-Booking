@@ -1,6 +1,7 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.proDashboard.sidebar;
+let escapeHandler;
 
 export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit }) {
     closeBookingContextMenu();
@@ -30,11 +31,22 @@ export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit }
             }
         });
     });
+    escapeHandler = (event) => {
+        if (event.key === "Escape") {
+            closeBookingContextMenu();
+        }
+    };
+    document.addEventListener("keydown", escapeHandler);
+    menu.querySelector("[role='menuitem']")?.focus();
     window.setTimeout(() => document.addEventListener("click", closeBookingContextMenu, { once: true }), 0);
 }
 
 export function closeBookingContextMenu() {
     document.querySelector("[data-booking-context-menu]")?.remove();
+    if (escapeHandler) {
+        document.removeEventListener("keydown", escapeHandler);
+        escapeHandler = undefined;
+    }
 }
 
 function menuButton(action, label) {

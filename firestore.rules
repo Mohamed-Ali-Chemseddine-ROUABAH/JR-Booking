@@ -11,7 +11,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return signedIn() && request.auth.token.admin == true;
+      return signedIn() && request.auth.token.get("admin", false) == true;
     }
 
     function ownsProfile(profileId) {
@@ -57,7 +57,7 @@ service cloud.firestore {
 
     match /publicProfiles/{proId} {
       allow read: if true;
-      allow create: if willOwnProfile(proId) && hasOnlyPublicProfileFields() && request.resource.data.verified != true;
+      allow create: if willOwnProfile(proId) && hasOnlyPublicProfileFields() && request.resource.data.get("verified", false) != true;
       allow update: if ownsProfile(proId) && hasOnlyPublicProfileFields() && keepsAdminPublicFieldsSafe();
       allow update: if isAdmin() && hasOnlyPublicProfileFields();
       allow delete: if isAdmin();

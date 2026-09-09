@@ -17,6 +17,7 @@ export async function initializeClientProfileSettings({ user }) {
             </div>
             <div class="working-hours-fields">
                 <label class="working-hours-field"><span>${strings.fullNameLabel}</span><input name="displayName" type="text"></label>
+                <label class="working-hours-field"><span>${strings.addressLabel}</span><input name="address" type="text"><small>Utilisée uniquement pour les réservations avec déplacement.</small></label>
                 <label class="working-hours-field"><span>${strings.timezoneLabel}</span><select name="timezone"><option value="Europe/Paris">Europe/Paris</option><option value="UTC">UTC</option><option value="America/Montreal">America/Montreal</option></select></label>
             </div>
             <div class="working-hours-actions">
@@ -34,6 +35,7 @@ export async function initializeClientProfileSettings({ user }) {
         const snapshot = await getDoc(doc(getFirestoreDb(), "clientAccounts", user.uid));
         const data = snapshot.exists() ? snapshot.data() : {};
         form.displayName.value = data.displayName || user.displayName || "";
+        form.address.value = data.address || "";
         form.timezone.value = data.timezone || "Europe/Paris";
     } catch {
         feedback.textContent = strings.loadError;
@@ -46,6 +48,7 @@ export async function initializeClientProfileSettings({ user }) {
         try {
             await setDoc(doc(getFirestoreDb(), "clientAccounts", user.uid), {
                 displayName: form.displayName.value.trim(),
+                address: form.address.value.trim(),
                 timezone: form.timezone.value
             }, { merge: true });
             feedback.textContent = strings.saved;

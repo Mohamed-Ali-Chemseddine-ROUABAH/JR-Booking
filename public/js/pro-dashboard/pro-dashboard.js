@@ -8,10 +8,13 @@ import { initializeSidebarFeed } from "../sidebar/sidebar-feed.js";
 import { initializeProNavbar } from "./navbar-pro.js";
 import { initializeWorkingHours } from "./working-hours.js";
 import { initializePersonalInfo } from "./personal-info.js";
+import { initializePaymentInfo } from "./payment-info.js";
+import { initializeMovementInfo } from "./movement-info.js";
 import { initializeBookingCreation } from "./booking-creation.js";
-import { updateBookingStatus } from "./booking-actions.js";
+import { updateBookingStatus, updateBookingDetails } from "./booking-actions.js";
 import { initializeBookingEdit } from "./booking-edit.js";
 import { openBookingContextMenu } from "./booking-context-menu.js";
+import { calculateMovementQuote } from "./movement-pricing.js";
 
 const strings = UI_STRINGS.proDashboard;
 const layout = document.querySelector("[data-dashboard-layout]");
@@ -27,6 +30,8 @@ requireAuth({
             user,
             onLogout: handleLogout,
             onWorkingHours: () => initializeWorkingHours({ user }),
+            onPaymentInfo: () => initializePaymentInfo({ user }),
+            onMovementInfo: () => initializeMovementInfo({ user }),
             onPersonalInfo: () => initializePersonalInfo({ user })
         });
         const workingHours = await loadWorkingHours(user.uid);
@@ -128,8 +133,56 @@ async function handleLogout() {
 async function loadBookings(userId) {
     try {
         const snapshot = await getDocs(query(collection(getFirestoreDb(), "bookings"), where("proId", "==", userId)));
-        return snapshot.docs.map((booking) => ({ id: booking.id, ...booking.data() }));
+        const bookings = snapshot.docs.map((booking) => ({ id: booking.id, ...booking.data() }));
+        const profileSnapshot = await getDoc(doc(getFirestoreDb(), "proProfiles", userId));
+        const movementInfo = profileSnapshot.data()?.movementInfo;
+        const paymentInfo = profileSnapshot.data()?.paymentInfo;
+        if ((!movementInfo?.movement || !movementInfo.address) && !paymentInfo?.enabled) {
+            return bookings;
+        }
+        return Promise.all(bookings.map((booking) => saveBookingContext(booking, movementInfo, paymentInfo)));
     } catch {
         return [];
     }
+}
+
+async function saveBookingContext(booking, movementInfo, paymentInfo) {
+    if (booking.status === "rejected") {
+        return booking;
+    }
+    let movementQuote = booking.movementQuote;
+    if (!movementQuote && movementInfo?.movement && movementInfo.address && booking.clientAddress) {
+        movementQuote = await calculateMovementQuote({
+            originAddress: movementInfo.address,
+            destinationAddress: booking.clientAddress,
+            zones: movementInfo.zones || []
+        });
+    }
+    const paymentContext = paymentInfo?.enabled ? buildPaymentContext(booking, paymentInfo, movementQuote) : null;
+    if (!movementQuote && !paymentContext) return booking;
+    const updates = {};
+    if (movementQuote && !booking.movementQuote) updates.movementQuote = movementQuote;
+    if (paymentContext && !booking.paymentContext) updates.paymentContext = paymentContext;
+    if (!Object.keys(updates).length) return { ...booking, movementQuote, paymentContext: booking.paymentContext };
+    await updateBookingDetails(booking.id, updates);
+    return { ...booking, ...updates };
+}
+
+function buildPaymentContext(booking, paymentInfo, movementQuote) {
+    const durationHours = Math.round(((new Date(booking.end) - new Date(booking.start)) / 3600000) * 100) / 100;
+    const ratePerUnit = Number(paymentInfo.ratePerUnit) || 0;
+    const surcharge = Number(movementQuote?.surcharge) || 0;
+    return {
+        bankTransfer: Boolean(paymentInfo.bankTransfer),
+        rib: paymentInfo.bankTransfer ? paymentInfo.rib : "",
+        wero: Boolean(paymentInfo.wero),
+        weroPhone: paymentInfo.wero ? paymentInfo.weroPhone : "",
+        banks: Array.isArray(paymentInfo.banks) ? paymentInfo.banks : [],
+        customBankName: paymentInfo.customBankName || "",
+        customBankUrl: paymentInfo.customBankUrl || "",
+        ratePerUnit,
+        durationHours,
+        surcharge,
+        balance: Math.round((ratePerUnit * durationHours + surcharge) * 100) / 100
+    };
 }

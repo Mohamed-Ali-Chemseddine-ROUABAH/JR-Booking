@@ -140,6 +140,10 @@
   padding: 24px;
 }
 
+.movement-info-dialog { width: min(820px, 100%); }
+.movement-map { min-height: 240px; margin: 10px 0; border: 1px solid var(--panel-brd); border-radius: var(--r-sm); overflow: hidden; }
+.movement-zone-row { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: end; }
+
 .booking-creation-modal {
   position: fixed;
   inset: 0;
@@ -189,7 +193,8 @@
 .working-hours-field label { color: var(--ink-300); font-size: .85rem; }
 
 .working-hours-field input,
-.working-hours-field select {
+.working-hours-field select,
+.working-hours-field textarea {
   min-width: 0;
   padding: 10px 12px;
   color: var(--ink-100);
@@ -310,6 +315,8 @@
 @media (max-width: 600px) {
   .working-hours-fields,
   .working-hours-days { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .payment-info-dialog .working-hours-fields { grid-template-columns: 1fr; }
+  .payment-info-dialog .payment-bank-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .working-hours-repeatable-row { grid-template-columns: 1fr 1fr; }
   .working-hours-dialog { padding: 18px; }
   .personal-info-visibility { grid-template-columns: 1fr; }
@@ -493,7 +500,13 @@
 .schedule-scroll {
   overflow-x: auto;
   padding-bottom: 2px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--panel-brd-strong) transparent;
 }
+.schedule-scroll::-webkit-scrollbar { height: 6px; }
+.schedule-scroll::-webkit-scrollbar-track { background: transparent; }
+.schedule-scroll::-webkit-scrollbar-thumb { background: var(--panel-brd-strong); border-radius: 999px; }
+.schedule-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-700); }
 
 .schedule-cell {
   min-height: 58px;

@@ -1,13 +1,16 @@
 import { requireAuth, signOutCurrentUser } from "../core/auth-guard.js";
-import { collection, doc, getDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { showNotification } from "../shared/notifications.js";
-import { initializeClientNavbar } from "./navbar-client.js";
+import { initializeClientNavbar } from "./navbar-client.js?v=payment-context-20260909";
 import { initializeClientBookings } from "./client-bookings.js";
 import { initializeClientProfileSettings } from "./client-profile-settings.js";
 import { initializeRequestChange } from "./client-request-change.js";
 import { updateBookingStatus } from "../pro-dashboard/booking-actions.js";
+import { initializeClientSchedule } from "./client-schedule.js";
+import { initializeClientPaymentContext } from "./client-payment-context.js";
+import { initializeProfessionalSearch } from "./client-professional-search.js";
 
 const strings = UI_STRINGS.clientDashboard;
 const status = document.querySelector("[data-dashboard-status]");
@@ -19,25 +22,35 @@ status.textContent = strings.loading;
 requireAuth({
     allowedRoles: ["client", "authenticated"],
     onAuthorized: async ({ user }) => {
+        let activeFilter = "pending";
+        let currentBookings = await loadBookings(user.uid);
+        let savedProfessionals = await loadSavedProfessionals(user.uid);
+        let lockedProfessional = null;
+
         initializeClientNavbar(document.querySelector("[data-client-navbar]"), {
             user,
             onLogout: handleLogout,
-            onEditProfile: () => initializeClientProfileSettings({ user })
+            onEditProfile: () => initializeClientProfileSettings({ user }),
+            onPayment: () => initializeClientPaymentContext({ bookings: currentBookings })
         });
-
-        let activeFilter = "pending";
-        const bookings = await loadBookings(user.uid);
-        renderBookings(user, bookings, activeFilter);
+        renderSchedule();
+        renderBookings(activeFilter);
+        renderProfessionalSearch();
         status.textContent = "";
 
         async function refresh() {
-            const updatedBookings = await loadBookings(user.uid);
-            renderBookings(user, updatedBookings, activeFilter);
+            currentBookings = await loadBookings(user.uid);
+            renderSchedule();
+            renderBookings(activeFilter);
         }
 
-        function renderBookings(currentUser, currentBookings, filter) {
+        function renderSchedule() {
+            initializeClientSchedule(document.querySelector("[data-client-schedule-root]"), { bookings: currentBookings, lockedProfessional });
+        }
+
+        function renderBookings(filter) {
             initializeClientBookings(document.querySelector("[data-client-bookings-root]"), {
-                userId: currentUser.uid,
+                userId: user.uid,
                 bookings: currentBookings,
                 initialFilter: filter,
                 onFilterChange: (nextFilter) => { activeFilter = nextFilter; },
@@ -45,6 +58,56 @@ requireAuth({
                 onCancel: (booking) => handleCancel(booking),
                 onRequestChange: (booking) => initializeRequestChange({ booking, onSaved: refresh })
             });
+        }
+
+        function renderProfessionalSearch() {
+            initializeProfessionalSearch(document.querySelector("[data-client-professional-search]"), {
+                savedProfessionals,
+                lockedProId: lockedProfessional?.proId || null,
+                lockedDisplayName: lockedProfessional?.displayName || null,
+                lockedIdTag: lockedProfessional?.idTag || null,
+                onLock: handleLock,
+                onUnlock: handleUnlock,
+                onSave: handleSave,
+                onRemove: handleRemove
+            });
+        }
+
+        async function handleLock(proId, displayName, idTag) {
+            const busySlots = await loadBusySlots(proId);
+            lockedProfessional = { proId, displayName, idTag, busySlots };
+            renderSchedule();
+            renderProfessionalSearch();
+        }
+
+        function handleUnlock() {
+            lockedProfessional = null;
+            renderSchedule();
+            renderProfessionalSearch();
+        }
+
+        async function handleSave(proId, displayName, idTag) {
+            if (savedProfessionals.some((item) => item.proId === proId)) return;
+            const entry = { proId, displayName, idTag: idTag || null };
+            savedProfessionals = [...savedProfessionals, entry];
+            renderProfessionalSearch();
+            try {
+                await setDoc(doc(getFirestoreDb(), "clientAccounts", user.uid), { savedProfessionals: arrayUnion(entry) }, { merge: true });
+            } catch {
+                showNotification(strings.bookings.actionError, "error");
+            }
+        }
+
+        async function handleRemove(proId) {
+            const entry = savedProfessionals.find((item) => item.proId === proId);
+            savedProfessionals = savedProfessionals.filter((item) => item.proId !== proId);
+            renderProfessionalSearch();
+            if (!entry) return;
+            try {
+                await setDoc(doc(getFirestoreDb(), "clientAccounts", user.uid), { savedProfessionals: arrayRemove(entry) }, { merge: true });
+            } catch {
+                showNotification(strings.bookings.actionError, "error");
+            }
         }
 
         async function handleAccept(booking) {
@@ -89,6 +152,24 @@ async function attachProDisplayName(booking) {
         return { ...booking, proDisplayName: snapshot.data()?.displayName };
     } catch {
         return booking;
+    }
+}
+
+async function loadSavedProfessionals(userId) {
+    try {
+        const snapshot = await getDoc(doc(getFirestoreDb(), "clientAccounts", userId));
+        return snapshot.data()?.savedProfessionals || [];
+    } catch {
+        return [];
+    }
+}
+
+async function loadBusySlots(proId) {
+    try {
+        const snapshot = await getDocs(collection(getFirestoreDb(), "busySlots", proId, "slots"));
+        return snapshot.docs.map((slot) => slot.data());
+    } catch {
+        return [];
     }
 }
 

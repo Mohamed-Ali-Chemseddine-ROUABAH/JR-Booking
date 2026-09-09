@@ -7,3 +7,4 @@
 - **Security rules:** `requireAuth({ allowedRoles: ["client", "authenticated"] })` — client accounts have no custom claim yet, so `getUserRole` resolves them to `authenticated`, matching the same fallback `login.html` relies on for `getRoleHomePath`.
 - **Mockup references:** Client dashboard bookings and account actions in `docs/requirements/MASTER_SPECIFICATION.md` Part 7.
 - **Verification:** No formal Phase 9 entry yet in `docs/verification/VERIFICATION_LOG.md`; tracked in the completed-implementation-slices checklist until a dedicated entry is prepared.
+- **Planned addition (Phase 9b):** implemented. The orchestrator reads/writes `clientAccounts.savedProfessionals` and wires `client-professional-search.js`, passing its lock/unlock state into `initializeClientSchedule` as an optional overlay. See `docs/architecture/js/client-dashboard/client-professional-search.md`.

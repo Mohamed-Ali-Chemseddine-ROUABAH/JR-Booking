@@ -2,7 +2,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.proDashboard.navbar;
 
-export function initializeProNavbar(container, { user, onLogout, onWorkingHours, onPersonalInfo }) {
+export function initializeProNavbar(container, { user, onLogout, onWorkingHours, onPaymentInfo, onMovementInfo, onPersonalInfo }) {
     container.innerHTML = `
         <div class="pro-brand">
             <div class="pro-brand-mark" aria-hidden="true">JR</div>
@@ -45,6 +45,10 @@ export function initializeProNavbar(container, { user, onLogout, onWorkingHours,
             settingsTrigger.setAttribute("aria-expanded", "false");
             if (index === 0) {
                 onWorkingHours?.();
+            } else if (index === 1) {
+                onPaymentInfo?.();
+            } else if (index === 2) {
+                onMovementInfo?.();
             } else if (index === 4) {
                 onPersonalInfo?.();
             }

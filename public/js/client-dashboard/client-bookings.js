@@ -72,7 +72,10 @@ function renderBookings(container, userId, bookings, activeFilter) {
             : isOwnPending
                 ? `<div class="sidebar-booking-actions"><button class="btn btn-ghost" type="button" data-cancel>${strings.cancelBooking}</button></div>`
                 : "";
-        return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}"><strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${strings.statuses[booking.status] || booking.status}</small>${notice}${actions}</article>`;
+        const movementQuote = booking.movementQuote
+            ? `<small>${strings.movementDistance}: ${booking.movementQuote.distanceKm} km · ${strings.movementSurcharge}: ${booking.movementQuote.surcharge} €</small>`
+            : "";
+        return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}"><strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${strings.statuses[booking.status] || booking.status}</small>${movementQuote}${notice}${actions}</article>`;
     }).join("");
 }
 
