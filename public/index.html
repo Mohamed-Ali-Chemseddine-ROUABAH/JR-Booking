@@ -10,6 +10,7 @@
     <!-- Application CSS -->
     <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
     <link rel="stylesheet" href="assets/css/glass-theme.css">
+    <script src="firebase-config.js?v=production-web-20260909"></script>
 
     <style>
         /* Landing specific styles extracted from mockup */
@@ -89,6 +90,7 @@
         </button>
         <span>DEVENIR PRESTATAIRE</span>
       </div>
+      <p class="hero-foot"><a href="privacy-policy.html">Politique de confidentialité</a><span>·</span><a href="terms.html">Conditions d’utilisation</a></p>
 
     </div>
   </div>
@@ -150,9 +152,7 @@
   }
 
   searchInput.addEventListener('input', debounce(updateSearchStatus));
-  professionalRequestButton.addEventListener('click', () => {
-    showNotification(UI_STRINGS.landing.professionalRequestUnavailable, 'info');
-  });
+  professionalRequestButton.addEventListener('click', () => window.location.assign('request-professional.html'));
   searchStatus.textContent = UI_STRINGS.search.empty;
 </script>
 

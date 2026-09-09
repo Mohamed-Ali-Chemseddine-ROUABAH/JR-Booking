@@ -36,6 +36,8 @@
 
 - [ ] **10. Installez et configurez l'extension "Trigger Email" avec un compte Gmail d'envoi. / 10. Install and configure the "Trigger Email" extension with a Gmail sending account.**
 - [ ] **11. Configurez un client OAuth Google Cloud pour la synchronisation du calendrier. / 11. Set up a Google Cloud OAuth client for Calendar sync.** (Guide: https://developers.google.com/workspace/guides/create-credentials)
+- [ ] **12. Définissez et publiez la politique de confidentialité avant la validation OAuth. / 12. Define and publish the privacy policy before OAuth verification.** The final public URL, expected to be `https://jr-booking-premium.web.app/privacy-policy.html`, must not be marked complete until the page exists, is publicly reachable, and accurately describes Firebase Auth, Firestore, Storage, Calendar OAuth, payment-link handling, data retention, and user rights.
+- [ ] **13. Définissez et publiez les conditions d'utilisation avant la validation OAuth. / 13. Define and publish the terms of service before OAuth verification.** The final public URL, expected to be `https://jr-booking-premium.web.app/terms.html`, must not be marked complete until the page exists, is publicly reachable, and has been reviewed for the professional/client workflows, payments, cancellations, account restrictions, and platform responsibilities.
 
 ## Admin Login Reference / RÃ©fÃ©rence de connexion administrateur
 - **Admin Login Token (Filename) / Jeton de connexion administrateur (Nom de fichier):** `admin-<unlisted-token>.html` (Ã€ dÃ©finir lors du dÃ©ploiement. RenseignÃ© dans `.env` / To be defined at deployment. Recorded in `.env`).

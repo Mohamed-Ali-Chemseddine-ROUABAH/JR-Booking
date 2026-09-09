@@ -5,16 +5,21 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 import { showNotification } from "../shared/notifications.js?v=undo-20260907";
 import { initializeSchedule } from "../schedule/schedule-render.js";
 import { initializeSidebarFeed } from "../sidebar/sidebar-feed.js";
-import { initializeProNavbar } from "./navbar-pro.js";
+import { initializeProNavbar } from "./navbar-pro.js?v=crm-20260909";
 import { initializeWorkingHours } from "./working-hours.js";
 import { initializePersonalInfo } from "./personal-info.js";
 import { initializePaymentInfo } from "./payment-info.js";
 import { initializeMovementInfo } from "./movement-info.js";
+import { initializeClientDatabase } from "./client-database.js?v=crm-erasure-20260909";
+import { initializeStatistics } from "./statistics.js?v=stats-20260909";
 import { initializeBookingCreation } from "./booking-creation.js";
 import { updateBookingStatus, updateBookingDetails } from "./booking-actions.js";
 import { initializeBookingEdit } from "./booking-edit.js";
 import { openBookingContextMenu } from "./booking-context-menu.js";
 import { calculateMovementQuote } from "./movement-pricing.js";
+import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
+import { initializeCalendarSync } from "../schedule/schedule-gcal-sync.js?v=calendar-config-20260909";
+import { buildProfessionalScheduleReport, openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
 
 const strings = UI_STRINGS.proDashboard;
 const layout = document.querySelector("[data-dashboard-layout]");
@@ -26,16 +31,21 @@ status.textContent = strings.loading;
 requireAuth({
     allowedRoles: ["professional"],
     onAuthorized: async ({ user }) => {
+        let dashboardBookings = [];
         initializeProNavbar(document.querySelector("[data-pro-navbar]"), {
             user,
             onLogout: handleLogout,
+            onPrint: () => openPrintDocument(buildProfessionalScheduleReport({ professionalName: user.displayName || user.email, bookings: dashboardBookings, strings: UI_STRINGS.proDashboard.navbar.printReport })),
             onWorkingHours: () => initializeWorkingHours({ user }),
             onPaymentInfo: () => initializePaymentInfo({ user }),
             onMovementInfo: () => initializeMovementInfo({ user }),
-            onPersonalInfo: () => initializePersonalInfo({ user })
+            onPersonalInfo: () => initializePersonalInfo({ user }),
+            onClientDatabase: () => initializeClientDatabase({ user }),
+            onStatistics: () => initializeStatistics({ user })
         });
         const workingHours = await loadWorkingHours(user.uid);
         const bookings = await loadBookings(user.uid);
+        dashboardBookings = bookings;
         let sidebar;
         let activeFilter = "pending";
         const renderDashboard = (currentBookings) => {
@@ -63,11 +73,13 @@ requireAuth({
                         onEdit: (selectedBooking) => initializeBookingEdit({ booking: selectedBooking, onSaved: refreshDashboard })
                     });
                 },
+                onCalendarSync: () => initializeCalendarSync({ user }),
                 onCreateBooking: (details) => initializeBookingCreation({ user, details, onSaved: refreshDashboard })
             });
         };
         const refreshDashboard = async () => {
             const updatedBookings = await loadBookings(user.uid);
+            dashboardBookings = updatedBookings;
             renderDashboard(updatedBookings);
         };
         const handleBookingStatus = async (bookingId, nextStatus, previousStatus) => {
@@ -178,8 +190,7 @@ function buildPaymentContext(booking, paymentInfo, movementQuote) {
         wero: Boolean(paymentInfo.wero),
         weroPhone: paymentInfo.wero ? paymentInfo.weroPhone : "",
         banks: Array.isArray(paymentInfo.banks) ? paymentInfo.banks : [],
-        customBankName: paymentInfo.customBankName || "",
-        customBankUrl: paymentInfo.customBankUrl || "",
+        customPaymentLinks: normalizeCustomPaymentLinks(paymentInfo),
         ratePerUnit,
         durationHours,
         surcharge,

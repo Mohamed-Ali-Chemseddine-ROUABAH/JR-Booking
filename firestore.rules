@@ -55,6 +55,34 @@ service cloud.firestore {
         && request.resource.data.status in ["pending", "accepted", "done", "no-show", "busy"];
     }
 
+    function canClientBookProfessional(proId, clientId) {
+      return !exists(/databases/$(database)/documents/proClientRecords/$(proId + "_" + clientId))
+        || get(/databases/$(database)/documents/proClientRecords/$(proId + "_" + clientId)).data.get("relationshipStatus", "active") != "blocked";
+    }
+
+    function clientBookingUpdate() {
+      return request.auth.uid == resource.data.clientId
+        && resource.data.status == "pending"
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "start", "end"])
+        && request.resource.data.status in ["pending", "accepted", "rejected"]
+        && (resource.data.createdBy != request.auth.uid || request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"]))
+        && (request.resource.data.status != "accepted" || resource.data.createdBy != request.auth.uid);
+    }
+
+    function professionalBookingUpdate() {
+      return request.auth.uid == resource.data.proId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "status",
+          "statusHistory",
+          "start",
+          "end",
+          "guestContact",
+          "movementQuote",
+          "paymentContext",
+          "customPrice"
+        ]);
+    }
+
     match /publicProfiles/{proId} {
       allow read: if true;
       allow create: if willOwnProfile(proId) && hasOnlyPublicProfileFields() && request.resource.data.get("verified", false) != true;
@@ -81,6 +109,15 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /professionalRequests/{requestId} {
+      allow read: if signedIn() && (request.auth.uid == requestId || isAdmin());
+      allow create: if signedIn()
+        && request.auth.uid == requestId
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == "pending";
+      allow update, delete: if isAdmin();
+    }
+
     match /bookings/{bookingId} {
       allow read: if signedIn()
         && (
@@ -93,13 +130,9 @@ service cloud.firestore {
         && (
           request.auth.uid == request.resource.data.clientId
           || request.auth.uid == request.resource.data.proId
-        );
-      allow update: if signedIn()
-        && (
-          request.auth.uid == resource.data.clientId
-          || request.auth.uid == resource.data.proId
-          || isAdmin()
-        );
+        )
+        && (request.resource.data.get("clientId", null) == null || canClientBookProfessional(request.resource.data.proId, request.resource.data.clientId));
+      allow update: if isAdmin() || (signedIn() && (clientBookingUpdate() || professionalBookingUpdate()));
       allow delete: if isAdmin();
 
       match /messages/{messageId} {
@@ -115,12 +148,10 @@ service cloud.firestore {
     }
 
     match /proClientRecords/{recordId} {
-      allow read, write: if signedIn()
-        && (
-          request.auth.uid == resource.data.proId
-          || request.auth.uid == request.resource.data.proId
-          || isAdmin()
-        );
+      allow read: if signedIn() && (request.auth.uid == resource.data.proId || isAdmin());
+      allow create: if signedIn() && (request.auth.uid == request.resource.data.proId || isAdmin());
+      allow update: if signedIn() && (request.auth.uid == resource.data.proId || request.auth.uid == request.resource.data.proId || isAdmin());
+      allow delete: if isAdmin();
     }
 
     match /supportTickets/{ticketId} {

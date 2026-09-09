@@ -1,10 +1,14 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import { connectAuthEmulator, getAuth } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { connectFirestoreEmulator, getFirestore } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { connectStorageEmulator, getStorage } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js";
+import { connectFunctionsEmulator, getFunctions } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 
 let firebaseApp;
 let firestore;
 let firebaseAuth;
+let firebaseStorage;
+let firebaseFunctions;
 
 const LOCAL_FIREBASE_CONFIG = {
     apiKey: "fake-api-key",
@@ -14,7 +18,8 @@ const LOCAL_FIREBASE_CONFIG = {
 
 const LOCAL_EMULATORS = {
     auth: "http://127.0.0.1:9099",
-    firestore: { host: "127.0.0.1", port: 8080 }
+    firestore: { host: "127.0.0.1", port: 8080 },
+    functions: { host: "127.0.0.1", port: 5001 }
 };
 
 export function isFirebaseConfigured() {
@@ -59,6 +64,28 @@ export function getFirebaseAuth() {
     }
 
     return firebaseAuth;
+}
+
+export function getFirebaseStorage() {
+    const app = getFirebaseApp();
+    if (app && !firebaseStorage) {
+        firebaseStorage = getStorage(app);
+        const storageEmulator = getEmulatorConfig().storage;
+        if (storageEmulator) {
+            connectStorageEmulator(firebaseStorage, storageEmulator.host || "127.0.0.1", storageEmulator.port || 9199);
+        }
+    }
+    return firebaseStorage;
+}
+
+export function getFirebaseFunctions() {
+    const app = getFirebaseApp();
+    if (app && !firebaseFunctions) {
+        firebaseFunctions = getFunctions(app);
+        const functionsEmulator = getEmulatorConfig().functions;
+        if (functionsEmulator) connectFunctionsEmulator(firebaseFunctions, functionsEmulator.host || "127.0.0.1", functionsEmulator.port || 5001);
+    }
+    return firebaseFunctions;
 }
 
 function connectConfiguredAuthEmulator(auth) {

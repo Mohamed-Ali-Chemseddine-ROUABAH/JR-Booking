@@ -1,6 +1,9 @@
 # Environment variables
 .env
 .env.*
+!.env.example
+functions/.env
+functions/.env.*
 
 # Credentials and service accounts
 *.pem
@@ -14,6 +17,9 @@ node_modules/
 firebase-debug.log
 firebase-debug.*.log
 *.log
+emulator-data/
+firebase-export/
+/package-lock.json
 
 # OS files
 .DS_Store

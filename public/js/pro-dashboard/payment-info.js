@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
 
 const strings = UI_STRINGS.proDashboard.paymentInfo;
 const defaultInfo = {
@@ -11,6 +12,7 @@ const defaultInfo = {
     weroPhone: "",
     ratePerUnit: "",
     banks: [],
+    customPaymentLinks: [],
     customBankName: "",
     customBankUrl: ""
 };
@@ -42,6 +44,7 @@ export async function initializePaymentInfo({ user }) {
     });
 
     modal.querySelector("[data-payment-close]").addEventListener("click", () => modal.remove());
+    modal.querySelector("[data-payment-link-add]").addEventListener("click", () => addPaymentLinkRow(modal.querySelector("[data-payment-links]")));
     modal.addEventListener("click", (event) => {
         if (event.target === modal) modal.remove();
     });
@@ -75,10 +78,8 @@ function createModal() {
                     ${bankToggle("societeGenerale", strings.bankSocieteGenerale)}
                 </div>
                 <h3>${strings.customBankTitle}</h3>
-                <div class="working-hours-fields">
-                    <label class="working-hours-field"><span>${strings.customBankNameLabel}</span><input name="customBankName" type="text"></label>
-                    <label class="working-hours-field"><span>${strings.customBankUrlLabel}</span><input name="customBankUrl" type="url"></label>
-                </div>
+                <div class="payment-links-list" data-payment-links></div>
+                <button class="btn btn-ghost" type="button" data-payment-link-add>${strings.addCustomLink}</button>
             </section>
             <section class="working-hours-section">
                 <div class="working-hours-fields">
@@ -107,8 +108,9 @@ function populateForm(form, info) {
     form.wero.checked = Boolean(info.wero);
     form.weroPhone.value = info.weroPhone;
     form.ratePerUnit.value = info.ratePerUnit;
-    form.customBankName.value = info.customBankName;
-    form.customBankUrl.value = info.customBankUrl;
+    const linkList = form.querySelector("[data-payment-links]");
+    linkList.innerHTML = "";
+    normalizeCustomPaymentLinks(info).forEach((link) => addPaymentLinkRow(linkList, link));
     (info.banks || []).forEach((bank) => {
         const input = form.querySelector(`[name='bank-${bank}']`);
         if (input) input.checked = true;
@@ -124,7 +126,24 @@ function readForm(form) {
         weroPhone: form.weroPhone.value.trim(),
         ratePerUnit: form.ratePerUnit.value,
         banks: [...form.querySelectorAll("[name^='bank-']:checked")].map((input) => input.name.slice(5)),
-        customBankName: form.customBankName.value.trim(),
-        customBankUrl: form.customBankUrl.value.trim()
+        customPaymentLinks: [...form.querySelectorAll("[data-payment-link]")].map((row) => ({
+            label: row.querySelector("[data-payment-link-label]").value.trim(),
+            url: row.querySelector("[data-payment-link-url]").value.trim()
+        })).filter((link) => link.label || link.url),
+        customBankName: "",
+        customBankUrl: ""
     };
+}
+
+function addPaymentLinkRow(container, link = {}) {
+    const row = document.createElement("div");
+    row.className = "working-hours-fields payment-link-row";
+    row.dataset.paymentLink = "true";
+    row.innerHTML = `<label class="working-hours-field"><span>${strings.customBankNameLabel}</span><input data-payment-link-label type="text" value="${escapeAttribute(link.label || "")}"></label><label class="working-hours-field"><span>${strings.customBankUrlLabel}</span><input data-payment-link-url type="url" value="${escapeAttribute(link.url || "")}"></label><button class="btn btn-ghost" type="button" data-payment-link-remove>${strings.removeCustomLink}</button>`;
+    row.querySelector("[data-payment-link-remove]").addEventListener("click", () => row.remove());
+    container.append(row);
+}
+
+function escapeAttribute(value) {
+    return String(value).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

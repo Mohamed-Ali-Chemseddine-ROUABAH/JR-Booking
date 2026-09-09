@@ -7,7 +7,7 @@ import { initializeClientNavbar } from "./navbar-client.js?v=payment-context-202
 import { initializeClientBookings } from "./client-bookings.js";
 import { initializeClientProfileSettings } from "./client-profile-settings.js";
 import { initializeRequestChange } from "./client-request-change.js";
-import { updateBookingStatus } from "../pro-dashboard/booking-actions.js";
+import { updateClientBookingStatus } from "../pro-dashboard/booking-actions.js";
 import { initializeClientSchedule } from "./client-schedule.js";
 import { initializeClientPaymentContext } from "./client-payment-context.js";
 import { initializeProfessionalSearch } from "./client-professional-search.js";
@@ -112,7 +112,7 @@ requireAuth({
 
         async function handleAccept(booking) {
             try {
-                await updateBookingStatus(booking.id, "accepted");
+                await updateClientBookingStatus(booking.id, "accepted");
                 await refresh();
                 showNotification(strings.bookings.actionSaved, "success");
             } catch {
@@ -123,7 +123,7 @@ requireAuth({
         async function handleCancel(booking) {
             if (!window.confirm(strings.bookings.cancelConfirmation)) return;
             try {
-                await updateBookingStatus(booking.id, "rejected");
+                await updateClientBookingStatus(booking.id, "rejected");
                 await refresh();
                 showNotification(strings.bookings.actionSaved, "success");
             } catch {

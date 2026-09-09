@@ -203,6 +203,31 @@
   border-radius: var(--r-sm);
 }
 
+.statistics-dialog .working-hours-field select {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 42px;
+  padding-right: 38px;
+  color: var(--ink-100);
+  background-color: rgba(20, 23, 28, .92);
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-300) 50%), linear-gradient(135deg, var(--ink-300) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 17px, calc(100% - 12px) 17px;
+  background-repeat: no-repeat;
+  background-size: 5px 5px, 5px 5px;
+}
+
+.statistics-dialog .working-hours-field select:hover,
+.statistics-dialog .working-hours-field select:focus {
+  border-color: var(--ink-100);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(244,245,247,.08);
+}
+
+.statistics-dialog .working-hours-field select option {
+  color: var(--ink-100);
+  background: #14171c;
+}
+
 .working-hours-days {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -221,6 +246,39 @@
 }
 
 .working-hours-feedback { min-height: 1.2rem; color: var(--ink-300); }
+
+.statistics-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.statistics-card { display: grid; gap: 6px; padding: 14px; border: 1px solid var(--panel-brd); border-radius: var(--r-sm); background: var(--ghost); }
+.statistics-card small { color: var(--ink-500); }
+.statistics-card strong { color: var(--ink-100); font-size: 1.2rem; }
+.statistics-chart { display: grid; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--hair); }
+.statistics-chart h3 { margin: 0; color: var(--ink-100); }
+.statistics-bars { display: grid; gap: 10px; }
+.statistics-bar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 28px; align-items: center; gap: 10px; color: var(--ink-300); font-size: .82rem; }
+.statistics-bar-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--ghost); }
+.statistics-bar-track span { display: block; height: 100%; border-radius: inherit; background: var(--ink-100); }
+.calendar-sync-state { display: grid; gap: 5px; padding: 14px; border: 1px solid var(--panel-brd); border-radius: var(--r-sm); background: var(--ghost); }
+.calendar-sync-state strong { color: var(--ink-100); }
+.calendar-sync-state span { color: var(--ink-500); font-size: .84rem; }
+.admin-request-panel { padding: 24px; }
+.admin-request-panel h1 { margin: 8px 0 0; color: var(--ink-100); font-family: var(--font-display); }
+.admin-request-row { display: flex; justify-content: space-between; gap: 18px; padding: 18px 0; border-top: 1px solid var(--hair); }
+.admin-request-copy { display: grid; gap: 6px; min-width: 0; }
+.admin-request-copy strong { color: var(--ink-100); }
+.admin-request-copy small { color: var(--ink-500); }
+.admin-request-copy a { color: var(--ink-300); text-decoration: underline; overflow-wrap: anywhere; }
+.admin-audit-list { display: grid; gap: 8px; }
+.admin-audit-row { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--hair); color: var(--ink-300); font-size: .82rem; }
+.admin-audit-row strong { color: var(--ink-100); }
+.admin-audit-row small { color: var(--ink-500); }
+.admin-queues-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.admin-queues-grid h3 { color: var(--ink-100); font-size: 1rem; }
+.admin-queue-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 10px; padding: 10px 0; border-top: 1px solid var(--hair); }
+.admin-queue-row strong { color: var(--ink-100); }
+.admin-queue-row small { color: var(--ink-500); }
+.admin-queue-row select { grid-column: 1 / -1; color: var(--ink-100); background: var(--ghost); border: 1px solid var(--panel-brd); border-radius: var(--r-sm); padding: 7px; }
+@media (max-width: 700px) { .admin-queues-grid { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .admin-request-row { display: grid; } }
 
 .working-hours-repeatable-list { display: grid; gap: 10px; }
 
@@ -315,6 +373,7 @@
 @media (max-width: 600px) {
   .working-hours-fields,
   .working-hours-days { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .statistics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .payment-info-dialog .working-hours-fields { grid-template-columns: 1fr; }
   .payment-info-dialog .payment-bank-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .working-hours-repeatable-row { grid-template-columns: 1fr 1fr; }

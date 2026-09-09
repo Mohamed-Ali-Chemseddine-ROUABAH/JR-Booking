@@ -1,5 +1,6 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { escapeHtml } from "../core/utils.js";
+import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
 
 const strings = UI_STRINGS.clientDashboard.paymentContext;
 
@@ -39,7 +40,7 @@ function renderPaymentDetail(container, booking) {
     const options = [];
     if (payment.bankTransfer && payment.rib) options.push(`<div class="client-payment-option"><strong>${strings.bankTransfer}</strong><pre>${escapeHtml(payment.rib)}</pre></div>`);
     if (payment.wero && payment.weroPhone) options.push(`<div class="client-payment-option"><strong>${strings.wero}</strong><span>${escapeHtml(payment.weroPhone)}</span></div>`);
-    if (payment.customBankUrl) options.push(`<a class="btn btn-solid" href="${safeUrl(payment.customBankUrl)}" target="_blank" rel="noreferrer">${escapeHtml(payment.customBankName || strings.externalLink)}</a>`);
+    normalizeCustomPaymentLinks(payment).filter((link) => link.url).forEach((link) => options.push(`<a class="btn btn-solid" href="${safeUrl(link.url)}" target="_blank" rel="noreferrer">${escapeHtml(link.label || strings.externalLink)}</a>`));
     if (payment.banks?.length) options.push(`<p class="client-payment-meta"><strong>${strings.acceptedBanks}:</strong> ${payment.banks.map(escapeHtml).join(" · ")}</p>`);
     container.innerHTML = `
         <div class="client-payment-summary"><span>${strings.reference}: ${escapeHtml(booking.proDisplayName || "Professionnel")}</span><strong>${strings.balance}: ${Number(payment.balance || 0).toFixed(2)} €</strong><small>${strings.duration}: ${payment.durationHours} ${strings.hours}</small></div>

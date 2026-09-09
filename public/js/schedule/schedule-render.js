@@ -3,7 +3,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 const strings = UI_STRINGS.proDashboard.schedule;
 const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
 
-export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, daysToShow = 7, workingHours = {}, bookings = [] } = {}) {
+export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, daysToShow = 7, workingHours = {}, bookings = [] } = {}) {
     let selectedDays = daysToShow;
     let weekOffset = 0;
     const visibleDays = getVisibleDays(selectedDays, weekOffset);
@@ -18,7 +18,7 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
                 <button class="chip-button" type="button" data-navigation="previous">${strings.previous}</button>
                 <button class="chip-button is-active" type="button" data-navigation="today">${strings.today}</button>
                 <button class="chip-button" type="button" data-navigation="next">${strings.next}</button>
-                <button class="chip-button" type="button">${strings.sync}</button>
+                <button class="chip-button" type="button" data-calendar-sync>${strings.sync}</button>
                 <div class="schedule-view-switch" role="group" aria-label="${strings.title}">
                     <button class="chip-button${daysToShow === 1 ? " is-active" : ""}" type="button" data-days="1">${strings.viewOne}</button>
                     <button class="chip-button${daysToShow === 3 ? " is-active" : ""}" type="button" data-days="3">${strings.viewThree}</button>
@@ -34,6 +34,7 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
     `;
 
     container.querySelector("[data-sidebar-expand]").addEventListener("click", onExpandSidebar);
+    container.querySelector("[data-calendar-sync]").addEventListener("click", onCalendarSync);
     container.querySelectorAll("[data-days]").forEach((button) => {
         button.addEventListener("click", () => {
             container.querySelectorAll("[data-days]").forEach((item) => item.classList.remove("is-active"));
