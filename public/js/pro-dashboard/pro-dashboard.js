@@ -3,7 +3,7 @@ import { collection, doc, getDocs, getDoc, query, where } from "https://www.gsta
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { showNotification } from "../shared/notifications.js?v=undo-20260907";
-import { initializeSchedule } from "../schedule/schedule-render.js";
+import { initializeSchedule } from "../schedule/schedule-render.js?v=calendar-sync-20260910b";
 import { initializeSidebarFeed } from "../sidebar/sidebar-feed.js";
 import { initializeProNavbar } from "./navbar-pro.js?v=crm-20260909";
 import { initializeWorkingHours } from "./working-hours.js";
@@ -18,7 +18,7 @@ import { initializeBookingEdit } from "./booking-edit.js";
 import { openBookingContextMenu } from "./booking-context-menu.js";
 import { calculateMovementQuote } from "./movement-pricing.js";
 import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
-import { initializeCalendarSync } from "../schedule/schedule-gcal-sync.js?v=calendar-config-20260909";
+import { initializeCalendarSync, loadGoogleCalendarEvents } from "../schedule/schedule-gcal-sync.js?v=calendar-sync-20260910b";
 import { buildProfessionalScheduleReport, openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
 
 const strings = UI_STRINGS.proDashboard;
@@ -45,6 +45,7 @@ requireAuth({
         });
         const workingHours = await loadWorkingHours(user.uid);
         const bookings = await loadBookings(user.uid);
+        const calendarEvents = await loadCalendarEvents();
         dashboardBookings = bookings;
         let sidebar;
         let activeFilter = "pending";
@@ -61,6 +62,7 @@ requireAuth({
                 daysToShow: workingHours.viewDays,
                 workingHours,
                 bookings: currentBookings,
+                calendarEvents,
                 onExpandSidebar: expandSidebar,
                 onSelectBooking: (bookingId) => sidebar.selectBooking(bookingId),
                 onBookingContextMenu: ({ bookingId, x, y }) => {
@@ -107,6 +109,18 @@ requireAuth({
         status.textContent = "";
     }
 });
+
+async function loadCalendarEvents() {
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 7);
+    try {
+        return await loadGoogleCalendarEvents({ from, to });
+    } catch {
+        return [];
+    }
+}
 
 async function loadWorkingHours(userId) {
     try {

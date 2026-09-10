@@ -4,6 +4,7 @@
 !.env.example
 functions/.env
 functions/.env.*
+extensions/*.env
 
 # Credentials and service accounts
 *.pem

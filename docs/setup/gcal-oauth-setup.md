@@ -6,6 +6,8 @@
 - Use a Firebase project linked to the local `.firebaserc` project ID.
 - Use a dedicated Google Cloud OAuth client for local/sandbox verification before production.
 
+Professional onboarding is a separate prerequisite from Calendar OAuth: a new professional submits an email-first application, verifies that email, is approved by an admin, and sets a password through the approval email before using the professional dashboard.
+
 ## Google Cloud Console
 
 1. Open Google Cloud Console for the Firebase project.

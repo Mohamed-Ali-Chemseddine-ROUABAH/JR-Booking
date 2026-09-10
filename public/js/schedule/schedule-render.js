@@ -3,7 +3,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 const strings = UI_STRINGS.proDashboard.schedule;
 const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
 
-export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, daysToShow = 7, workingHours = {}, bookings = [] } = {}) {
+export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, daysToShow = 7, workingHours = {}, bookings = [], calendarEvents = [] } = {}) {
     let selectedDays = daysToShow;
     let weekOffset = 0;
     const visibleDays = getVisibleDays(selectedDays, weekOffset);
@@ -28,7 +28,7 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
         </div>
         <div class="schedule-scroll">
             <div class="schedule-grid" role="grid" aria-label="${strings.title}">
-                ${renderGrid(getVisibleDays(selectedDays, weekOffset), workingHours, bookings)}
+                ${renderGrid(getVisibleDays(selectedDays, weekOffset), workingHours, bookings, calendarEvents)}
             </div>
         </div>
     `;
@@ -40,42 +40,42 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
             container.querySelectorAll("[data-days]").forEach((item) => item.classList.remove("is-active"));
             button.classList.add("is-active");
             selectedDays = Number(button.dataset.days);
-            renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, onCreateBooking, onSelectBooking, onBookingContextMenu);
+            renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
         });
     });
     attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu);
     container.querySelector("[data-navigation='previous']").addEventListener("click", () => {
         weekOffset -= 1;
-        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, onCreateBooking, onSelectBooking, onBookingContextMenu);
+        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
     });
     container.querySelector("[data-navigation='today']").addEventListener("click", () => {
         weekOffset = 0;
-        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, onCreateBooking, onSelectBooking, onBookingContextMenu);
+        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
     });
     container.querySelector("[data-navigation='next']").addEventListener("click", () => {
         weekOffset += 1;
-        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, onCreateBooking, onSelectBooking, onBookingContextMenu);
+        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
     });
-    renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, onCreateBooking, onSelectBooking, onBookingContextMenu);
+    renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
 }
 
-function renderScheduleGrid(container, daysToShow, weekOffset, workingHours, bookings, onCreateBooking, onSelectBooking, onBookingContextMenu) {
+function renderScheduleGrid(container, daysToShow, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu) {
     const visibleDays = getVisibleDays(daysToShow, weekOffset);
     const grid = container.querySelector(".schedule-grid");
     grid.style.setProperty("--schedule-day-count", String(visibleDays.length));
-    grid.innerHTML = renderGrid(visibleDays, workingHours, bookings);
+    grid.innerHTML = renderGrid(visibleDays, workingHours, bookings, calendarEvents);
     attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu);
     container.querySelector(".schedule-summary").textContent = `${strings.summary.replace("{days}", visibleDays.length)} · ${formatDateRange(visibleDays)}`;
 }
 
-function renderGrid(visibleDays, workingHours, bookings) {
+function renderGrid(visibleDays, workingHours, bookings, calendarEvents) {
     const header = [`<div class="schedule-cell schedule-day" role="columnheader"></div>`]
         .concat(visibleDays.map((day) => `<div class="schedule-cell schedule-day" role="columnheader"><span>${day.label}</span><small>${day.shortDate}</small></div>`))
         .join("");
 
     const rows = hours.map((hour) => {
         const slots = visibleDays
-            .map((day) => renderSlot(hour, day, workingHours, bookings))
+            .map((day) => renderSlot(hour, day, workingHours, bookings, calendarEvents))
             .join("");
 
         return `<div class="schedule-cell schedule-time" role="rowheader">${hour}</div>${slots}`;
@@ -84,7 +84,7 @@ function renderGrid(visibleDays, workingHours, bookings) {
     return header + rows;
 }
 
-function renderSlot(hour, day, workingHours, bookings) {
+function renderSlot(hour, day, workingHours, bookings, calendarEvents) {
     const dayNumber = day.date.getDay() || 7;
     const isWorkingDay = workingHours.workingDays?.includes(dayNumber) ?? true;
     const absence = (workingHours.absences || []).some((item) => item.start && item.end && day.isoDate >= item.start && day.isoDate <= item.end);
@@ -96,11 +96,16 @@ function renderSlot(hour, day, workingHours, bookings) {
     const breakEnd = workingHours.recurringBreak?.end || "13:00";
     const isBreak = hour >= breakStart && hour < breakEnd;
     const booking = findBooking(bookings, day.isoDate, hour);
+    const calendarEvent = findCalendarEvent(calendarEvents, day.isoDate, hour);
     const available = isWorkingDay && isWithinHours && !isBreak && !absence && !booking;
     if (booking) {
         const status = ["pending", "accepted", "done", "no-show"].includes(booking.status) ? booking.status : "pending";
         const clientLabel = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || strings.bookingLabel);
         return `<div class="schedule-cell schedule-slot schedule-slot-booking schedule-slot-${status}" role="gridcell" data-booking-id="${escapeHtml(booking.id)}"><strong>${clientLabel}</strong><small>${strings.bookingStatuses[status]}</small></div>`;
+    }
+    if (calendarEvent) {
+        const eventClass = calendarEvent.presentationMode === "solid" ? "schedule-slot-calendar-solid" : "schedule-slot-calendar-ghost";
+        return `<div class="schedule-cell schedule-slot schedule-slot-unavailable ${eventClass}" role="gridcell" title="${escapeHtml(calendarEvent.title)}"><strong>${escapeHtml(calendarEvent.title)}</strong><small>Google Calendar</small></div>`;
     }
     const label = available ? strings.emptySlot : strings.unavailableSlot;
     const className = available ? "schedule-slot" : "schedule-slot schedule-slot-unavailable";
@@ -271,4 +276,13 @@ function getAvailableRange(container, date, startHour, hoverHour) {
 function nextHour(hour) {
     const [hourValue, minutes] = hour.split(":").map(Number);
     return `${String(hourValue + 1).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function findCalendarEvent(calendarEvents, isoDate, hour) {
+    const slotStart = new Date(`${isoDate}T${hour}:00`);
+    return calendarEvents.find((event) => {
+        const start = toDate(event.start);
+        const end = toDate(event.end);
+        return start && end && start <= slotStart && end > slotStart;
+    });
 }

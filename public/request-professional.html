@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
     <link rel="stylesheet" href="assets/css/glass-theme.css">
-    <script src="firebase-config.js?v=production-web-20260909"></script>
+    <script src="firebase-config.js?v=local-emulator-routing-20260910"></script>
     <style>
         .request-screen { min-height: 100vh; padding: 72px 0; }
         .request-layout { width: min(980px, 100%); margin: 0 auto; display: grid; grid-template-columns: minmax(0, .8fr) minmax(320px, 1fr); gap: 28px; align-items: center; }
@@ -27,9 +27,9 @@
 <main class="request-screen">
   <div class="wrap request-layout">
     <section class="request-copy"><span class="eyebrow">JR Booking Premium</span><h1>Présentez votre activité.</h1><p>Envoyez votre demande professionnelle et votre justificatif. L’équipe d’administration pourra examiner votre dossier avant l’ouverture de votre espace.</p></section>
-    <section class="glass request-panel" aria-labelledby="request-title"><h2 id="request-title">Demande professionnelle</h2><form class="request-form" data-professional-request-form><label>Nom affiché<input name="displayName" type="text" autocomplete="organization" required></label><label>Adresse courriel<input name="email" type="email" autocomplete="email" required></label><label>Présentation de l’activité<textarea name="description" maxlength="1200" required></textarea></label><label>Justificatif professionnel<input name="verificationFile" type="file" accept="application/pdf,image/jpeg,image/png" required></label><span class="request-help">PDF, JPEG ou PNG · 10 Mo maximum.</span><button class="btn btn-solid" type="submit">Envoyer la demande</button><span class="request-status" data-request-status role="status" aria-live="polite"></span><a class="auth-link" href="index.html">Retour à l’accueil</a></form></section>
+    <section class="glass request-panel" aria-labelledby="request-title"><h2 id="request-title">Demande professionnelle</h2><form class="request-form" data-professional-request-form><label>Nom affiché<input name="displayName" type="text" autocomplete="organization" required></label><label>Adresse courriel<input name="email" type="email" autocomplete="email" required></label><label>Présentation de l’activité<textarea name="description" maxlength="1200" required></textarea></label><label>Justificatif professionnel<input name="verificationFile" type="file" accept="application/pdf,image/jpeg,image/png" required></label><span class="request-help" data-file-status role="status">PDF, JPEG ou PNG · 10 Mo maximum.</span><button class="btn btn-solid" type="submit">Envoyer la demande</button><span class="request-status" data-request-status role="status" aria-live="polite"></span><a class="auth-link" href="index.html">Retour à l’accueil</a></form></section>
   </div>
 </main>
-<script type="module" src="js/request-professional/request-form.js?v=phase13-storage-20260909"></script>
+<script type="module" src="js/request-professional/request-form.js?v=email-first-application-20260910"></script>
 </body>
 </html>

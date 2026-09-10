@@ -94,7 +94,7 @@ async function loadRequests(user = authorizedAdmin) {
 
 function renderRequest(request) {
     const file = request.verificationFile;
-    const reviewActions = request.status === "pending" ? `<button class="btn btn-solid" type="button" data-request-action="approved" data-request-id="${escapeHtml(request.id)}">${strings.approve}</button><button class="btn btn-ghost" type="button" data-request-action="rejected" data-request-id="${escapeHtml(request.id)}">${strings.reject}</button>` : "";
+    const reviewActions = request.status === "pending-review" ? `<button class="btn btn-solid" type="button" data-request-action="approved" data-request-id="${escapeHtml(request.id)}">${strings.approve}</button><button class="btn btn-ghost" type="button" data-request-action="rejected" data-request-id="${escapeHtml(request.id)}">${strings.reject}</button>` : "";
     const banAction = request.status === "provisioned" ? `<button class="btn btn-ghost" type="button" data-ban-action="${request.accountStatus === "banned" ? "active" : "banned"}" data-request-id="${escapeHtml(request.id)}">${request.accountStatus === "banned" ? strings.reinstate : strings.ban}</button>` : "";
     return `<article class="admin-request-row"><div class="admin-request-copy"><strong>${escapeHtml(request.displayName || strings.unnamed)}</strong><small>${escapeHtml(request.email || "")} · ${escapeHtml(request.description || "")}</small><span class="admin-request-status">${escapeHtml(request.status || "")}${request.accountStatus ? ` · ${escapeHtml(request.accountStatus)}` : ""}</span><a href="${safeUrl(file?.url)}" target="_blank" rel="noreferrer">${escapeHtml(file?.name || strings.noFile)}</a></div><div class="working-hours-actions">${reviewActions}${banAction}</div></article>`;
 }

@@ -6,12 +6,12 @@ Provides the first protected Phase 13 administration surface for reviewing profe
 
 ## Reads
 
-- `professionalRequests`, queried for documents with `status == "pending"`.
+- `professionalRequests`, queried for documents with `status == "pending-review"`.
 - The request's stored verification-file URL is rendered as an admin-only external link.
 
 ## Writes
 
-- Updates an application to `approved` or `rejected` after a French confirmation prompt.
+- Updates a verified application from `pending-review` to `approved` or `rejected` after a French confirmation prompt.
 - Adds `reviewedBy` and `reviewedAt` to the reviewed request.
 
 ## Authorization
@@ -20,9 +20,9 @@ The page uses `requireAuth({ allowedRoles: ["admin"] })`. Firestore rules allow 
 
 ## Scope boundary
 
-The review screen itself does not assign claims or create profile documents directly. Those privileged effects are delegated to the server-side provisioning step below; admin claims, reinstatement, audit-log UI, and broader platform controls remain later Phase 13 work.
+The review screen itself does not assign claims, send password links, or create profile documents directly. Those privileged effects are delegated to the server-side provisioning step below. The admin UI must not expose an approval action for `awaiting-email-verification`, `rejected`, `expired`, or already completed applications.
 
-The provisioning step is now implemented server-side by the `provisionProfessionalAccount` callable Function. After an admin marks a request `approved`, the callable rechecks the admin claim, sets `{ professional: true, role: "professional" }` on the applicant's Auth user, creates the private `proProfiles/{uid}` record, creates the initial `publicProfiles/{uid}` mirror, and marks the request `provisioned`. The browser never assigns claims or creates these privileged profile documents.
+The provisioning step is implemented server-side by the `provisionProfessionalAccount` callable Function. After an admin marks a verified request approved, the callable rechecks the admin claim, creates or links the Auth user, assigns `{ professional: true, role: "professional" }`, creates the private `proProfiles/{uid}` record, creates the initial `publicProfiles/{uid}` mirror, sends a one-time password-setup email, and marks the request `approved-awaiting-password`. The browser never assigns claims or creates these privileged profile documents.
 
 The dashboard also reads the latest 30 documents from `logs`, ordered by timestamp, and renders the action, collection, document, and time. The audit trigger now includes `professionalRequests`. The audit panel requires the admin claim; applicants and professionals cannot read `logs`. In local development, the trigger must run in the same Firebase emulator suite as Firestore for entries to appear.
 

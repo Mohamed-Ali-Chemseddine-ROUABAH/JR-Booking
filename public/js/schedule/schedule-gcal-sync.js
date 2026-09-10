@@ -5,6 +5,14 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.proDashboard.calendarSync;
 
+export async function loadGoogleCalendarEvents({ from, to }) {
+    const result = await httpsCallable(getFirebaseFunctions(), "syncGoogleCalendar")({
+        from: from.toISOString(),
+        to: to.toISOString()
+    });
+    return Array.isArray(result.data?.events) ? result.data.events : [];
+}
+
 export async function initializeCalendarSync({ user }) {
     const modal = document.createElement("div");
     modal.className = "working-hours-modal";

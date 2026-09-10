@@ -608,6 +608,15 @@
   background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(244,245,247,.025) 8px 9px);
 }
 
+.schedule-slot-calendar-ghost {
+  border-style: dashed;
+  opacity: 0.78;
+}
+
+.schedule-slot-calendar-solid {
+  border-color: var(--ink-500);
+}
+
 .schedule-slot-drag-preview {
   background: rgba(120,170,255,.16);
   outline: 1px dashed var(--ink-100);

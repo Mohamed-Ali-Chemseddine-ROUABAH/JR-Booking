@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR Booking Premium - Vérification</title>
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/glass-theme.css">
+</head>
+<body>
+<main class="auth-screen"><div class="wrap"><section class="glass auth-panel" aria-labelledby="verification-title"><h1 id="verification-title">Vérification de votre demande</h1><p data-verification-status>Vérification en cours...</p><a class="btn btn-solid" href="index.html">Retour à l'accueil</a></section></div></main>
+<script type="module">
+    const status = document.querySelector("[data-verification-status]");
+    const token = new URLSearchParams(window.location.search).get("token");
+    const endpoint = `${window.location.origin}/api/professional/verify`;
+    if (!token) {
+        status.textContent = "Le lien de vérification est incomplet.";
+    } else {
+        fetch(`${endpoint}?token=${encodeURIComponent(token)}`).then(async (response) => {
+            const result = await response.json();
+            status.textContent = response.ok ? "Votre adresse est vérifiée. Votre demande va maintenant être examinée par l'administration." : (result.message || "Ce lien est invalide ou expiré.");
+        }).catch(() => { status.textContent = "La vérification est momentanément indisponible."; });
+    }
+</script>
+</body>
+</html>

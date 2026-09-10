@@ -1,5 +1,13 @@
 {
   "projects": {
     "default": "jr-booking-premium"
+  },
+  "targets": {},
+  "etags": {
+    "jr-booking-premium": {
+      "extensionInstances": {
+        "firestore-send-email": "ae5ef8bdacce4ba2386eb968f2c4715ede9fd3164f0589cfc93a09fd6dad2897"
+      }
+    }
   }
 }

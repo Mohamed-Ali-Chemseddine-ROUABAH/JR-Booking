@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
     <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
     <link rel="stylesheet" href="assets/css/glass-theme.css">
-    <script src="firebase-config.js?v=production-web-20260909"></script>
+    <script src="firebase-config.js?v=local-emulator-routing-20260910"></script>
 </head>
 <body>
 <main class="auth-screen">
@@ -103,7 +103,9 @@
       const role = await getUserRole(credential.user);
       status.textContent = strings.login.success(roleLabel);
       showNotification(status.textContent, 'success');
-      window.location.assign(getRoleHomePath(role));
+      const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+      const safeReturnTo = returnTo && /^[-a-z0-9_/]+\.html$/i.test(returnTo) ? returnTo : null;
+      window.location.assign(safeReturnTo || getRoleHomePath(role));
     } catch (error) {
       status.textContent = getAuthErrorMessage(error);
       showNotification(status.textContent, 'error');

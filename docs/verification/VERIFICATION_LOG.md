@@ -41,6 +41,23 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - [ ] Desktop and mobile layouts have no horizontal overflow and preserve the intended schedule/sidebar order.
 - [ ] All production UI copy is loaded from its French string module.
 
+### Planned lifecycle contract - Public professional application / Contrat de cycle de vie planifie
+
+- **Required behavior / Comportement requis:** an anonymous visitor can submit a professional application without an existing login; email verification precedes admin review; approval precedes professional provisioning; password setup follows approval.
+- **Forbidden shortcut / Raccourci interdit:** do not redirect a new applicant to login before accepting the initial application.
+- **Required states / Etats requis:** `awaiting-email-verification` -> `pending-review` -> `approved-awaiting-password` -> `completed`, with `rejected` and `expired` alternatives.
+- **Required privacy / Confidentialite requise:** verification documents, token hashes, review notes, and provisioning metadata remain unavailable to anonymous visitors and applicants except for a safe status response.
+- **Required email events / Emails requis:** verification link after submission; approval plus one-time password setup link after admin approval; rejection or expiry notice where policy permits.
+- **Email prerequisite / Prerequis email:** Setup Checklist item 10 must be `Pass` before delivery can be marked verified. Before that gate, tests may verify only that a server-side `mail/{messageId}` queue document was created and that the UI reports the message as queued, never delivered.
+
+### Planned communication and email boundary / Limite communication et email planifiee
+
+- **Platform email / Email plateforme:** Trigger Email sends from one administrator-configured sender for verification, approval, password setup, booking, and security messages.
+- **Professional-client messages / Messages professionnel-client:** messages are stored in an authorized booking thread; email is an optional notification with a safe link, not a second private Gmail connection.
+- **Forbidden design / Conception interdite:** professionals must never paste a Gmail password, SMTP credential, or OAuth code into the website.
+- **Required states / Etats requis:** `message saved` -> `email queued` -> `email sent` or `email failed`; a failed email does not erase the message.
+- **Human check / Test humain:** verify one platform email and one authorized booking-message notification with the configured sandbox mailbox; verify that unrelated users cannot read either the thread or private delivery data.
+
 ## Preparation Entries / Entrees de preparation
 
 ### Mockup Extraction Preparation - Shared UI Foundation / Fondations UI partagees
@@ -80,6 +97,22 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - [x] **Phase 9b client professional search, lock, and favorites:** a search bar above "Mes réservations" finds professionals by name, locks one professional's `busySlots` onto the client's own calendar (unlocking clears it), and saves/removes professionals from a persistent favorites list on `clientAccounts.savedProfessionals`. AI browser smoke test passed against local emulators; human confirmation remains required.
 - [ ] **Human phase sign-off:** Phase 2, Phase 4, and Phase 5 entries remain `Pending` until a human tester records `Pass`.
 - [ ] **Next implementation slice:** Authenticated end-to-end movement verification, followed by the remaining Phase 10 client payment-context surface, then human sign-off on the new Phase 9b client professional search/lock/favorites slice.
+
+### Phase 14 - Google Calendar event import / Import des evenements Google Calendar
+
+- **Mockup reference / Reference mockup:** professional schedule, calendar synchronization control, ghost/solid imported-event display.
+- **Production owner / Responsable production:** `functions/index.js`, `public/js/schedule/schedule-gcal-sync.js`, `public/js/schedule/schedule-render.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/assets/css/pro-dashboard.css`.
+- **Data and rules / Donnees et regles:** server-only `gcalTokens/{proId}`; `proProfiles/{proId}.calendarSettings`; Google Calendar primary events returned through the authenticated callable only.
+- **Feature flag / Feature toggle:** `googleCalendarEventImport`, off until human verification.
+- **Build check / Auto-verification:** Functions and browser modules pass `node --check`; callable validates a 1-31 day range, refreshes the token server-side, returns sanitized events, and the current seven-day professional schedule renders imported events as unavailable slots without exposing tokens.
+- **Human steps / Etapes humaines:**
+  1. Connectez un compte Google de test depuis Synchronisation calendrier. / Connect a sandbox Google account from Calendar synchronization.
+  2. Creez un evenement dans le calendrier principal pendant les sept prochains jours, puis rechargez le tableau professionnel. / Create an event in the primary calendar during the next seven days, then reload the professional dashboard.
+  3. Verifiez que le creneau est indisponible, que le mode fantome reste en lecture seule et qu'aucun jeton OAuth n'apparait dans le navigateur. / Verify the slot is unavailable, ghost mode remains read-only, and no OAuth token appears in the browser.
+- **Responsive check / Verification responsive:** desktop 1440 px; mobile 375 px; imported labels must remain inside schedule cells without horizontal overflow.
+- **Privacy check / Verification confidentialite:** only the owning professional can invoke sync; clients and anonymous users never read `gcalTokens` or imported event details.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:**
 
 ### Phase 5 - Working-time configuration / Configuration du temps de travail
 
