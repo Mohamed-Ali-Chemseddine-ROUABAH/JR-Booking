@@ -36,6 +36,18 @@ Reservation documents and reservation-linked messages. Access is limited to the 
 
 Message fields: `authorUid`, `authorRole`, `body`, `createdAt`, `editedAt`, `readAt`, and optional `notificationState` (`not-requested`, `queued`, `sent`, `failed`). Messages are never writable by anonymous users, unrelated clients, or a delegate without the explicit messaging permission. The message is saved independently from email delivery.
 
+Booking identity fields planned for the reservation-linking slice: `clientId` (nullable until a verified account claims the booking), `serviceRecipientUid` (nullable and distinct from the contact or payer), `contacts` (small array of `{contactId, email, role, verifiedAt, linkedUid, notify}`), `claimState`, and `claimExpiresAt`. Contact emails are notification routes, not account ownership. The server normalizes and validates them; clients and professionals cannot use an arbitrary email string to read another person's bookings.
+
+Recurring or linked bookings also store `seriesId` and `seriesScope` metadata. A modification records whether it applies to `this`, `this-and-following`, or `all-in-series`, along with the actor, timestamp, previous values, and affected booking IDs. The operation is transactional or idempotent so a partial series update can be retried safely.
+
+### `clientRelationships/{relationshipId}`
+
+Explicit consent record for sharing client history or delegated booking visibility. Fields: `requesterUid`, `recipientUid`, `scope` (`booking`, `professional`, `all`), optional `proId`, `status` (`pending`, `active`, `revoked`, `expired`), `requestedAt`, `acceptedAt`, `revokedAt`, and `updatedAt`. Both users must approve before access is active; revocation affects future reads without deleting historical bookings.
+
+### `clientAccounts/{clientId}.authSettings`
+
+Private authentication and consent metadata only; never store passwords or email-link tokens here. Fields may include `passwordAuthEnabled`, `emailLinkEnabled`, `termsVersion`, `termsAcceptedAt`, `privacyVersion`, and `privacyAcceptedAt`. Firebase Auth owns credentials, email-link expiry, and session revocation.
+
 ### `notificationPreferences/{uid}`
 
 Private user-owned delivery preferences. Fields: `messageEmail` (`immediate`, `daily`, `none`), `bookingEmail` (`immediate`, `none`), `reminderEmail` (`immediate`, `none`), `timezone`, and `updatedAt`. Security rules allow only the owner or an admin to read or update this document. Security and essential transaction emails ignore opt-out preferences where legally or operationally required.

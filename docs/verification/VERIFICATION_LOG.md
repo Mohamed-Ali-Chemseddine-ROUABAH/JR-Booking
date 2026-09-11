@@ -58,6 +58,14 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - **Required states / Etats requis:** `message saved` -> `email queued` -> `email sent` or `email failed`; a failed email does not erase the message.
 - **Human check / Test humain:** verify one platform email and one authorized booking-message notification with the configured sandbox mailbox; verify that unrelated users cannot read either the thread or private delivery data.
 
+### Planned reservation identity and access slice / Liaison identite reservation planifiee
+
+- **Required behavior / Comportement requis:** professionals can add notification emails and explicit roles; verified clients can claim only identified bookings; recurring modifications require an explicit scope; history sharing requires consent from both verified accounts.
+- **Forbidden behavior / Comportement interdit:** no automatic account fusion, no access based on an email string alone, no 3- or 4-digit PIN as the sole credential, and no deletion of history when a contact is removed or a relationship is revoked.
+- **Data and rules / Donnees et regles:** booking contact array, nullable `clientId`, `serviceRecipientUid`, `seriesId`, `seriesScope`, `clientRelationships`, notification preferences, server claim tokens, and audit events. Contact emails are not authorization fields.
+- **Implementation order / Ordre d'implementation:** additional contacts -> verified booking claim -> series-scope modification -> mutual history relationship -> optional email-link sign-in.
+- **Human result / Resultat humain:** `Pending`
+
 ### Phase 13 - Email-first professional onboarding / Demande professionnelle email-first
 
 - **Mockup reference / Reference mockup:** `Devenir prestataire`, application form, verification-email landing page, admin application review, and password setup after approval.
