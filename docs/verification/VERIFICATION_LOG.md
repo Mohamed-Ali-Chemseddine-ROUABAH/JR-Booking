@@ -58,6 +58,22 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - **Required states / Etats requis:** `message saved` -> `email queued` -> `email sent` or `email failed`; a failed email does not erase the message.
 - **Human check / Test humain:** verify one platform email and one authorized booking-message notification with the configured sandbox mailbox; verify that unrelated users cannot read either the thread or private delivery data.
 
+### Phase 13 - Email-first professional onboarding / Demande professionnelle email-first
+
+- **Mockup reference / Reference mockup:** `Devenir prestataire`, application form, verification-email landing page, admin application review, and password setup after approval.
+- **Production owner / Responsable production:** `public/request-professional.html`, `public/js/request-professional/request-form.js`, `public/verify-professional.html`, `public/js/admin/admin-dashboard.js`, `functions/index.js`, `firestore.rules`, `storage.rules`, and Firebase Trigger Email extension.
+- **Data and rules / Donnees et regles:** `professionalRequests/{applicationId}`, private application-scoped Storage file, `professionalRequestEvents`, `mail`, Auth claims and `proProfiles/{uid}` after approval. Anonymous submission is handled by the trusted HTTPS endpoint; the browser cannot write application or mail documents directly.
+- **Feature flag / Feature toggle:** `emailFirstProfessionalApplication`, off until human verification.
+- **Build check / Auto-verification:** deployed submission and verification endpoints respond; Functions and browser syntax checks pass; the Trigger Email extension is active at version `0.2.10`; deployment does not include local environment files.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez la demande depuis la page d'accueil sans vous connecter, remplissez le formulaire et envoyez un PDF de test. / Open the application from the landing page while signed out, complete the form, and send a test PDF.
+  2. Vérifiez le message de confirmation, la réception de l'email de vérification et le passage à `pending-review`. / Verify the confirmation, receipt of the verification email, and transition to `pending-review`.
+  3. Connectez-vous comme administrateur, approuvez la demande, puis vérifiez l'email de création du mot de passe et l'accès professionnel. / Sign in as an administrator, approve the request, then verify the password-setup email and professional access.
+- **Responsive check / Verification responsive:** desktop 1440 px; mobile 375 px; form and upload status remain readable without horizontal overflow.
+- **Privacy check / Verification confidentialite:** anonymous visitors can submit but cannot read applications, files, tokens, mail documents, or admin review data; only the admin sees the verified application.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** Implementation deployed 2026-09-10; Trigger Email active; real mailbox delivery and full approval/password setup remain to be verified.
+
 ## Preparation Entries / Entrees de preparation
 
 ### Mockup Extraction Preparation - Shared UI Foundation / Fondations UI partagees
