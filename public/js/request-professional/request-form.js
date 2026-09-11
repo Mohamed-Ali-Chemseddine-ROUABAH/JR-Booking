@@ -7,7 +7,7 @@ const form = document.querySelector("[data-professional-request-form]");
 const status = form.querySelector("[data-request-status]");
 const fileStatus = form.querySelector("[data-file-status]");
 const submitButton = form.querySelector("button[type='submit']");
-const fileInput = form.elements.verificationFile;
+const fileInput = form.querySelector("[name='verificationFile']");
 const maxFileSize = 10 * 1024 * 1024;
 const allowedTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 

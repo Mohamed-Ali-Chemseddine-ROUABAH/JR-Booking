@@ -10,7 +10,7 @@ const googleClientId = defineString("GOOGLE_CLIENT_ID");
 const googleRedirectUri = defineString("GOOGLE_REDIRECT_URI", { default: "https://jr-booking-premium.web.app/api/calendar/google/callback" });
 const googleCalendarScopes = defineString("GOOGLE_CALENDAR_SCOPES", { default: "https://www.googleapis.com/auth/calendar.events" });
 
-admin.initializeApp();
+admin.initializeApp({ storageBucket: "jr-booking-premium.firebasestorage.app" });
 
 const auditedCollections = new Set([
     "bookings",
@@ -66,6 +66,7 @@ exports.submitProfessionalApplication = onRequest(async (request, response) => {
     if (request.method === "OPTIONS") return response.status(204).send("");
     if (request.method !== "POST") return response.status(405).json({ error: "method_not_allowed" });
 
+    let stage = "parse";
     try {
         const { fields, file } = await readProfessionalApplication(request);
         const email = String(fields.email || "").trim().toLowerCase();
@@ -75,6 +76,7 @@ exports.submitProfessionalApplication = onRequest(async (request, response) => {
             return response.status(400).json({ error: "invalid_application" });
         }
 
+        stage = "duplicate-check";
         const firestore = admin.firestore();
         const duplicateSnapshot = await firestore.collection("professionalRequests").where("email", "==", email).limit(10).get();
         const hasOpenApplication = duplicateSnapshot.docs.some((item) => ["awaiting-email-verification", "pending-review", "approved-awaiting-password"].includes(item.data().status));
@@ -84,15 +86,16 @@ exports.submitProfessionalApplication = onRequest(async (request, response) => {
         const verificationToken = crypto.randomBytes(32).toString("hex");
         const verificationTokenHash = hashToken(verificationToken);
         const storagePath = `professionalRequests/${applicationId}/${file.name}`;
+        stage = "storage";
         const bucket = admin.storage().bucket();
         const storageFile = bucket.file(storagePath);
         await storageFile.save(file.buffer, { metadata: { contentType: file.contentType } });
-        const [verificationFileUrl] = await storageFile.getSignedUrl({ version: "v4", action: "read", expires: Date.now() + 60 * 60 * 1000 });
+        stage = "firestore";
         await firestore.collection("professionalRequests").doc(applicationId).set({
             email,
             displayName,
             description,
-            verificationFile: { name: file.name, contentType: file.contentType, size: file.buffer.length, storagePath, url: verificationFileUrl },
+            verificationFile: { name: file.name, contentType: file.contentType, size: file.buffer.length, storagePath },
             emailVerificationStatus: "pending",
             status: "awaiting-email-verification",
             verificationTokenHash,
@@ -101,6 +104,7 @@ exports.submitProfessionalApplication = onRequest(async (request, response) => {
             updatedAt: new Date()
         });
         const verificationUrl = `https://jr-booking-premium.web.app/verify-professional.html?token=${verificationToken}`;
+        stage = "mail";
         await queueMail({
             to: email,
             templateId: "professional-application-verification",
@@ -111,7 +115,7 @@ exports.submitProfessionalApplication = onRequest(async (request, response) => {
         });
         return response.status(202).json({ status: "email_queued" });
     } catch (error) {
-        console.error("Professional application failed", error);
+        console.error("Professional application failed", { stage, error: error.message });
         return response.status(500).json({ error: "application_unavailable" });
     }
 });
@@ -340,6 +344,10 @@ function readProfessionalApplication(request) {
         });
         busboy.on("finish", () => fileSize <= 10 * 1024 * 1024 ? resolve({ fields, file }) : reject(new Error("verification_file_too_large")));
         busboy.on("error", reject);
-        request.pipe(busboy);
+        if (request.rawBody) {
+            busboy.end(request.rawBody);
+        } else {
+            request.pipe(busboy);
+        }
     });
 }
