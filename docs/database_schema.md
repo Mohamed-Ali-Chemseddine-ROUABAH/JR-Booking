@@ -36,9 +36,9 @@ Reservation documents and reservation-linked messages. Access is limited to the 
 
 Message fields: `authorUid`, `authorRole`, `body`, `createdAt`, `editedAt`, `readAt`, and optional `notificationState` (`not-requested`, `queued`, `sent`, `failed`). Messages are never writable by anonymous users, unrelated clients, or a delegate without the explicit messaging permission. The message is saved independently from email delivery.
 
-Booking identity fields planned for the reservation-linking slice: `clientId` (nullable until a verified account claims the booking), `serviceRecipientUid` (nullable and distinct from the contact or payer), `contacts` (small array of `{contactId, email, role, verifiedAt, linkedUid, notify}`), `claimState`, and `claimExpiresAt`. Contact emails are notification routes, not account ownership. The server normalizes and validates them; clients and professionals cannot use an arbitrary email string to read another person's bookings.
+Booking identity fields planned for the reservation-linking slice: `clientId` (nullable until a verified account claims the booking), `serviceRecipientUid` (nullable and distinct from the contact or payer), `contacts` (small capped array of `{contactId, email, role, verifiedAt, linkedUid, notify}`), `claimState`, `claimExpiresAt`, and optional `claimConflict`. Contact emails are notification routes, not account ownership. The server normalizes and validates them; clients and professionals cannot use an arbitrary email string to read another person's bookings.
 
-Recurring or linked bookings also store `seriesId` and `seriesScope` metadata. A modification records whether it applies to `this`, `this-and-following`, or `all-in-series`, along with the actor, timestamp, previous values, and affected booking IDs. The operation is transactional or idempotent so a partial series update can be retried safely.
+Recurring or linked bookings store `seriesId` and `occurrenceIndex`; a modification records `seriesScope` (`this`, `this-and-following`, or `all-in-series`), actor, timestamp, previous values, and affected booking IDs. Each occurrence is a separate booking document. The operation is transactional or idempotent so a partial series update can be retried safely without duplicating occurrences.
 
 ### `clientRelationships/{relationshipId}`
 
@@ -46,7 +46,7 @@ Explicit consent record for sharing client history or delegated booking visibili
 
 ### `clientAccounts/{clientId}.authSettings`
 
-Private authentication and consent metadata only; never store passwords or email-link tokens here. Fields may include `passwordAuthEnabled`, `emailLinkEnabled`, `termsVersion`, `termsAcceptedAt`, `privacyVersion`, and `privacyAcceptedAt`. Firebase Auth owns credentials, email-link expiry, and session revocation.
+Private authentication and consent metadata only; never store passwords or email-link tokens here. Fields may include `passwordAuthEnabled`, `emailLinkEnabled`, `termsVersion`, `termsAcceptedAt`, `privacyVersion`, `privacyAcceptedAt`, `emailLinkLastRequestedAt`, and `recoveryMethod`. Firebase Auth owns credentials, email-link expiry, and session revocation; rate limits and replay protection remain server/provider responsibilities.
 
 ### `notificationPreferences/{uid}`
 

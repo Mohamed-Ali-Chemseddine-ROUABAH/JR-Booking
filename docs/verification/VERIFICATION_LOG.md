@@ -66,6 +66,11 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - **Implementation order / Ordre d'implementation:** additional contacts -> verified booking claim -> series-scope modification -> mutual history relationship -> optional email-link sign-in.
 - **Human result / Resultat humain:** `Pending`
 
+### Reservation identity plan review gate / Gate de revue du plan identite reservation
+
+- **Must be confirmed before implementation / A confirmer avant implementation:** booking update allow-lists, trusted claim Function, capped contact roles, claim conflict handling, occurrence-level series model, separate remove-contact/revoke-history/unlink-claim actions, email-link recovery, and versioned terms/privacy acceptance.
+- **Human result / Resultat humain:** `Pending`
+
 ### Phase 13 - Email-first professional onboarding / Demande professionnelle email-first
 
 - **Mockup reference / Reference mockup:** `Devenir prestataire`, application form, verification-email landing page, admin application review, and password setup after approval.
