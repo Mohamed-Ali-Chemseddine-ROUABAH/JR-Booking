@@ -3,7 +3,7 @@ import { escapeHtml } from "../core/utils.js";
 
 const strings = UI_STRINGS.clientDashboard.bookings;
 
-export function initializeClientBookings(container, { userId, bookings = [], onAccept, onCancel, onRequestChange, initialFilter = "pending", onFilterChange } = {}) {
+export function initializeClientBookings(container, { userId, bookings = [], onAccept, onCancel, onRequestChange, onUnlinkClaim, onRequestHistoryShare, onMessages, initialFilter = "pending", onFilterChange } = {}) {
     container.innerHTML = `
         <div class="sidebar-head">
             <h1>${strings.title}</h1>
@@ -47,6 +47,16 @@ export function initializeClientBookings(container, { userId, bookings = [], onA
         if (event.target.matches("[data-request-change]")) {
             onRequestChange?.(booking);
         }
+        if (event.target.matches("[data-unlink-claim]")) {
+            const contact = booking.contacts?.find((item) => item.linkedUid === userId);
+            if (contact) onUnlinkClaim?.(booking, contact);
+        }
+        if (event.target.matches("[data-share-history]")) {
+            onRequestHistoryShare?.(booking, event.target.dataset.shareHistory);
+        }
+        if (event.target.matches("[data-message-booking]")) {
+            onMessages?.(booking, booking.clientId === userId ? "client" : "shared-client");
+        }
     });
 
     applyFilter(activeFilter);
@@ -64,18 +74,32 @@ function renderBookings(container, userId, bookings, activeFilter) {
         const name = escapeHtml(booking.proDisplayName || strings.bookingFallbackName);
         const date = start ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(start) : "";
         const time = start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
-        const isProMade = booking.status === "pending" && booking.createdBy && booking.createdBy !== userId;
-        const isOwnPending = booking.status === "pending" && (!booking.createdBy || booking.createdBy === userId);
-        const notice = isProMade ? `<p class="client-booking-notice">${strings.awaitingConfirmation}</p>` : "";
-        const actions = isProMade
+        const isOwnBooking = booking.clientId === userId;
+        const isProMade = isOwnBooking && booking.status === "pending" && booking.createdBy && booking.createdBy !== userId;
+        const isOwnPending = isOwnBooking && booking.status === "pending" && (!booking.createdBy || booking.createdBy === userId);
+        const notice = isProMade
+            ? `<p class="client-booking-notice">${strings.awaitingConfirmation}</p>`
+            : !isOwnBooking
+                ? `<p class="client-booking-notice">${strings.sharedHistoryNotice}</p>`
+                : "";
+        const bookingActions = isProMade
             ? `<div class="sidebar-booking-actions"><button class="btn btn-solid" type="button" data-accept>${strings.acceptBooking}</button><button class="btn btn-ghost" type="button" data-request-change>${strings.requestChange}</button></div>`
             : isOwnPending
                 ? `<div class="sidebar-booking-actions"><button class="btn btn-ghost" type="button" data-cancel>${strings.cancelBooking}</button></div>`
                 : "";
+            const messageAction = `<div class="sidebar-booking-actions"><button class="btn btn-ghost" type="button" data-message-booking>${UI_STRINGS.shared.bookingMessages.title}</button></div>`;
+        const linkedContact = booking.contacts?.find((item) => item.linkedUid === userId);
+        const unlinkAction = isOwnBooking && booking.claimState === "claimed" && linkedContact
+            ? `<div class="sidebar-booking-actions"><button class="btn btn-ghost" type="button" data-unlink-claim>${strings.unlinkClaim}</button></div>`
+            : "";
+        const shareTargets = isOwnBooking ? (booking.contacts || []).filter((item) => item.linkedUid && item.linkedUid !== userId) : [];
+        const shareActions = shareTargets.length
+            ? `<div class="sidebar-booking-actions">${shareTargets.map((contact) => `<button class="btn btn-ghost" type="button" data-share-history="${escapeHtml(contact.linkedUid)}" title="${escapeHtml(strings.shareHistory(contact.name || contact.email))}">${escapeHtml(strings.shareHistory(contact.name || contact.email))}</button>`).join("")}</div>`
+            : "";
         const movementQuote = booking.movementQuote
             ? `<small>${strings.movementDistance}: ${booking.movementQuote.distanceKm} km · ${strings.movementSurcharge}: ${booking.movementQuote.surcharge} €</small>`
             : "";
-        return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}"><strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${strings.statuses[booking.status] || booking.status}</small>${movementQuote}${notice}${actions}</article>`;
+        return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}"><strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${strings.statuses[booking.status] || booking.status}</small>${movementQuote}${notice}${messageAction}${bookingActions}${unlinkAction}${shareActions}</article>`;
     }).join("");
 }
 

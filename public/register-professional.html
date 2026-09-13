@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JR Booking Premium - Création professionnelle</title>
+  <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
+  <link rel="stylesheet" href="assets/css/glass-theme.css">
+  <script src="firebase-config.js?v=local-emulator-routing-20260910"></script>
+</head>
+<body>
+<main class="auth-screen"><div class="wrap"><div class="auth-layout">
+  <section class="auth-copy"><span class="eyebrow">JR Booking Premium</span><h1>Créer votre espace professionnel.</h1><p>Utilisez le lien reçu de l’administration pour définir votre accès.</p></section>
+  <section class="glass auth-panel" aria-labelledby="creation-title"><div class="auth-brand"><div class="auth-brand-mark" aria-hidden="true">JR</div><span>Espace professionnel</span></div>
+    <form class="auth-form" data-professional-creation-form><h2 id="creation-title">Création professionnelle</h2><div class="auth-field"><label for="display-name">Nom affiché</label><input id="display-name" name="displayName" required></div><div class="auth-field"><label for="password">Mot de passe</label><input id="password" name="password" type="password" minlength="6" required></div><button class="btn btn-solid" type="submit">Créer mon espace</button><p class="auth-status" data-creation-status role="status" aria-live="polite"></p><a class="auth-link" href="login.html">Retour à la connexion</a></form>
+  </section>
+</div></div></main>
+<script type="module">
+  import { getFirebaseFunctions } from './js/core/firebase-init.js';
+  import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js';
+  const form = document.querySelector('[data-professional-creation-form]');
+  const status = document.querySelector('[data-creation-status]');
+  const token = new URLSearchParams(window.location.search).get('token') || '';
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = form.querySelector('button');
+    button.disabled = true;
+    status.textContent = 'Création de votre espace...';
+    try {
+      await httpsCallable(getFirebaseFunctions(), 'redeemProfessionalCreationLink')({ token, displayName: form.elements.displayName.value, password: form.elements.password.value });
+      status.textContent = 'Votre espace est créé. Vous pouvez maintenant vous connecter.';
+      form.reset();
+    } catch {
+      status.textContent = 'Ce lien est invalide, expiré ou déjà utilisé.';
+    } finally { button.disabled = false; }
+  });
+</script>
+</body>
+</html>

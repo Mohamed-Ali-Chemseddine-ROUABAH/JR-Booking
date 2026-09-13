@@ -18,7 +18,7 @@ export async function initializeCalendarSync({ user }) {
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<section class="glass working-hours-dialog calendar-sync-dialog" aria-labelledby="calendar-sync-title"><div class="working-hours-header"><h2 id="calendar-sync-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-calendar-close>${strings.close}</button></div><p class="calendar-sync-state"><strong>${strings.notConnected}</strong><span>${strings.notConnectedHelp}</span></p><section class="working-hours-section"><h3>${strings.displayTitle}</h3><label class="working-hours-field"><span>${strings.modeLabel}</span><select name="calendarMode"><option value="ghost">${strings.ghostMode}</option><option value="solid">${strings.solidMode}</option></select></label><label class="working-hours-field"><span>${strings.reminderLabel}</span><select name="reminderMinutes"><option value="0">${strings.reminderNone}</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 heure</option></select></label></section><div class="working-hours-actions"><span class="working-hours-feedback" data-calendar-feedback role="status"></span><button class="btn btn-solid" type="button" data-calendar-save>${strings.save}</button><button class="btn btn-ghost" type="button" data-calendar-connect>${strings.connect}</button></div></section>`;
+    modal.innerHTML = `<section class="glass working-hours-dialog calendar-sync-dialog" aria-labelledby="calendar-sync-title"><div class="working-hours-header"><h2 id="calendar-sync-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-calendar-close>${strings.close}</button></div><p class="calendar-sync-state"><strong>${strings.notConnected}</strong><span>${strings.notConnectedHelp}</span></p><section class="working-hours-section"><h3>${strings.displayTitle}</h3><label class="working-hours-field"><span>${strings.modeLabel}</span><select name="calendarMode"><option value="ghost">${strings.ghostMode}</option><option value="solid">${strings.solidMode}</option></select></label><label class="working-hours-field"><span>${strings.reminderLabel}</span><select name="reminderMinutes"><option value="0">${strings.reminderNone}</option><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">1 heure</option></select></label></section><div class="working-hours-actions"><span class="working-hours-feedback" data-calendar-feedback role="status"></span><button class="btn btn-solid" type="button" data-calendar-save>${strings.save}</button><button class="btn btn-ghost" type="button" data-calendar-connect>${strings.connect}</button><button class="btn btn-ghost" type="button" data-calendar-watch>${strings.watch}</button></div></section>`;
     document.body.append(modal);
     const feedback = modal.querySelector("[data-calendar-feedback]");
     try {
@@ -47,6 +47,15 @@ export async function initializeCalendarSync({ user }) {
         } catch (error) {
             feedback.textContent = error?.code === "functions/failed-precondition" ? strings.oauthUnavailable : strings.connectError;
             button.disabled = false;
+        }
+    });
+    modal.querySelector("[data-calendar-watch]").addEventListener("click", async () => {
+        feedback.textContent = strings.connecting;
+        try {
+            await httpsCallable(getFirebaseFunctions(), "watchGoogleCalendar")({});
+            feedback.textContent = strings.watchEnabled;
+        } catch (error) {
+            feedback.textContent = error?.code === "functions/failed-precondition" ? strings.oauthUnavailable : strings.connectError;
         }
     });
     modal.querySelector("[data-calendar-close]").addEventListener("click", () => modal.remove());

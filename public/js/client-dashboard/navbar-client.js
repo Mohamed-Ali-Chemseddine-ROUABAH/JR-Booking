@@ -2,7 +2,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.clientDashboard.navbar;
 
-export function initializeClientNavbar(container, { user, onLogout, onEditProfile, onPayment }) {
+export function initializeClientNavbar(container, { user, onLogout, onEditProfile, onPayment, onHistoryShare }) {
     container.innerHTML = `
         <div class="pro-brand">
             <div class="pro-brand-mark" aria-hidden="true">JR</div>
@@ -22,6 +22,7 @@ export function initializeClientNavbar(container, { user, onLogout, onEditProfil
                 <div class="glass settings-menu-items" role="menu" aria-label="${strings.settingsLabel}">
                     <button type="button" role="menuitem" data-menu-edit-profile>${strings.editProfile}</button>
                     <button type="button" role="menuitem" data-menu-payments title="${strings.paymentsUnavailable}">${strings.payments}</button>
+                    <button type="button" role="menuitem" data-menu-history-share>${strings.historyShare}</button>
                 </div>
             </div>
             <button class="btn btn-solid" type="button" data-logout>${strings.logout}</button>
@@ -48,5 +49,10 @@ export function initializeClientNavbar(container, { user, onLogout, onEditProfil
         settingsMenu.classList.remove("is-open");
         settingsTrigger.setAttribute("aria-expanded", "false");
         onPayment?.();
+    });
+    container.querySelector("[data-menu-history-share]").addEventListener("click", () => {
+        settingsMenu.classList.remove("is-open");
+        settingsTrigger.setAttribute("aria-expanded", "false");
+        onHistoryShare?.();
     });
 }

@@ -8,6 +8,7 @@ const defaultSettings = {
     startTime: "09:00",
     endTime: "17:00",
     viewDays: 7,
+    bufferMinutes: 0,
     timezone: "Europe/Paris",
     recurringBreak: { start: "12:00", end: "13:00" },
     absences: [],
@@ -76,6 +77,7 @@ function createModal() {
                     ${field("startTime", "time", strings.startLabel)}
                     ${field("endTime", "time", strings.endLabel)}
                     ${field("viewDays", "number", strings.viewDaysLabel, "1", "7")}
+                    ${field("bufferMinutes", "number", strings.bufferLabel, "0", "120")}
                     <label class="working-hours-field"><span>${strings.timezoneLabel}</span><select name="timezone"><option value="Europe/Paris">Europe/Paris</option><option value="UTC">UTC</option><option value="America/Montreal">America/Montreal</option></select></label>
                 </div>
             </section>
@@ -114,6 +116,7 @@ function populateForm(form, settings) {
     form.startTime.value = settings.startTime;
     form.endTime.value = settings.endTime;
     form.viewDays.value = settings.viewDays;
+    form.bufferMinutes.value = settings.bufferMinutes;
     form.timezone.value = settings.timezone;
     form.breakStart.value = settings.recurringBreak.start;
     form.breakEnd.value = settings.recurringBreak.end;
@@ -130,6 +133,7 @@ function readForm(form) {
         startTime: form.startTime.value,
         endTime: form.endTime.value,
         viewDays: Number(form.viewDays.value),
+        bufferMinutes: Math.min(120, Math.max(0, Number(form.bufferMinutes.value) || 0)),
         timezone: form.timezone.value,
         recurringBreak: { start: form.breakStart.value, end: form.breakEnd.value },
         absences: [...form.querySelectorAll("[data-absence-row]")].map((row) => ({

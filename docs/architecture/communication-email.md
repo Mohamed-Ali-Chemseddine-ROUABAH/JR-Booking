@@ -6,11 +6,11 @@ Separates private professional-client conversations from platform email delivery
 
 ## In-platform messages
 
-Messages belong to an authorized booking in `bookings/{bookingId}/messages/{messageId}`. The client, active professional, and delegates with the explicit messaging permission may read the thread. The sender may create a message; message bodies are not exposed to anonymous users or unrelated clients. A message is committed independently from notification delivery.
+Messages belong to an authorized booking in `bookings/{bookingId}/messages/{messageId}`. The client, active professional, and authorized shared-history reader may read the thread. `sendBookingMessage` is the trusted creation boundary for the booking client or professional; message bodies are not exposed to anonymous users or unrelated clients. A message is committed independently from notification delivery.
 
 ## Email notifications
 
-After a message or booking event is authorized and saved, a trusted server-side function checks the recipient's `notificationPreferences/{uid}` and writes a normalized document to `mail/{messageId}` when an email is appropriate. The Trigger Email extension sends from the platform-configured sender. The email contains a short summary and a safe authenticated deep link; the complete message remains in Firestore.
+After a message is authorized and saved, `sendBookingMessage` checks the recipient's `notificationPreferences/{uid}` and writes a normalized document to `mail/{mailId}` when an email is appropriate. The Trigger Email extension sends from the platform-configured sender. The email contains a short summary; the complete message remains in Firestore.
 
 The UI must distinguish `message saved`, `email queued`, `email sent`, and `email failed`. A failed email does not delete or roll back the message. Daily digests are a later batching slice; immediate notifications are the initial implementation.
 

@@ -2,7 +2,8 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.proDashboard.navbar;
 
-export function initializeProNavbar(container, { user, onLogout, onPrint, onWorkingHours, onPaymentInfo, onMovementInfo, onPersonalInfo, onClientDatabase, onStatistics }) {
+export function initializeProNavbar(container, { user, profiles = [], activeProfileId, onProfileChange, onLogout, onPrint, onWorkingHours, onPaymentInfo, onMovementInfo, onServices, onIntake, onPersonalInfo, onClientDatabase, onStatistics }) {
+    const profileSelector = profiles.length > 1 ? `<label class="pro-profile-selector"><span>${strings.profileLabel}</span><select data-profile-switcher>${profiles.map((profile) => `<option value="${escapeHtml(profile.id)}" ${profile.id === activeProfileId ? "selected" : ""}>${escapeHtml(profile.displayName || profile.name || profile.id)}</option>`).join("")}</select></label>` : "";
     container.innerHTML = `
         <div class="pro-brand">
             <div class="pro-brand-mark" aria-hidden="true">JR</div>
@@ -12,6 +13,7 @@ export function initializeProNavbar(container, { user, onLogout, onPrint, onWork
             </div>
         </div>
         <div class="pro-actions">
+            ${profileSelector}
             <div class="pro-account">
                 <span class="eyebrow">Compte</span>
                 <span class="pro-account-email"></span>
@@ -28,6 +30,7 @@ export function initializeProNavbar(container, { user, onLogout, onPrint, onWork
     `;
 
     container.querySelector(".pro-account-email").textContent = user.email || user.displayName || "Compte professionnel";
+    container.querySelector("[data-profile-switcher]")?.addEventListener("change", (event) => onProfileChange?.(event.target.value));
     container.querySelector("[data-print]").addEventListener("click", onPrint);
 
     const settingsMenu = container.querySelector("[data-settings-menu]");
@@ -50,13 +53,19 @@ export function initializeProNavbar(container, { user, onLogout, onPrint, onWork
                 onPaymentInfo?.();
             } else if (index === 2) {
                 onMovementInfo?.();
+            } else if (index === 3) {
+                onServices?.();
             } else if (index === 4) {
-                onPersonalInfo?.();
+                onIntake?.();
             } else if (index === 5) {
-                onClientDatabase?.();
+                onPersonalInfo?.();
             } else if (index === 6) {
+                onClientDatabase?.();
+            } else if (index === 7) {
                 onStatistics?.();
             }
         });
     });
 }
+
+function escapeHtml(value) { return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[character])); }

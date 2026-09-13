@@ -318,6 +318,13 @@
 .client-payment-option { display: grid; gap: 6px; padding: 13px; border: 1px solid var(--panel-brd); border-radius: var(--r-sm); }
 .client-payment-option strong { color: var(--ink-100); }
 .client-payment-option pre { margin: 0; color: var(--ink-300); white-space: pre-wrap; font: .78rem var(--font-mono); }
+.client-history-share-dialog { width: min(620px, 100%); display: grid; gap: 14px; }
+.client-history-share-section h3 { margin: 0 0 8px; color: var(--ink-300); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+.client-history-share-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.client-history-share-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid var(--panel-brd); border-radius: var(--r-sm); flex-wrap: wrap; }
+.client-history-share-item strong { display: block; color: var(--ink-100); }
+.client-history-share-item span { display: block; color: var(--ink-500); font-size: .74rem; }
+.client-history-share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 @media (max-width: 600px) {
   .client-dashboard-wrap { width: min(100% - 24px, 560px); }

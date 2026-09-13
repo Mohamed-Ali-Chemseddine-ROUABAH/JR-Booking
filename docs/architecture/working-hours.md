@@ -7,4 +7,5 @@
 - **Firestore:** Reads and merges `proProfiles/{uid}.workingHours`; no other fields are overwritten. The dashboard schedule reads the saved `viewDays`, `workingDays`, daily hours, and recurring break to render one to seven day columns with availability states.
 - **Security rules:** `proProfiles/{proId}` read/update requires the authenticated professional to own the document or be an admin.
 - **Feature flag:** Uses the existing professional dashboard gate; booking operations remain disabled.
+- **Buffer behavior:** `workingHours.bufferMinutes` is persisted as an integer from 0 to 120 and is applied by `schedule-render.js` to reserve time around existing non-rejected bookings.
 - **Mockup references:** Pro settings, working-time configuration, and responsive dashboard behavior in `docs/mockups/IMPLEMENTATION_REFERENCE.md` and `docs/requirements/MASTER_SPECIFICATION.md` Part 6.

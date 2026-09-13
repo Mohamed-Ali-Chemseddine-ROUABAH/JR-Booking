@@ -3,7 +3,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 const strings = UI_STRINGS.proDashboard.sidebar;
 let escapeHandler;
 
-export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit }) {
+export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit, onSyncCalendar, onMeetingLinks }) {
     closeBookingContextMenu();
     const menu = document.createElement("div");
     menu.className = "booking-context-menu glass-ghost";
@@ -18,6 +18,8 @@ export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit }
         booking.status === "accepted" ? menuButton("done", strings.completeBooking) : "",
         booking.status === "accepted" ? menuButton("no-show", strings.noShowBooking) : "",
         menuButton("edit", strings.editBooking),
+        menuButton("sync-calendar", strings.syncCalendarBooking),
+        menuButton("meeting-links", strings.meetingLinks),
         booking.status !== "pending" ? menuButton("pending", strings.returnPending) : ""
     ].join("");
     document.body.append(menu);
@@ -26,6 +28,10 @@ export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit }
             closeBookingContextMenu();
             if (button.dataset.contextAction === "edit") {
                 onEdit?.(booking);
+            } else if (button.dataset.contextAction === "sync-calendar") {
+                await onSyncCalendar?.(booking);
+            } else if (button.dataset.contextAction === "meeting-links") {
+                await onMeetingLinks?.(booking);
             } else {
                 await onStatusChange?.(booking.id, button.dataset.contextAction, booking.status);
             }

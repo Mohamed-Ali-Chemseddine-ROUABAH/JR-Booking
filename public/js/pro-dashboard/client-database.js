@@ -2,6 +2,7 @@ import { collection, doc, getDocs, getDoc, query, serverTimestamp, setDoc, where
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { escapeHtml } from "../core/utils.js";
+import { openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
 
 const strings = UI_STRINGS.proDashboard.clientDatabase;
 const eraseConfirmationPhrase = "SUPPRIMER CE CLIENT";
@@ -148,10 +149,5 @@ function formatHistoryDate(value) {
 
 function exportClientReport(client, history) {
     const report = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(strings.exportTitle)} - ${escapeHtml(client.name)}</title><style>body{font-family:Arial,sans-serif;color:#111;max-width:760px;margin:40px auto}h1{font-size:22px}li{margin:8px 0}small{color:#555}</style></head><body><h1>${escapeHtml(strings.exportTitle)}</h1><p><strong>${escapeHtml(client.name)}</strong><br>${escapeHtml(client.email || strings.noEmail)}</p><h2>${escapeHtml(strings.historyTitle)}</h2>${renderHistory(history)}</body></html>`;
-    const reportWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (!reportWindow) return;
-    reportWindow.document.write(report);
-    reportWindow.document.close();
-    reportWindow.focus();
-    reportWindow.print();
+    openPrintDocument(report);
 }

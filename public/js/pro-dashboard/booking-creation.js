@@ -1,6 +1,7 @@
-import { addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { getFirestoreDb } from "../core/firebase-init.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
+import { getFirebaseFunctions } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { initializeBookingContactEditor } from "./booking-contacts.js";
 
 const strings = UI_STRINGS.proDashboard.bookingCreation;
 
@@ -15,9 +16,8 @@ export function initializeBookingCreation({ user, details, onSaved }) {
                 <h2 id="booking-creation-title">${strings.title}</h2>
                 <button class="btn btn-ghost" type="button" data-booking-close>${strings.close}</button>
             </div>
+            <div data-booking-contacts></div>
             <div class="working-hours-fields">
-                <label class="working-hours-field"><span>${strings.clientNameLabel}</span><input name="clientName" type="text" required></label>
-                <label class="working-hours-field"><span>${strings.clientEmailLabel}</span><input name="clientEmail" type="email" required></label>
                 <label class="working-hours-field"><span>${strings.startLabel}</span><input name="start" type="datetime-local" value="${toDateTimeValue(details.date, details.hour)}" required></label>
                 <label class="working-hours-field"><span>${strings.endLabel}</span><input name="end" type="datetime-local" value="${toDateTimeValue(details.date, details.endHour || nextHour(details.hour))}" required></label>
             </div>
@@ -31,6 +31,8 @@ export function initializeBookingCreation({ user, details, onSaved }) {
 
     const form = modal.querySelector("form");
     const feedback = modal.querySelector("[data-booking-feedback]");
+    const contactEditor = initializeBookingContactEditor(modal.querySelector("[data-booking-contacts]"));
+    const requestId = createRequestId();
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const formData = new FormData(form);
@@ -42,15 +44,12 @@ export function initializeBookingCreation({ user, details, onSaved }) {
         }
 
         try {
-            await addDoc(collection(getFirestoreDb(), "bookings"), {
+            await httpsCallable(getFirebaseFunctions(), "createProfessionalBooking")({
+                requestId,
                 proId: user.uid,
-                clientId: null,
-                guestContact: { name: formData.get("clientName"), email: formData.get("clientEmail") },
+                contacts: contactEditor.getContacts(),
                 start,
-                end,
-                status: "pending",
-                createdBy: user.uid,
-                createdAt: serverTimestamp()
+                end
             });
             feedback.textContent = strings.saved;
             window.setTimeout(() => {
@@ -77,4 +76,8 @@ function toDateTimeValue(date, hour) {
 function nextHour(hour) {
     const [hours, minutes] = hour.split(":").map(Number);
     return `${String(hours + 1).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
+function createRequestId() {
+    return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }

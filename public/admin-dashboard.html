@@ -15,13 +15,60 @@
   <div class="pro-dashboard-wrap">
     <header class="glass pro-topbar" data-admin-navbar></header>
     <p class="dashboard-status" data-admin-status role="status" aria-live="polite"></p>
+    <section class="glass admin-request-panel" aria-labelledby="command-center-title">
+      <div class="working-hours-header"><div><span class="eyebrow">CENTRE DE COMMANDE</span><h1 id="command-center-title">À traiter aujourd’hui</h1></div><button class="btn btn-ghost" type="button" data-admin-summary-refresh>Actualiser</button></div>
+      <div class="admin-summary-grid" data-admin-summary><p class="working-hours-feedback">Calcul des priorités...</p></div>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="creation-links-title">
+      <div class="working-hours-header"><div><span class="eyebrow">ACCÈS PROFESSIONNEL</span><h2 id="creation-links-title">Liens de création professionnelle</h2></div><button class="btn btn-ghost" type="button" data-admin-links-refresh>Actualiser</button></div>
+      <form class="admin-link-form" data-admin-link-form><input type="email" name="email" placeholder="Adresse courriel confirmée" required><input type="number" name="maxUses" min="1" max="25" value="1" aria-label="Utilisations"><input type="number" name="expiresInDays" min="1" max="90" value="7" aria-label="Durée en jours"><button class="btn btn-solid" type="submit">Générer un lien</button></form>
+      <p class="dashboard-status" data-admin-link-feedback role="status"></p><div data-admin-links><p class="working-hours-feedback">Chargement des liens...</p></div>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="recovery-title">
+      <div class="working-hours-header"><div><span class="eyebrow">SÉCURITÉ</span><h2 id="recovery-title">Récupération d’accès</h2><p class="admin-panel-help">Envoyez un nouveau lien sans supprimer les réservations ni les profils liés.</p></div></div>
+      <form class="admin-link-form" data-admin-recovery-form><input type="text" name="target" placeholder="UID ou adresse courriel" required><button class="btn btn-solid" type="submit">Envoyer un lien sécurisé</button></form>
+      <p class="dashboard-status" data-admin-recovery-feedback role="status"></p>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="profiles-title">
+      <div class="working-hours-header"><div><span class="eyebrow">MULTI-PROFIL</span><h2 id="profiles-title">Profils professionnels supplémentaires</h2><p class="admin-panel-help">Ajoutez un profil géré par un compte professionnel existant.</p></div></div>
+      <form class="admin-profile-form" data-admin-profile-form><input type="text" name="ownerUid" placeholder="UID du professionnel propriétaire" required><input type="text" name="displayName" placeholder="Nom affiché du profil" required><input type="text" name="description" placeholder="Description courte"><button class="btn btn-solid" type="submit">Créer le profil</button></form>
+      <p class="dashboard-status" data-admin-profile-feedback role="status"></p>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="lifecycle-title">
+      <div class="working-hours-header"><div><span class="eyebrow">CYCLE DE VIE</span><h2 id="lifecycle-title">Cycle de vie du profil</h2><p class="admin-panel-help">Planifiez une suppression après un délai obligatoire de 30 jours.</p></div></div>
+      <form class="admin-profile-form" data-admin-lifecycle-form><input type="text" name="profileId" placeholder="ID du profil professionnel" required><input type="text" name="confirmation" placeholder="SUPPRIMER CE PROFIL" required><button class="btn btn-ghost" type="submit">Planifier la suppression</button><button class="btn btn-solid" type="button" data-admin-lifecycle-cancel>Annuler la suppression</button><button class="btn btn-ghost" type="button" data-admin-lifecycle-purge>Supprimer définitivement</button></form>
+      <p class="dashboard-status" data-admin-lifecycle-feedback role="status"></p>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="categories-title">
+      <div class="working-hours-header"><div><span class="eyebrow">MODÉRATION</span><h2 id="categories-title">Surveillance des catégories</h2></div><button class="btn btn-ghost" type="button" data-admin-categories-refresh>Actualiser</button></div>
+      <form class="admin-profile-form" data-admin-category-form><input type="text" name="from" placeholder="Catégorie actuelle" required><input type="text" name="to" placeholder="Nouveau nom" required><button class="btn btn-solid" type="submit">Renommer partout</button></form>
+      <p class="dashboard-status" data-admin-category-feedback role="status"></p><div data-admin-categories><p class="working-hours-feedback">Chargement des catégories...</p></div>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="moderation-title">
+      <div class="working-hours-header"><div><span class="eyebrow">MODÉRATION</span><h2 id="moderation-title">Modération des profils publics</h2></div></div>
+      <form class="admin-profile-form" data-admin-moderation-form><input type="text" name="profileId" placeholder="ID du profil public" required><input type="text" name="reason" placeholder="Motif de modération" required><label><input type="checkbox" name="redactDescription"> Masquer la description</label><label><input type="checkbox" name="redactAvatar"> Masquer la photo</label><button class="btn btn-solid" type="submit">Appliquer la modération</button></form>
+      <p class="dashboard-status" data-admin-moderation-feedback role="status"></p>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="broadcast-title">
+      <div class="working-hours-header"><div><span class="eyebrow">COMMUNICATION</span><h2 id="broadcast-title">Annonce plateforme</h2></div></div>
+      <form class="admin-broadcast-form" data-admin-broadcast-form><select name="audience" aria-label="Destinataires"><option value="clients">Clients</option><option value="professionals">Professionnels</option><option value="both">Clients et professionnels</option></select><input type="text" name="subject" placeholder="Objet de l’annonce" maxlength="160" required><textarea name="text" placeholder="Message de l’annonce" maxlength="4000" required></textarea><button class="btn btn-solid" type="submit">Mettre en file d’envoi</button></form>
+      <p class="dashboard-status" data-admin-broadcast-feedback role="status"></p>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="health-title">
+      <div class="working-hours-header"><div><span class="eyebrow">OBSERVABILITÉ</span><h2 id="health-title">Santé de la plateforme</h2></div><button class="btn btn-ghost" type="button" data-admin-health-refresh>Actualiser</button></div>
+      <div class="admin-summary-grid" data-admin-health><p class="working-hours-feedback">Lecture de la santé plateforme...</p></div>
+    </section>
     <section class="glass admin-request-panel" aria-labelledby="admin-title">
-      <div class="working-hours-header"><div><span class="eyebrow">JR BOOKING PREMIUM</span><h1 id="admin-title">Demandes professionnelles</h1></div><button class="btn btn-ghost" type="button" data-admin-refresh>Actualiser</button></div>
+      <div class="working-hours-header"><div><span class="eyebrow">JR BOOKING PREMIUM</span><h1 id="admin-title">Demandes professionnelles</h1></div><div class="working-hours-actions"><button class="btn btn-ghost" type="button" data-admin-refresh>Actualiser</button><button class="btn btn-solid" type="button" data-admin-bulk-review="approved">Approuver la sélection</button><button class="btn btn-ghost" type="button" data-admin-bulk-review="rejected">Rejeter la sélection</button></div></div>
       <div data-admin-requests><p class="working-hours-feedback">Chargement des demandes...</p></div>
     </section>
     <section class="glass admin-request-panel" aria-labelledby="audit-title">
       <div class="working-hours-header"><div><span class="eyebrow">JOURNAL</span><h2 id="audit-title">Journal d’audit</h2></div><button class="btn btn-ghost" type="button" data-admin-audit-refresh>Actualiser</button></div>
       <div data-admin-audit><p class="working-hours-feedback">Chargement du journal...</p></div>
+    </section>
+    <section class="glass admin-request-panel" aria-labelledby="claim-conflicts-title">
+      <div class="working-hours-header"><div><span class="eyebrow">IDENTITE</span><h2 id="claim-conflicts-title">Conflits de liaison</h2></div><button class="btn btn-ghost" type="button" data-admin-conflicts-refresh>Actualiser</button></div>
+      <div data-admin-conflicts><p class="working-hours-feedback">Chargement des conflits...</p></div>
     </section>
     <section class="glass admin-request-panel" aria-labelledby="queues-title">
       <div class="working-hours-header"><div><span class="eyebrow">SUIVI</span><h2 id="queues-title">Tickets et demandes de données</h2></div><button class="btn btn-ghost" type="button" data-admin-queues-refresh>Actualiser</button></div>
@@ -29,6 +76,6 @@
     </section>
   </div>
 </main>
-<script type="module" src="js/admin/admin-dashboard.js?v=email-first-review-20260910"></script>
+<script type="module" src="js/admin/admin-dashboard.js?v=booking-claims-20260911"></script>
 </body>
 </html>

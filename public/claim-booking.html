@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR Booking Premium - Lier une réservation</title>
+    <link rel="stylesheet" href="assets/css/base.css?v=booking-claim-20260911-2">
+    <link rel="stylesheet" href="assets/css/glass-theme.css">
+    <script src="firebase-config.js?v=local-emulator-routing-20260910"></script>
+</head>
+<body>
+<main class="auth-screen">
+    <div class="wrap">
+        <div class="auth-layout">
+            <section class="auth-copy">
+                <span class="eyebrow" data-claim-eyebrow></span>
+                <h1 data-claim-title></h1>
+                <p data-claim-intro></p>
+            </section>
+            <section class="glass auth-panel" aria-labelledby="claim-panel-title">
+                <h2 id="claim-panel-title" data-claim-panel-title></h2>
+                <p class="auth-status" data-claim-status role="status" aria-live="polite"></p>
+                <dl class="claim-summary" data-claim-summary hidden>
+                    <div><dt data-claim-professional-label></dt><dd data-claim-professional></dd></div>
+                    <div><dt data-claim-date-label></dt><dd data-claim-date></dd></div>
+                    <div><dt data-claim-time-label></dt><dd data-claim-time></dd></div>
+                    <div><dt data-claim-role-label></dt><dd data-claim-role></dd></div>
+                </dl>
+                <div class="auth-actions" data-claim-actions hidden>
+                    <button class="btn btn-solid" type="button" data-claim-accept></button>
+                    <button class="btn btn-ghost" type="button" data-claim-reject></button>
+                </div>
+                <a class="btn btn-solid" data-claim-login hidden></a>
+                <a class="auth-link" href="client-dashboard.html" data-claim-dashboard hidden></a>
+                <a class="auth-link" href="index.html" data-claim-home></a>
+            </section>
+        </div>
+    </div>
+</main>
+<script type="module" src="js/client-dashboard/booking-claim.js"></script>
+</body>
+</html>

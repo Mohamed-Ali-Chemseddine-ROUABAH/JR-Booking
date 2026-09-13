@@ -21,14 +21,21 @@ const password = process.env.TEST_PRO_PASSWORD || "ChangeMe123!";
 const displayName = process.env.TEST_PRO_DISPLAY_NAME || "Professionnel Test";
 const baseUrl = `http://${authHost}/identitytoolkit.googleapis.com/v1`;
 
+process.env.GCLOUD_PROJECT = process.env.GCLOUD_PROJECT || process.env.FIREBASE_PROJECT_ID || "jr-booking-premium";
+const admin = require("../functions/node_modules/firebase-admin");
+const app = admin.initializeApp({ projectId: process.env.GCLOUD_PROJECT });
+
 async function main() {
     const user = await createOrFindUser();
+    // Trusted callables check the real Auth custom claim, not the client-side email fallback.
+    await app.auth().setCustomUserClaims(user.localId, { professional: true, role: "professional" });
 
     console.log("Test professional ready in the Auth emulator.");
     console.log(`User ID: ${user.localId}`);
     console.log(`Email: ${email}`);
     console.log(`Password: ${password}`);
-    console.log("Local browser role fallback: professional");
+    console.log("Custom claims set: { professional: true, role: \"professional\" }");
+    console.log("Sign out and sign back in in the browser so the ID token picks up the claims.");
 }
 
 async function createOrFindUser() {

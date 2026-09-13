@@ -1,6 +1,6 @@
 import { requireAuth, signOutCurrentUser } from "../core/auth-guard.js";
 import { collection, doc, getDocs, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { getFirestoreDb } from "../core/firebase-init.js";
+import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { showNotification } from "../shared/notifications.js?v=undo-20260907";
 import { initializeSchedule } from "../schedule/schedule-render.js?v=calendar-sync-20260910b";
@@ -10,6 +10,8 @@ import { initializeWorkingHours } from "./working-hours.js";
 import { initializePersonalInfo } from "./personal-info.js";
 import { initializePaymentInfo } from "./payment-info.js";
 import { initializeMovementInfo } from "./movement-info.js";
+import { initializeServicesPackages } from "./services-packages.js";
+import { initializeIntakeQuestionnaire } from "./intake-questionnaire.js";
 import { initializeClientDatabase } from "./client-database.js?v=crm-erasure-20260909";
 import { initializeStatistics } from "./statistics.js?v=stats-20260909";
 import { initializeBookingCreation } from "./booking-creation.js";
@@ -20,6 +22,8 @@ import { calculateMovementQuote } from "./movement-pricing.js";
 import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
 import { initializeCalendarSync, loadGoogleCalendarEvents } from "../schedule/schedule-gcal-sync.js?v=calendar-sync-20260910b";
 import { buildProfessionalScheduleReport, openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
+import { initializeBookingMessages } from "../shared/booking-messages.js";
 
 const strings = UI_STRINGS.proDashboard;
 const layout = document.querySelector("[data-dashboard-layout]");
@@ -31,20 +35,32 @@ status.textContent = strings.loading;
 requireAuth({
     allowedRoles: ["professional"],
     onAuthorized: async ({ user }) => {
+        const profiles = await loadOwnedProfiles(user.uid);
+        const storedProfileId = sessionStorage.getItem("jr-active-professional-profile");
+        const activeProfileId = profiles.some((profile) => profile.id === storedProfileId) ? storedProfileId : user.uid;
+        const profileUser = { ...user, uid: activeProfileId };
         let dashboardBookings = [];
         initializeProNavbar(document.querySelector("[data-pro-navbar]"), {
-            user,
+            user: profileUser,
+            profiles,
+            activeProfileId,
+            onProfileChange: (profileId) => {
+                sessionStorage.setItem("jr-active-professional-profile", profileId);
+                window.location.reload();
+            },
             onLogout: handleLogout,
             onPrint: () => openPrintDocument(buildProfessionalScheduleReport({ professionalName: user.displayName || user.email, bookings: dashboardBookings, strings: UI_STRINGS.proDashboard.navbar.printReport })),
-            onWorkingHours: () => initializeWorkingHours({ user }),
-            onPaymentInfo: () => initializePaymentInfo({ user }),
-            onMovementInfo: () => initializeMovementInfo({ user }),
-            onPersonalInfo: () => initializePersonalInfo({ user }),
-            onClientDatabase: () => initializeClientDatabase({ user }),
-            onStatistics: () => initializeStatistics({ user })
+            onWorkingHours: () => initializeWorkingHours({ user: profileUser }),
+            onPaymentInfo: () => initializePaymentInfo({ user: profileUser }),
+            onMovementInfo: () => initializeMovementInfo({ user: profileUser }),
+            onServices: () => initializeServicesPackages({ user: profileUser }),
+            onIntake: () => initializeIntakeQuestionnaire({ user: profileUser }),
+            onPersonalInfo: () => initializePersonalInfo({ user: profileUser }),
+            onClientDatabase: () => initializeClientDatabase({ user: profileUser }),
+            onStatistics: () => initializeStatistics({ user: profileUser })
         });
-        const workingHours = await loadWorkingHours(user.uid);
-        const bookings = await loadBookings(user.uid);
+        const workingHours = await loadWorkingHours(activeProfileId);
+        const bookings = await loadBookings(activeProfileId);
         const calendarEvents = await loadCalendarEvents();
         dashboardBookings = bookings;
         let sidebar;
@@ -56,6 +72,7 @@ requireAuth({
                 onStatusChange: handleBookingStatus,
                 initialFilter: activeFilter,
                 onFilterChange: (filter) => { activeFilter = filter; },
+                onMessages: (booking) => initializeBookingMessages({ booking, userId: profileUser.uid, userRole: "professional" }),
                 onEditBooking: (booking) => initializeBookingEdit({ booking, onSaved: refreshDashboard })
             });
             initializeSchedule(document.querySelector("[data-schedule-root]"), {
@@ -75,12 +92,15 @@ requireAuth({
                         onEdit: (selectedBooking) => initializeBookingEdit({ booking: selectedBooking, onSaved: refreshDashboard })
                     });
                 },
-                onCalendarSync: () => initializeCalendarSync({ user }),
-                onCreateBooking: (details) => initializeBookingCreation({ user, details, onSaved: refreshDashboard })
+                onCalendarSync: () => initializeCalendarSync({ user: profileUser }),
+                onCalendarRangeChange: ({ from, to }) => loadCalendarEvents({ from, to }),
+                onSyncCalendar: syncBookingToCalendar,
+                onMeetingLinks: manageMeetingLinks,
+                onCreateBooking: (details) => initializeBookingCreation({ user: profileUser, details, onSaved: refreshDashboard })
             });
         };
         const refreshDashboard = async () => {
-            const updatedBookings = await loadBookings(user.uid);
+            const updatedBookings = await loadBookings(activeProfileId);
             dashboardBookings = updatedBookings;
             renderDashboard(updatedBookings);
         };
@@ -105,16 +125,35 @@ requireAuth({
                 showNotification(strings.sidebar.actionError, "error");
             }
         };
+
+        async function syncBookingToCalendar(booking) {
+            try {
+                await httpsCallable(getFirebaseFunctions(), "syncBookingToGoogleCalendar")({ bookingId: booking.id });
+                showNotification(strings.sidebar.syncCalendarBookingSaved, "success");
+            } catch {
+                showNotification(strings.sidebar.syncCalendarBookingError, "error");
+            }
+        }
         renderDashboard(bookings);
         status.textContent = "";
     }
 });
 
-async function loadCalendarEvents() {
-    const from = new Date();
+async function loadOwnedProfiles(authUid) {
+    try {
+        const snapshot = await getDocs(query(collection(getFirestoreDb(), "proProfiles"), where("owners", "array-contains", authUid)));
+        const profiles = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), displayName: item.data().personalInfo?.displayName || item.data().displayName || item.id }));
+        if (!profiles.some((profile) => profile.id === authUid)) profiles.unshift({ id: authUid, displayName: "Profil principal" });
+        return profiles;
+    } catch {
+        return [{ id: authUid, displayName: "Profil principal" }];
+    }
+}
+
+async function loadCalendarEvents({ from = new Date(), to } = {}) {
+    from = new Date(from);
     from.setHours(0, 0, 0, 0);
-    const to = new Date(from);
-    to.setDate(to.getDate() + 7);
+    to = to ? new Date(to) : new Date(from.getTime() + 7 * 24 * 60 * 60 * 1000);
     try {
         return await loadGoogleCalendarEvents({ from, to });
     } catch {
@@ -210,4 +249,17 @@ function buildPaymentContext(booking, paymentInfo, movementQuote) {
         surcharge,
         balance: Math.round((ratePerUnit * durationHours + surcharge) * 100) / 100
     };
+}
+
+async function manageMeetingLinks(booking) {
+    const raw = window.prompt(strings.sidebar.meetingLinksPrompt, (booking.meetingLinks || []).map((link) => `${link.label}|${link.url}`).join("\n"));
+    if (raw === null) return;
+    const links = raw.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
+        const [label, url] = line.split("|");
+        return { label: (label || "Réunion").trim(), url: (url || label || "").trim() };
+    });
+    try {
+        await httpsCallable(getFirebaseFunctions(), "updateBookingMeetingLinks")({ bookingId: booking.id, links });
+        showNotification(strings.sidebar.meetingLinksSaved, "success");
+    } catch { showNotification(strings.sidebar.meetingLinksError, "error"); }
 }

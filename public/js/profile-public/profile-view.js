@@ -1,6 +1,7 @@
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { watchAuthState } from "../core/auth-guard.js";
-import { getFirestoreDb } from "../core/firebase-init.js";
+import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.publicProfile;
@@ -54,10 +55,15 @@ function renderProfile() {
     document.querySelector("[data-profile-schedule-title]").textContent = strings.scheduleTitle;
     document.querySelector("[data-profile-schedule-help]").textContent = strings.scheduleHelp;
     document.querySelector("[data-profile-request-title]").textContent = strings.requestTitle;
+    document.querySelector("[data-profile-service-label]").textContent = strings.serviceLabel;
+    renderIntakeQuestions();
     document.querySelector("[data-profile-date-label]").textContent = strings.dateLabel;
     document.querySelector("[data-profile-start-label]").textContent = strings.startLabel;
     document.querySelector("[data-profile-end-label]").textContent = strings.endLabel;
     document.querySelector("[data-profile-request]").textContent = strings.request;
+    document.querySelector("[data-profile-waitlist]").textContent = strings.waitlist;
+    const services = document.querySelector("[data-profile-services]");
+    services.replaceChildren(new Option(strings.noService, ""), ...(profile.services || []).map((service, index) => new Option(`${service.name} · ${service.durationMinutes || service.duration} min · ${Number(service.price).toFixed(2)} €`, String(index))));
     document.querySelector("[data-profile-login-required]").textContent = strings.loginRequired;
     document.querySelector("[data-profile-sign-in]").textContent = strings.signIn;
     document.querySelector("[data-profile-register]").textContent = strings.register;
@@ -76,6 +82,23 @@ function renderProfile() {
     const dateInput = form.elements.date;
     dateInput.min = toIsoDate(new Date());
     dateInput.value = toIsoDate(new Date(Date.now() + 86400000));
+}
+
+function renderIntakeQuestions() {
+    const section = document.querySelector("[data-profile-intake]");
+    const questions = profile.intakeQuestionnaire?.questions || [];
+    section.hidden = !questions.length;
+    section.querySelector("[data-profile-intake-title]").textContent = strings.intakeTitle;
+    const list = section.querySelector("[data-profile-intake-list]");
+    list.replaceChildren(...questions.map((question, index) => {
+        const label = document.createElement("label");
+        label.textContent = question.text;
+        const input = document.createElement("textarea");
+        input.name = `intake_${index}`;
+        input.required = question.required !== false;
+        label.append(input);
+        return label;
+    }));
 }
 
 function renderDetails(visible) {
@@ -107,35 +130,40 @@ function renderSchedule() {
         date.setDate(date.getDate() + index);
         return date;
     });
-    schedule.replaceChildren(...days.map((date) => {
-        const day = document.createElement("div");
-        day.className = "profile-day";
+    const header = document.createElement("div");
+    header.className = "profile-schedule-header";
+    header.append(document.createElement("span"));
+    days.forEach((date) => {
         const heading = document.createElement("strong");
         heading.textContent = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit" }).format(date);
-        const slots = document.createElement("div");
-        slots.className = "profile-slot-list";
-        for (let hour = 9; hour < 17; hour += 1) {
-            const start = `${String(hour).padStart(2, "0")}:00`;
-            const end = `${String(hour + 1).padStart(2, "0")}:00`;
+        header.append(heading);
+    });
+    const grid = document.createElement("div");
+    grid.className = "profile-schedule-grid";
+    for (let hour = 9; hour < 17; hour += 1) {
+        const start = `${String(hour).padStart(2, "0")}:00`;
+        const end = `${String(hour + 1).padStart(2, "0")}:00`;
+        const time = document.createElement("span");
+        time.className = "profile-time-label";
+        time.textContent = start;
+        grid.append(time);
+        days.forEach((date) => {
             const slot = document.createElement("button");
             slot.type = "button";
             slot.className = "profile-slot";
-            slot.textContent = start;
+            slot.textContent = isBusy(toIsoDate(date), start, end) ? strings.occupiedSlot : strings.emptySlot;
             slot.dataset.date = toIsoDate(date);
             slot.dataset.start = start;
             slot.dataset.end = end;
             if (isBusy(slot.dataset.date, start, end)) {
-                slot.disabled = true;
                 slot.classList.add("is-busy");
                 slot.title = strings.occupied;
-            } else {
-                slot.addEventListener("click", () => selectSlot(slot));
             }
-            slots.append(slot);
-        }
-        day.append(heading, slots);
-        return day;
-    }));
+            slot.addEventListener("click", () => selectSlot(slot));
+            grid.append(slot);
+        });
+    }
+    schedule.replaceChildren(header, grid);
 }
 
 function selectSlot(slot) {
@@ -143,6 +171,7 @@ function selectSlot(slot) {
     form.elements.start.value = slot.dataset.start;
     form.elements.end.value = slot.dataset.end;
     form.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    form.querySelector("[data-profile-waitlist]").hidden = !slot.classList.contains("is-busy");
 }
 
 function isBusy(date, start, end) {
@@ -156,6 +185,8 @@ function isBusy(date, start, end) {
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const formData = new FormData(form);
+    const selectedService = profile.services?.[Number(formData.get("serviceId"))];
+    const intakeAnswers = Object.fromEntries([...form.elements].filter((element) => element.name.startsWith("intake_")).map((element) => [element.name, element.value.trim()]));
     const date = formData.get("date");
     const start = `${date}T${formData.get("start")}`;
     const end = `${date}T${formData.get("end")}`;
@@ -183,13 +214,24 @@ form.addEventListener("submit", async (event) => {
             end,
             status: "pending",
             createdBy: currentUser.uid,
-            createdAt: serverTimestamp()
+            createdAt: serverTimestamp(),
+            ...(selectedService ? { service: { name: selectedService.name, durationMinutes: selectedService.durationMinutes || selectedService.duration, price: selectedService.price } } : {}),
+                ...(Object.keys(intakeAnswers).length ? { intakeAnswers } : {})
         });
         feedback.textContent = strings.saved;
         form.reset();
     } catch {
         feedback.textContent = strings.error;
     }
+});
+
+form.querySelector("[data-profile-waitlist]").addEventListener("click", async () => {
+    if (!currentUser) { authPrompt.hidden = false; form.hidden = true; return; }
+    const feedback = document.querySelector("[data-profile-feedback]");
+    try {
+        await httpsCallable(getFirebaseFunctions(), "joinBookingWaitlist")({ proId: profileId, start: `${form.elements.date.value}T${form.elements.start.value}`, end: `${form.elements.date.value}T${form.elements.end.value}` });
+        feedback.textContent = strings.waitlistSaved;
+    } catch { feedback.textContent = strings.waitlistError; }
 });
 
 function toDate(value) {

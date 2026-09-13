@@ -3,7 +3,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 const strings = UI_STRINGS.proDashboard.schedule;
 const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
 
-export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, daysToShow = 7, workingHours = {}, bookings = [], calendarEvents = [] } = {}) {
+export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, onCalendarRangeChange, daysToShow = 7, workingHours = {}, bookings = [], calendarEvents = [] } = {}) {
     let selectedDays = daysToShow;
     let weekOffset = 0;
     const visibleDays = getVisibleDays(selectedDays, weekOffset);
@@ -40,23 +40,37 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
             container.querySelectorAll("[data-days]").forEach((item) => item.classList.remove("is-active"));
             button.classList.add("is-active");
             selectedDays = Number(button.dataset.days);
-            renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+            refreshCalendarRange();
         });
     });
     attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu);
     container.querySelector("[data-navigation='previous']").addEventListener("click", () => {
         weekOffset -= 1;
-        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+        refreshCalendarRange();
     });
     container.querySelector("[data-navigation='today']").addEventListener("click", () => {
         weekOffset = 0;
-        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+        refreshCalendarRange();
     });
     container.querySelector("[data-navigation='next']").addEventListener("click", () => {
         weekOffset += 1;
-        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+        refreshCalendarRange();
     });
     renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+
+    async function refreshCalendarRange() {
+        const visibleDays = getVisibleDays(selectedDays, weekOffset);
+        if (onCalendarRangeChange) {
+            calendarEvents = await onCalendarRangeChange({ from: visibleDays[0].date, to: endOfDay(visibleDays[visibleDays.length - 1].date) });
+        }
+        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+    }
+}
+
+function endOfDay(date) {
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+    return end;
 }
 
 function renderScheduleGrid(container, daysToShow, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu) {
@@ -97,7 +111,8 @@ function renderSlot(hour, day, workingHours, bookings, calendarEvents) {
     const isBreak = hour >= breakStart && hour < breakEnd;
     const booking = findBooking(bookings, day.isoDate, hour);
     const calendarEvent = findCalendarEvent(calendarEvents, day.isoDate, hour);
-    const available = isWorkingDay && isWithinHours && !isBreak && !absence && !booking;
+    const inBuffer = isWithinBookingBuffer(day, hour, bookings, Number(workingHours.bufferMinutes) || 0);
+    const available = isWorkingDay && isWithinHours && !isBreak && !absence && !booking && !inBuffer;
     if (booking) {
         const status = ["pending", "accepted", "done", "no-show"].includes(booking.status) ? booking.status : "pending";
         const clientLabel = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || strings.bookingLabel);
@@ -284,5 +299,22 @@ function findCalendarEvent(calendarEvents, isoDate, hour) {
         const start = toDate(event.start);
         const end = toDate(event.end);
         return start && end && start <= slotStart && end > slotStart;
+    });
+}
+
+function isWithinBookingBuffer(day, hour, bookings, bufferMinutes) {
+    if (!bufferMinutes) return false;
+    const slotStart = new Date(day.date);
+    const [hoursPart, minutesPart] = hour.split(":").map(Number);
+    slotStart.setHours(hoursPart, minutesPart, 0, 0);
+    const slotEnd = new Date(slotStart.getTime() + 60 * 60 * 1000);
+    return bookings.some((booking) => {
+        if (booking.status === "rejected") return false;
+        const start = toDate(booking.start);
+        const end = toDate(booking.end);
+        if (!start || !end) return false;
+        const expandedStart = new Date(start.getTime() - bufferMinutes * 60000);
+        const expandedEnd = new Date(end.getTime() + bufferMinutes * 60000);
+        return expandedStart < slotEnd && expandedEnd > slotStart;
     });
 }

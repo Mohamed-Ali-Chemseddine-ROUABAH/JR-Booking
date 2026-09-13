@@ -3,7 +3,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 const strings = UI_STRINGS.proDashboard.sidebar;
 const bookingStatuses = UI_STRINGS.proDashboard.schedule.bookingStatuses;
 
-export function initializeSidebarFeed(container, { onToggleSidebar, onStatusChange, onEditBooking, onFilterChange, initialFilter = "pending", bookings = [] }) {
+export function initializeSidebarFeed(container, { onToggleSidebar, onStatusChange, onEditBooking, onMessages, onFilterChange, initialFilter = "pending", bookings = [] }) {
     container.innerHTML = `
         <div class="sidebar-head">
             <h1>${strings.title}</h1>
@@ -24,13 +24,13 @@ export function initializeSidebarFeed(container, { onToggleSidebar, onStatusChan
     const bookingsRoot = container.querySelector("[data-sidebar-bookings]");
     let activeFilter = initialFilter;
     container.querySelectorAll("[data-filter]").forEach((button) => button.classList.toggle("is-active", button.dataset.filter === activeFilter));
-    renderBookings(bookingsRoot, bookings, onStatusChange, onEditBooking, activeFilter);
+    renderBookings(bookingsRoot, bookings, onStatusChange, onEditBooking, onMessages, activeFilter);
     container.querySelectorAll("[data-filter]").forEach((button) => {
         button.addEventListener("click", () => {
             activeFilter = button.dataset.filter;
             onFilterChange?.(activeFilter);
             container.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("is-active", item === button));
-            renderBookings(bookingsRoot, bookings, onStatusChange, onEditBooking, activeFilter);
+            renderBookings(bookingsRoot, bookings, onStatusChange, onEditBooking, onMessages, activeFilter);
         });
     });
 
@@ -46,7 +46,7 @@ export function initializeSidebarFeed(container, { onToggleSidebar, onStatusChan
     };
 }
 
-function renderBookings(container, bookings, onStatusChange, onEditBooking, activeFilter) {
+function renderBookings(container, bookings, onStatusChange, onEditBooking, onMessages, activeFilter) {
     const visibleBookings = bookings.filter((booking) => matchesFilter(booking, activeFilter));
     if (!visibleBookings.length) {
         container.innerHTML = `<section class="glass-ghost empty-feed"><h2>${strings.emptyTitle}</h2><p>${strings.emptyBody}</p><button class="btn btn-ghost" type="button" disabled>${strings.batchAction}</button></section>`;
@@ -59,11 +59,12 @@ function renderBookings(container, bookings, onStatusChange, onEditBooking, acti
         const date = start ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(start) : "";
         const time = start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
         const editAction = `<button class="btn btn-ghost" type="button" data-edit-booking>${strings.editBooking}</button>`;
+        const messageAction = `<button class="btn btn-ghost" type="button" data-message-booking>${UI_STRINGS.shared.bookingMessages.title}</button>`;
         const actions = booking.status === "pending"
-            ? `<div class="sidebar-booking-actions">${editAction}<button class="btn btn-solid" type="button" data-status-action="accepted">${strings.acceptBooking}</button><button class="btn btn-ghost" type="button" data-status-action="rejected">${strings.rejectBooking}</button></div>`
+            ? `<div class="sidebar-booking-actions">${editAction}${messageAction}<button class="btn btn-solid" type="button" data-status-action="accepted">${strings.acceptBooking}</button><button class="btn btn-ghost" type="button" data-status-action="rejected">${strings.rejectBooking}</button></div>`
             : booking.status === "accepted"
-                ? `<div class="sidebar-booking-actions">${editAction}<button class="btn btn-solid" type="button" data-status-action="done">${strings.completeBooking}</button><button class="btn btn-ghost" type="button" data-status-action="no-show">${strings.noShowBooking}</button></div>`
-                : `<div class="sidebar-booking-actions">${editAction}</div>`;
+                ? `<div class="sidebar-booking-actions">${editAction}${messageAction}<button class="btn btn-solid" type="button" data-status-action="done">${strings.completeBooking}</button><button class="btn btn-ghost" type="button" data-status-action="no-show">${strings.noShowBooking}</button></div>`
+                : `<div class="sidebar-booking-actions">${editAction}${messageAction}</div>`;
         return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}"><strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${bookingStatuses[booking.status] || strings.bookingFallbackName}</small>${actions}</article>`;
     }).join("");
 
@@ -79,6 +80,13 @@ function renderBookings(container, bookings, onStatusChange, onEditBooking, acti
             event.stopPropagation();
             const booking = bookings.find((item) => item.id === button.closest("[data-booking-card]").dataset.bookingCard);
             onEditBooking?.(booking);
+        });
+    });
+    container.querySelectorAll("[data-message-booking]").forEach((button) => {
+        button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            const booking = bookings.find((item) => item.id === button.closest("[data-booking-card]").dataset.bookingCard);
+            onMessages?.(booking);
         });
     });
 }

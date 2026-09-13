@@ -1,13 +1,17 @@
 import {
     createUserWithEmailAndPassword,
+    deleteUser,
     getIdTokenResult,
     onAuthStateChanged,
     sendPasswordResetEmail,
+    sendSignInLinkToEmail,
     signInWithEmailAndPassword,
+    signInWithEmailLink,
     signOut,
     updateProfile
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirebaseAuth, isFirebaseConfigured, isUsingLocalFirebaseEmulators } from "./firebase-init.js";
+import { buildEmailLinkContinuationUrl, normalizeEmailAddress } from "./email-link-utils.mjs";
 import { UI_STRINGS } from "./strings-fr.js";
 
 const ROLE_HOME_PATHS = {
@@ -36,18 +40,47 @@ export function watchAuthState(callback) {
 
 export async function signInWithEmail({ email, password }) {
     const auth = requireConfiguredAuth();
-    return signInWithEmailAndPassword(auth, email, password);
+    const credential = await signInWithEmailAndPassword(auth, normalizeEmailAddress(email), password);
+    await credential.user.getIdToken(true);
+    return credential;
+}
+
+export async function sendMagicLink({ email, returnTo } = {}) {
+    const auth = requireConfiguredAuth();
+    const normalizedEmail = normalizeEmailAddress(email);
+    const actionCodeSettings = {
+        url: buildEmailLinkContinuationUrl({
+            origin: window.location.origin || "http://127.0.0.1:5000",
+            path: "login.html",
+            returnTo
+        }),
+        handleCodeInApp: false
+    };
+
+    await sendSignInLinkToEmail(auth, normalizedEmail, actionCodeSettings);
+    return { email: normalizedEmail };
+}
+
+export async function completeMagicLinkSignIn({ email, url }) {
+    const auth = requireConfiguredAuth();
+    const normalizedEmail = normalizeEmailAddress(email);
+    return signInWithEmailLink(auth, normalizedEmail, url);
 }
 
 export async function registerClientAccount({ email, password, displayName }) {
     const auth = requireConfiguredAuth();
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
+    const credential = await createUserWithEmailAndPassword(auth, normalizeEmailAddress(email), password);
 
     if (displayName) {
         await updateProfile(credential.user, { displayName });
     }
 
     return credential;
+}
+
+export async function deleteCurrentUser() {
+    const auth = requireConfiguredAuth();
+    if (auth.currentUser) await deleteUser(auth.currentUser);
 }
 
 export async function sendResetLink(email) {
@@ -65,7 +98,9 @@ export async function getUserRole(user) {
         return "anonymous";
     }
 
-    const tokenResult = await getIdTokenResult(user);
+    // Force refresh so custom claims set after this session's last token issuance
+    // (e.g. by an admin action) reach role checks and subsequent callable Functions.
+    const tokenResult = await getIdTokenResult(user, true);
     const claimedRole = tokenResult.claims.role;
 
     if (claimedRole === "admin" || tokenResult.claims.admin === true) {

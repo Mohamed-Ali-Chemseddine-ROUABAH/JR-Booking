@@ -1,16 +1,19 @@
 import { requireAuth, signOutCurrentUser } from "../core/auth-guard.js";
-import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
-import { getFirestoreDb } from "../core/firebase-init.js";
+import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
+import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { showNotification } from "../shared/notifications.js";
-import { initializeClientNavbar } from "./navbar-client.js?v=payment-context-20260909";
-import { initializeClientBookings } from "./client-bookings.js";
+import { initializeClientNavbar } from "./navbar-client.js?v=history-share-20260912";
+import { initializeClientBookings } from "./client-bookings.js?v=history-share-20260912";
 import { initializeClientProfileSettings } from "./client-profile-settings.js";
 import { initializeRequestChange } from "./client-request-change.js";
 import { updateClientBookingStatus } from "../pro-dashboard/booking-actions.js";
 import { initializeClientSchedule } from "./client-schedule.js";
 import { initializeClientPaymentContext } from "./client-payment-context.js";
 import { initializeProfessionalSearch } from "./client-professional-search.js";
+import { initializeHistoryShare } from "./client-history-share.js";
+import { initializeBookingMessages } from "../shared/booking-messages.js";
 
 const strings = UI_STRINGS.clientDashboard;
 const status = document.querySelector("[data-dashboard-status]");
@@ -25,13 +28,17 @@ requireAuth({
         let activeFilter = "pending";
         let currentBookings = await loadBookings(user.uid);
         let savedProfessionals = await loadSavedProfessionals(user.uid);
+        let relationships = await loadRelationships(user.uid);
+        let sharedBookings = await loadSharedBookings(user.uid, relationships);
         let lockedProfessional = null;
+        let historyShareModal = null;
 
         initializeClientNavbar(document.querySelector("[data-client-navbar]"), {
             user,
             onLogout: handleLogout,
             onEditProfile: () => initializeClientProfileSettings({ user }),
-            onPayment: () => initializeClientPaymentContext({ bookings: currentBookings })
+            onPayment: () => initializeClientPaymentContext({ bookings: currentBookings }),
+            onHistoryShare: () => openHistoryShare()
         });
         renderSchedule();
         renderBookings(activeFilter);
@@ -40,8 +47,20 @@ requireAuth({
 
         async function refresh() {
             currentBookings = await loadBookings(user.uid);
+            relationships = await loadRelationships(user.uid);
+            sharedBookings = await loadSharedBookings(user.uid, relationships);
             renderSchedule();
             renderBookings(activeFilter);
+        }
+
+        function openHistoryShare() {
+            historyShareModal?.remove();
+            historyShareModal = initializeHistoryShare({
+                userId: user.uid,
+                relationships,
+                onApprove: (item) => handleApproveHistoryShare(item),
+                onRevoke: (item) => handleRevokeHistoryShare(item)
+            });
         }
 
         function renderSchedule() {
@@ -51,12 +70,15 @@ requireAuth({
         function renderBookings(filter) {
             initializeClientBookings(document.querySelector("[data-client-bookings-root]"), {
                 userId: user.uid,
-                bookings: currentBookings,
+                bookings: [...currentBookings, ...sharedBookings],
                 initialFilter: filter,
                 onFilterChange: (nextFilter) => { activeFilter = nextFilter; },
                 onAccept: (booking) => handleAccept(booking),
                 onCancel: (booking) => handleCancel(booking),
-                onRequestChange: (booking) => initializeRequestChange({ booking, onSaved: refresh })
+                onRequestChange: (booking) => initializeRequestChange({ booking, onSaved: refresh }),
+                onUnlinkClaim: (booking, contact) => handleUnlinkClaim(booking, contact),
+                onRequestHistoryShare: (booking, linkedUid) => handleRequestHistoryShare(booking, linkedUid),
+                onMessages: (booking, userRole) => initializeBookingMessages({ booking, userId: user.uid, userRole })
             });
         }
 
@@ -130,8 +152,72 @@ requireAuth({
                 showNotification(strings.bookings.actionError, "error");
             }
         }
+
+        async function handleUnlinkClaim(booking, contact) {
+            if (!window.confirm(strings.bookings.unlinkClaimConfirmation)) return;
+            try {
+                await httpsCallable(getFirebaseFunctions(), "unlinkBookingClaim")({ bookingId: booking.id, contactId: contact.contactId, requestId: createRequestId() });
+                await refresh();
+                showNotification(strings.bookings.claimUnlinked, "success");
+            } catch {
+                showNotification(strings.bookings.actionError, "error");
+            }
+        }
+
+        async function handleRequestHistoryShare(booking, linkedUid) {
+            const contact = booking.contacts?.find((item) => item.linkedUid === linkedUid);
+            const label = contact?.name || contact?.email || "";
+            if (!window.confirm(strings.bookings.shareHistoryConfirmation(label))) return;
+            const relationshipId = buildRelationshipKey(user.uid, linkedUid, "booking", booking.id);
+            const contextLabel = booking.proDisplayName ? `${label} · ${booking.proDisplayName}` : label;
+            try {
+                await setDoc(doc(getFirestoreDb(), "clientRelationships", relationshipId), {
+                    requesterUid: user.uid,
+                    recipientUid: linkedUid,
+                    scope: "booking",
+                    bookingId: booking.id,
+                    status: "pending",
+                    contextLabel,
+                    requestedAt: new Date(),
+                    updatedAt: new Date()
+                });
+                relationships = await loadRelationships(user.uid);
+                showNotification(strings.bookings.shareHistorySent, "success");
+            } catch {
+                showNotification(strings.bookings.actionError, "error");
+            }
+        }
+
+        async function handleApproveHistoryShare(item) {
+            if (!item) return;
+            try {
+                await updateDoc(doc(getFirestoreDb(), "clientRelationships", item.id), { status: "active", acceptedAt: new Date(), updatedAt: new Date() });
+                await refresh();
+                showNotification(UI_STRINGS.clientDashboard.historyShare.approved, "success");
+                openHistoryShare();
+            } catch {
+                showNotification(UI_STRINGS.clientDashboard.historyShare.actionError, "error");
+            }
+        }
+
+        async function handleRevokeHistoryShare(item) {
+            if (!item) return;
+            try {
+                await updateDoc(doc(getFirestoreDb(), "clientRelationships", item.id), { status: "revoked", revokedAt: new Date(), revokedBy: user.uid, updatedAt: new Date() });
+                await refresh();
+                showNotification(UI_STRINGS.clientDashboard.historyShare.revoked, "success");
+                openHistoryShare();
+            } catch {
+                showNotification(UI_STRINGS.clientDashboard.historyShare.actionError, "error");
+            }
+        }
     }
 });
+
+function buildRelationshipKey(uidA, uidB, scope, scopeId) {
+    const [first, second] = uidA < uidB ? [uidA, uidB] : [uidB, uidA];
+    return `${first}_${second}_${scope}_${scopeId}`;
+}
 
 async function loadBookings(userId) {
     try {
@@ -141,6 +227,43 @@ async function loadBookings(userId) {
     } catch {
         return [];
     }
+}
+
+async function loadRelationships(userId) {
+    try {
+        const [asRequester, asRecipient] = await Promise.all([
+            getDocs(query(collection(getFirestoreDb(), "clientRelationships"), where("requesterUid", "==", userId))),
+            getDocs(query(collection(getFirestoreDb(), "clientRelationships"), where("recipientUid", "==", userId)))
+        ]);
+        const byId = new Map();
+        [...asRequester.docs, ...asRecipient.docs].forEach((item) => byId.set(item.id, { id: item.id, ...item.data() }));
+        return [...byId.values()].filter((item) => item.status !== "revoked");
+    } catch {
+        return [];
+    }
+}
+
+async function loadSharedBookings(userId, relationships) {
+    const active = relationships.filter((item) => item.status === "active");
+    if (!active.length) return [];
+    const results = await Promise.all(active.map(async (item) => {
+        const otherUid = item.requesterUid === userId ? item.recipientUid : item.requesterUid;
+        try {
+            if (item.scope === "booking") {
+                const snapshot = await getDoc(doc(getFirestoreDb(), "bookings", item.bookingId));
+                return snapshot.exists() ? [await attachProDisplayName({ id: snapshot.id, ...snapshot.data() })] : [];
+            }
+            const constraints = [where("clientId", "==", otherUid)];
+            if (item.scope === "professional") constraints.push(where("proId", "==", item.proId));
+            const snapshot = await getDocs(query(collection(getFirestoreDb(), "bookings"), ...constraints));
+            return Promise.all(snapshot.docs.map((booking) => attachProDisplayName({ id: booking.id, ...booking.data() })));
+        } catch {
+            return [];
+        }
+    }));
+    const byId = new Map();
+    results.flat().forEach((booking) => byId.set(booking.id, booking));
+    return [...byId.values()];
 }
 
 async function attachProDisplayName(booking) {
@@ -180,4 +303,8 @@ async function handleLogout() {
     } catch {
         showNotification(UI_STRINGS.auth.errors.generic, "error");
     }
+}
+
+function createRequestId() {
+    return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }

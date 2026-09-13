@@ -35,6 +35,7 @@
         <div class="profile-schedule" data-profile-schedule></div>
         <form class="profile-request-form" data-profile-form hidden>
           <h3 data-profile-request-title></h3>
+          <label><span data-profile-service-label></span><select name="serviceId" data-profile-services></select></label>
           <label><span data-profile-date-label></span><input name="date" type="date" required></label>
           <div class="profile-time-fields">
             <label><span data-profile-start-label></span><input name="start" type="time" value="09:00" required></label>
@@ -42,6 +43,8 @@
           </div>
           <p class="profile-feedback" data-profile-feedback role="status" aria-live="polite"></p>
           <button class="btn btn-solid" type="submit" data-profile-request></button>
+          <button class="btn btn-ghost" type="button" data-profile-waitlist hidden></button>
+            <section class="profile-intake" data-profile-intake hidden><h4 data-profile-intake-title></h4><div data-profile-intake-list></div></section>
         </form>
         <div class="profile-auth-prompt" data-profile-auth-prompt hidden>
           <p data-profile-login-required></p>
@@ -52,6 +55,6 @@
     </section>
   </div>
 </main>
-<script type="module" src="js/profile-public/profile-view.js?v=client-address-20260909"></script>
+<script type="module" src="js/profile-public/profile-view.js?v=availability-polish-20260913"></script>
 </body>
 </html>

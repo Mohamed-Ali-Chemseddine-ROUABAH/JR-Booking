@@ -16,8 +16,8 @@ service firebase.storage {
     }
 
     match /professionalRequests/{requestId}/{fileName} {
-      allow read: if isAdmin() || (signedIn() && requestId == request.auth.uid);
-      allow create: if signedIn() && requestId == request.auth.uid && isAllowedVerificationFile();
+      allow read: if isAdmin();
+      allow create: if false;
       allow update, delete: if false;
     }
 

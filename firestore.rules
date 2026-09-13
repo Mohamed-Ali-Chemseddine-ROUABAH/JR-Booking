@@ -22,6 +22,15 @@ service cloud.firestore {
         );
     }
 
+    function ownsBookingProfile(profileId) {
+      return signedIn()
+        && (
+          request.auth.uid == profileId
+          || (get(/databases/$(database)/documents/proProfiles/$(profileId)).data.owners is list
+            && request.auth.uid in get(/databases/$(database)/documents/proProfiles/$(profileId)).data.owners)
+        );
+    }
+
     function willOwnProfile(profileId) {
       return signedIn()
         && request.auth.uid == profileId
@@ -35,6 +44,8 @@ service cloud.firestore {
         "name",
         "idTag",
         "categories",
+        "services",
+        "intakeQuestionnaire",
         "shortDescription",
         "visibleFields",
         "avatarUrl",
@@ -76,11 +87,84 @@ service cloud.firestore {
           "statusHistory",
           "start",
           "end",
-          "guestContact",
           "movementQuote",
           "paymentContext",
           "customPrice"
+          ,"meetingLinks"
         ]);
+    }
+
+    function clientBookingCreate() {
+      return request.resource.data.keys().hasOnly([
+          "proId",
+          "clientId",
+          "clientAddress",
+          "start",
+          "end",
+          "service",
+          "intakeAnswers",
+          "status",
+          "createdBy",
+          "createdAt"
+        ])
+        && request.resource.data.clientId == request.auth.uid
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.proId is string
+        && canClientBookProfessional(request.resource.data.proId, request.auth.uid);
+    }
+
+    function hasActiveHistoryShare(otherUid, scope, scopeId) {
+      return signedIn()
+        && otherUid != null
+        && exists(/databases/$(database)/documents/clientRelationships/$((request.auth.uid < otherUid ? request.auth.uid + "_" + otherUid : otherUid + "_" + request.auth.uid) + "_" + scope + "_" + scopeId))
+        && get(/databases/$(database)/documents/clientRelationships/$((request.auth.uid < otherUid ? request.auth.uid + "_" + otherUid : otherUid + "_" + request.auth.uid) + "_" + scope + "_" + scopeId)).data.status == "active";
+    }
+
+    function canReadSharedBookingHistory(booking, bookingId) {
+      return booking.clientId != null
+        && request.auth.uid != booking.clientId
+        && (
+          hasActiveHistoryShare(booking.clientId, "booking", bookingId)
+          || hasActiveHistoryShare(booking.clientId, "professional", booking.proId)
+          || hasActiveHistoryShare(booking.clientId, "all", "all")
+        );
+    }
+
+    function clientRelationshipCreate() {
+      return signedIn()
+        && request.resource.data.requesterUid == request.auth.uid
+        && request.resource.data.recipientUid is string
+        && request.resource.data.recipientUid != request.auth.uid
+        && request.resource.data.status == "pending"
+        && request.resource.data.scope in ["booking", "professional", "all"]
+        && (request.resource.data.scope != "booking" || request.resource.data.bookingId is string)
+        && (request.resource.data.scope != "professional" || request.resource.data.proId is string)
+        && request.resource.data.requestedAt is timestamp
+        && request.resource.data.updatedAt is timestamp
+        && (!("contextLabel" in request.resource.data) || request.resource.data.contextLabel is string)
+        && request.resource.data.keys().hasOnly(["requesterUid", "recipientUid", "scope", "bookingId", "proId", "status", "requestedAt", "updatedAt", "contextLabel"]);
+    }
+
+    function clientRelationshipApprove() {
+      return signedIn()
+        && request.auth.uid == resource.data.recipientUid
+        && resource.data.status == "pending"
+        && request.resource.data.status == "active"
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "acceptedAt", "updatedAt"])
+        && request.resource.data.acceptedAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
+    }
+
+    function clientRelationshipRevoke() {
+      return signedIn()
+        && (request.auth.uid == resource.data.requesterUid || request.auth.uid == resource.data.recipientUid)
+        && resource.data.status in ["pending", "active"]
+        && request.resource.data.status == "revoked"
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "revokedAt", "revokedBy", "updatedAt"])
+        && request.resource.data.revokedBy == request.auth.uid
+        && request.resource.data.revokedAt is timestamp
+        && request.resource.data.updatedAt is timestamp;
     }
 
     match /publicProfiles/{proId} {
@@ -109,12 +193,18 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /legalAcceptances/{acceptanceId} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    match /waitlistEntries/{proId}/entries/{entryId} {
+      allow read: if signedIn() && (request.auth.uid == resource.data.clientId || request.auth.uid == proId || isAdmin());
+      allow write: if false;
+    }
+
     match /professionalRequests/{requestId} {
-      allow read: if signedIn() && (request.auth.uid == requestId || isAdmin());
-      allow create: if signedIn()
-        && request.auth.uid == requestId
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.status == "pending";
+      allow read: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
@@ -124,26 +214,22 @@ service cloud.firestore {
           request.auth.uid == resource.data.clientId
           || request.auth.uid == resource.data.proId
           || isAdmin()
+          || canReadSharedBookingHistory(resource.data, bookingId)
         );
-      allow create: if signedIn()
-        && request.resource.data.status == "pending"
-        && (
-          request.auth.uid == request.resource.data.clientId
-          || request.auth.uid == request.resource.data.proId
-        )
-        && (request.resource.data.get("clientId", null) == null || canClientBookProfessional(request.resource.data.proId, request.resource.data.clientId));
+      allow create: if signedIn() && clientBookingCreate();
       allow update: if isAdmin() || (signedIn() && (clientBookingUpdate() || professionalBookingUpdate()));
       allow delete: if isAdmin();
 
       match /messages/{messageId} {
-        allow read, create: if signedIn()
+        allow read: if signedIn()
           && exists(/databases/$(database)/documents/bookings/$(bookingId))
           && (
             request.auth.uid == get(/databases/$(database)/documents/bookings/$(bookingId)).data.clientId
-            || request.auth.uid == get(/databases/$(database)/documents/bookings/$(bookingId)).data.proId
+            || ownsBookingProfile(get(/databases/$(database)/documents/bookings/$(bookingId)).data.proId)
+            || canReadSharedBookingHistory(get(/databases/$(database)/documents/bookings/$(bookingId)).data, bookingId)
             || isAdmin()
           );
-        allow update, delete: if false;
+        allow create, update, delete: if false;
       }
     }
 
@@ -151,6 +237,13 @@ service cloud.firestore {
       allow read: if signedIn() && (request.auth.uid == resource.data.proId || isAdmin());
       allow create: if signedIn() && (request.auth.uid == request.resource.data.proId || isAdmin());
       allow update: if signedIn() && (request.auth.uid == resource.data.proId || request.auth.uid == request.resource.data.proId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /clientRelationships/{relationshipId} {
+      allow read: if signedIn() && (request.auth.uid == resource.data.requesterUid || request.auth.uid == resource.data.recipientUid || isAdmin());
+      allow create: if clientRelationshipCreate();
+      allow update: if isAdmin() || clientRelationshipApprove() || clientRelationshipRevoke();
       allow delete: if isAdmin();
     }
 
@@ -172,17 +265,21 @@ service cloud.firestore {
     }
 
     match /creationLinks/{linkId} {
-      allow read, write: if isAdmin();
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /mail/{messageId} {
-      allow create: if signedIn();
-      allow read, update, delete: if isAdmin();
+      allow read, write: if isAdmin();
     }
 
     match /logs/{logId} {
       allow read: if isAdmin();
       allow write: if false;
+    }
+
+    match /bookingClaimTokens/{tokenHash} {
+      allow read, write: if false;
     }
 
     match /gcalTokens/{proId} {

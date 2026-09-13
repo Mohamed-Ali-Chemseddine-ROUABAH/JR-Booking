@@ -47,6 +47,11 @@
             <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength="6" required>
           </div>
 
+          <div class="auth-consents">
+            <label><input id="terms-accepted" name="termsAccepted" type="checkbox" required><span data-ui="terms-acceptance"></span></label>
+            <label><input id="privacy-accepted" name="privacyAccepted" type="checkbox" required><span data-ui="privacy-acceptance"></span></label>
+          </div>
+
           <div class="auth-actions">
             <button class="btn btn-solid" type="submit" data-ui="submit"></button>
           </div>
@@ -62,7 +67,9 @@
 
 <script type="module">
   import { UI_STRINGS } from './js/core/strings-fr.js';
-  import { getAuthErrorMessage, isAuthConfigured, registerClientAccount } from './js/core/auth-guard.js';
+  import { deleteCurrentUser, getAuthErrorMessage, isAuthConfigured, registerClientAccount } from './js/core/auth-guard.js';
+  import { getFirebaseFunctions } from './js/core/firebase-init.js';
+  import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js';
   import { showNotification } from './js/shared/notifications.js';
 
   const strings = UI_STRINGS.auth;
@@ -80,6 +87,8 @@
   document.querySelector('[data-ui="password-label"]').textContent = strings.shared.passwordLabel;
   document.querySelector('[data-ui="password-help"]').textContent = strings.register.passwordHelp;
   document.querySelector('[data-ui="confirm-password-label"]').textContent = strings.shared.confirmPasswordLabel;
+  document.querySelector('[data-ui="terms-acceptance"]').textContent = strings.register.termsAcceptance;
+  document.querySelector('[data-ui="privacy-acceptance"]').textContent = strings.register.privacyAcceptance;
   document.querySelector('[data-ui="submit"]').textContent = strings.register.submit;
   document.querySelector('[data-ui="login-link"]').textContent = strings.register.loginLink;
   document.querySelector('[data-ui="back-home"]').textContent = strings.shared.backHome;
@@ -96,20 +105,34 @@
       status.textContent = strings.register.passwordMismatch;
       return;
     }
+    if (!formData.get('termsAccepted') || !formData.get('privacyAccepted')) {
+      status.textContent = strings.register.legalRequired;
+      return;
+    }
 
     submitButton.disabled = true;
     status.textContent = strings.shared.submitting;
 
+    let accountCreated = false;
     try {
       await registerClientAccount({
         displayName: formData.get('displayName'),
         email: formData.get('email'),
         password: formData.get('password')
       });
+      accountCreated = true;
+      const getLegalVersions = httpsCallable(getFirebaseFunctions(), 'getCurrentLegalVersions');
+      const { data: legal } = await getLegalVersions({});
+      await httpsCallable(getFirebaseFunctions(), 'recordLegalAcceptance')({
+        termsVersion: legal.termsVersion,
+        privacyVersion: legal.privacyVersion,
+        sourceFlow: 'client-registration'
+      });
       status.textContent = strings.register.success;
       showNotification(status.textContent, 'success');
     } catch (error) {
-      status.textContent = getAuthErrorMessage(error);
+      if (accountCreated) await deleteCurrentUser().catch(() => {});
+      status.textContent = accountCreated ? strings.register.legalError : getAuthErrorMessage(error);
       showNotification(status.textContent, 'error');
     } finally {
       submitButton.disabled = false;

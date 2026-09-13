@@ -24,7 +24,133 @@ export const UI_STRINGS = {
         ,queueEmpty: "Aucun élément en attente.",
         queueError: "La file n’a pas pu être chargée.",
         queueUpdateError: "Le statut n’a pas pu être mis à jour.",
-        untitled: "Élément sans titre"
+        untitled: "Élément sans titre",
+        claimConflictsLoading: "Chargement des conflits de liaison...",
+        claimConflictsEmpty: "Aucun conflit de liaison en attente.",
+        claimConflictsError: "Les conflits de liaison n’ont pas pu être chargés.",
+        approveClaimConflict: "Approuver la liaison",
+        denyClaimConflict: "Refuser la liaison",
+        approveClaimConflictConfirm: "Approuver cette liaison après vérification de l’identité ?",
+        denyClaimConflictConfirm: "Refuser cette liaison ? La réservation sera conservée.",
+        claimConflictUpdateError: "Le conflit de liaison n’a pas pu être résolu.",
+        claimConflictReasons: {
+            "contact-linked-to-another-account": "Ce contact est déjà lié à un autre compte.",
+            "booking-role-linked-to-another-account": "Ce rôle de réservation est déjà lié à un autre compte.",
+            "identity-conflict": "Les liaisons d’identité existantes sont incompatibles."
+        },
+        commandCenter: {
+            title: "À traiter aujourd’hui",
+            applications: "Demandes professionnelles",
+            tickets: "Tickets ouverts",
+            dataRequests: "Demandes de données",
+            expiringLinks: "Liens bientôt expirés",
+            loading: "Calcul des priorités...",
+            error: "Les priorités n’ont pas pu être chargées."
+        },
+        creationLinks: {
+            title: "Liens de création professionnelle",
+            emailPlaceholder: "Adresse courriel confirmée",
+            usesPlaceholder: "Utilisations",
+            expiryPlaceholder: "Durée en jours",
+            generate: "Générer un lien",
+            loading: "Chargement des liens...",
+            empty: "Aucun lien de création.",
+            error: "Les liens de création n’ont pas pu être chargés.",
+            generated: "Lien généré. Copiez-le maintenant :",
+            revoke: "Révoquer",
+            revokeConfirm: "Révoquer ce lien de création ?",
+            revoked: "Lien révoqué.",
+            status: "Statut"
+        },
+        accountRecovery: {
+            title: "Récupération d’accès",
+            help: "Envoyez un nouveau lien sans supprimer les réservations ni les profils liés.",
+            targetPlaceholder: "UID ou adresse courriel",
+            issue: "Envoyer un lien sécurisé",
+            confirmation: "Un nouveau lien sera envoyé et toutes les données liées seront conservées. Continuer ?",
+            queued: "Lien de récupération placé dans la file d’envoi. Les données ont été conservées.",
+            error: "Le lien de récupération n’a pas pu être créé."
+        },
+        profiles: {
+            title: "Profils professionnels supplémentaires",
+            help: "Ajoutez un profil géré par un compte professionnel existant.",
+            ownerPlaceholder: "UID du professionnel propriétaire",
+            namePlaceholder: "Nom affiché du profil",
+            descriptionPlaceholder: "Description courte",
+            create: "Créer le profil",
+            created: "Profil supplémentaire créé.",
+            error: "Le profil supplémentaire n’a pas pu être créé."
+        },
+        lifecycle: {
+            title: "Cycle de vie du profil",
+            help: "Planifiez une suppression après un délai obligatoire de 30 jours.",
+            profilePlaceholder: "ID du profil professionnel",
+            confirmationPlaceholder: "SUPPRIMER CE PROFIL",
+            schedule: "Planifier la suppression",
+            cancel: "Annuler la suppression",
+            scheduled: "Suppression planifiée dans 30 jours; le compte est en attente de récupération.",
+            cancelled: "Suppression annulée; le compte est réactivé.",
+            error: "L’action de cycle de vie n’a pas pu être effectuée.",
+            purgeConfirmation: "SUPPRIMER DEFINITIVEMENT CE PROFIL",
+            purged: "Profil définitivement supprimé; les réservations historiques sont conservées.",
+            purgeError: "La suppression définitive n’a pas pu être effectuée."
+        },
+        categories: {
+            title: "Surveillance des catégories",
+            fromPlaceholder: "Catégorie actuelle",
+            toPlaceholder: "Nouveau nom",
+            rename: "Renommer partout",
+            loading: "Chargement des catégories...",
+            empty: "Aucune catégorie publique.",
+            renamed: "Catégorie renommée dans les profils concernés.",
+            error: "La gestion des catégories a échoué."
+        },
+        moderation: {
+            title: "Modération des profils publics",
+            profilePlaceholder: "ID du profil public",
+            reasonPlaceholder: "Motif de modération",
+            description: "Masquer la description",
+            avatar: "Masquer la photo",
+            apply: "Appliquer la modération",
+            confirmation: "Appliquer cette redaction au profil public ?",
+            applied: "Modération appliquée et journalisée.",
+            error: "La modération n’a pas pu être appliquée."
+        },
+        broadcasts: {
+            title: "Annonce plateforme",
+            audience: "Destinataires",
+            clients: "Clients",
+            professionals: "Professionnels",
+            both: "Clients et professionnels",
+            subjectPlaceholder: "Objet de l’annonce",
+            textPlaceholder: "Message de l’annonce",
+            send: "Mettre en file d’envoi",
+            confirmation: "Mettre cette annonce en file d’envoi pour le public sélectionné ?",
+            queued: "Annonce mise en file d’envoi.",
+            error: "L’annonce n’a pas pu être mise en file.",
+        },
+        health: {
+            title: "Santé de la plateforme",
+            refresh: "Actualiser",
+            loading: "Lecture de la santé plateforme...",
+            error: "La santé de la plateforme n’a pas pu être chargée.",
+            professionals: "Profils professionnels",
+            clients: "Comptes clients",
+            bookings: "Réservations",
+            authUsers: "Utilisateurs Auth",
+            mailQueued: "Emails en file",
+            mailFailed: "Échecs email",
+            privilegedFailures: "Échecs opérations sensibles",
+            calendarErrors: "Erreurs Calendar",
+            auditEvents: "Événements d’audit"
+        },
+        bulkReview: {
+            approve: "Approuver la sélection",
+            reject: "Rejeter la sélection",
+            confirmation: "Appliquer cette décision aux demandes sélectionnées ?",
+            queued: "Décision appliquée aux demandes sélectionnées.",
+            error: "La décision groupée n’a pas pu être appliquée."
+        }
     },
     landing: {
         eyebrow: "JR Booking Premium · version 2",
@@ -63,11 +189,15 @@ export const UI_STRINGS = {
             professionalRole: "Professionnel",
             clientRole: "Client",
             submit: "Se connecter",
+            magicLink: "Recevoir un lien de connexion",
             resetLink: "Envoyer un lien de réinitialisation",
             registerClient: "Créer un compte client",
             success: (roleLabel) => `Connexion réussie pour l'espace ${roleLabel}. Redirection vers le tableau de bord...`,
             resetSent: "Lien de réinitialisation envoyé si ce compte existe.",
-            missingEmailForReset: "Saisissez votre adresse courriel avant de demander le lien."
+            magicLinkSent: "Un lien de connexion a été envoyé à votre adresse courriel.",
+            magicLinkReady: "Veuillez confirmer votre lien de connexion, puis validez votre adresse courriel.",
+            missingEmailForReset: "Saisissez votre adresse courriel avant de demander le lien.",
+            missingEmailForMagicLink: "Saisissez votre adresse courriel pour valider le lien de connexion."
         },
         register: {
             pageTitle: "JR Booking Premium - Inscription client",
@@ -78,7 +208,11 @@ export const UI_STRINGS = {
             loginLink: "J'ai déjà un compte",
             passwordHelp: "Minimum 6 caractères.",
             success: "Compte client créé. Vous êtes maintenant connecté.",
-            passwordMismatch: "Les deux mots de passe doivent être identiques."
+            passwordMismatch: "Les deux mots de passe doivent être identiques.",
+            termsAcceptance: "J’accepte les conditions d’utilisation.",
+            privacyAcceptance: "J’ai lu la politique de confidentialité.",
+            legalRequired: "Vous devez accepter les conditions et confirmer la lecture de la politique de confidentialité.",
+            legalError: "Le compte n’a pas pu être finalisé avec les acceptations légales. Réessayez."
         },
         errors: {
             "auth/unconfigured": "Firebase doit être configuré avant d'utiliser l'authentification.",
@@ -108,6 +242,7 @@ export const UI_STRINGS = {
             startLabel: "Début de journée",
             endLabel: "Fin de journée",
             viewDaysLabel: "Nombre de jours affichés",
+            bufferLabel: "Temps tampon entre deux réservations (minutes)",
             timezoneLabel: "Fuseau horaire principal",
             breakTitle: "Pause récurrente",
             breakStartLabel: "Début de pause",
@@ -191,6 +326,33 @@ export const UI_STRINGS = {
             loadError: "Les informations de paiement n'ont pas pu être chargées.",
             saveError: "Les informations de paiement n'ont pas pu être enregistrées."
         },
+        services: {
+            title: "Services et forfaits",
+            close: "Fermer",
+            help: "Définissez les services proposés avec leur durée et leur tarif.",
+            add: "Ajouter un service",
+            save: "Enregistrer les services",
+            saved: "Services enregistrés.",
+            loadError: "Les services n’ont pas pu être chargés.",
+            saveError: "Les services n’ont pas pu être enregistrés.",
+            name: "Nom du service",
+            duration: "Durée (minutes)",
+            price: "Tarif (€)",
+            remove: "Retirer"
+        },
+        intake: {
+            title: "Questionnaire d’accueil",
+            close: "Fermer",
+            help: "Posez quelques questions avant une première réservation.",
+            add: "Ajouter une question",
+            save: "Enregistrer le questionnaire",
+            saved: "Questionnaire enregistré.",
+            loadError: "Le questionnaire n’a pas pu être chargé.",
+            saveError: "Le questionnaire n’a pas pu être enregistré.",
+            question: "Question",
+            required: "Réponse obligatoire",
+            remove: "Retirer"
+        },
         movementInfo: {
             title: "Type de travail et déplacements",
             close: "Fermer",
@@ -226,6 +388,24 @@ export const UI_STRINGS = {
             close: "Fermer",
             clientNameLabel: "Nom du client",
             clientEmailLabel: "Adresse courriel",
+            contactsTitle: "Contacts de la réservation",
+            primaryContact: "Contact principal",
+            additionalContact: "Contact supplémentaire",
+            addContact: "Ajouter un contact",
+            removeContact: "Retirer",
+            confirmRemoveContact: "Retirer ce contact des futures notifications ? L'historique de la réservation sera conservé.",
+            sendClaimInvitation: "Envoyer l'invitation",
+            claimInvitationQueued: "Invitation de liaison ajoutée à la file d'envoi.",
+            claimInvitationError: "L'invitation de liaison n'a pas pu être envoyée.",
+            contactRoleLabel: "Rôle",
+            notifyContact: "Recevoir les notifications",
+            contactRoles: {
+                primary: "Principal",
+                guardian: "Responsable légal",
+                payer: "Payeur",
+                participant: "Participant",
+                assistant: "Assistant"
+            },
             startLabel: "Début",
             endLabel: "Fin",
             save: "Créer la réservation",
@@ -238,6 +418,7 @@ export const UI_STRINGS = {
             settings: "Réglages",
             print: "Imprimer",
             logout: "Déconnexion",
+            profileLabel: "Profil actif",
             menuLabel: "Menu du tableau de bord",
             settingsLabel: "Sections de réglages",
             settingsItems: [
@@ -245,6 +426,7 @@ export const UI_STRINGS = {
                 "Paiements",
                 "Type de travail",
                 "Méthode de réservation",
+                "Questionnaire d’accueil",
                 "Informations personnelles",
                 "Base clients",
                 "Statistiques"
@@ -282,7 +464,9 @@ export const UI_STRINGS = {
             saveError: "Les préférences Calendar n'ont pas pu être enregistrées.",
             oauthUnavailable: "OAuth Google n'est pas encore configuré sur cet environnement."
             ,connecting: "Ouverture de l’autorisation Google...",
-            connectError: "La connexion Google n’a pas pu être démarrée."
+            connectError: "La connexion Google n’a pas pu être démarrée.",
+            watch: "Activer les notifications",
+            watchEnabled: "Notifications Google Calendar activées."
         },
         clientDatabase: {
             title: "Base clients",
@@ -383,6 +567,13 @@ export const UI_STRINGS = {
             editSaved: "Réservation modifiée.",
             editError: "La réservation n'a pas pu être modifiée.",
             contextMenuLabel: "Actions de la réservation",
+            syncCalendarBooking: "Synchroniser avec Google Calendar",
+            syncCalendarBookingSaved: "Réservation synchronisée avec Google Calendar.",
+            syncCalendarBookingError: "La réservation n'a pas pu être synchronisée avec Google Calendar.",
+            meetingLinks: "Gérer les liens de réunion",
+            meetingLinksPrompt: "Ajoutez un lien HTTPS, ou laissez vide pour supprimer les liens.",
+            meetingLinksSaved: "Liens de réunion enregistrés.",
+            meetingLinksError: "Les liens de réunion n’ont pas pu être enregistrés.",
             returnPending: "Remettre en attente"
         },
         schedule: {
@@ -408,6 +599,36 @@ export const UI_STRINGS = {
             summary: "Vue {days} jours"
         }
     },
+    bookingClaim: {
+        pageTitle: "JR Booking Premium - Lier une réservation",
+        eyebrow: "Liaison sécurisée",
+        title: "Retrouver cette réservation.",
+        intro: "Vérifiez les informations avant de lier la réservation à votre compte.",
+        loading: "Vérification du lien en cours...",
+        signInRequired: "Connectez-vous avec l'adresse vérifiée qui a reçu cette invitation.",
+        signIn: "Se connecter",
+        professional: "Professionnel",
+        date: "Date",
+        time: "Horaire",
+        role: "Rôle du contact",
+        contactRoles: {
+            primary: "Principal",
+            guardian: "Responsable légal",
+            payer: "Payeur",
+            participant: "Participant",
+            assistant: "Assistant"
+        },
+        accept: "Lier à mon compte",
+        reject: "Refuser cette liaison",
+        claimed: "La réservation est maintenant liée à votre compte.",
+        linkedContact: "Votre contact est vérifié. Ce rôle ne donne pas accès à l'historique de réservation.",
+        rejected: "La liaison a été refusée. La réservation n'a pas été supprimée.",
+        reviewRequired: "Un conflit de liaison nécessite une vérification par l'administration.",
+        invalid: "Ce lien est invalide, expiré ou a déjà été utilisé.",
+        verifiedEmailRequired: "Votre adresse courriel doit être vérifiée avant de continuer.",
+        dashboard: "Ouvrir mon tableau de bord",
+        backHome: "Retour à l'accueil"
+    },
     clientDashboard: {
         pageTitle: "JR Booking Premium - Tableau client",
         brandSmall: "Espace client",
@@ -430,7 +651,8 @@ export const UI_STRINGS = {
             settingsLabel: "Options du compte client",
             editProfile: "Modifier mon profil",
             payments: "Paiements",
-            paymentsUnavailable: "Aucun paiement actif pour le moment."
+            paymentsUnavailable: "Aucun paiement actif pour le moment.",
+            historyShare: "Partage d'historique"
         },
         paymentContext: {
             title: "Paiement de la réservation",
@@ -460,12 +682,19 @@ export const UI_STRINGS = {
             movementSurcharge: "Supplément",
             bookingFallbackName: "Professionnel",
             awaitingConfirmation: "Réservation proposée par le professionnel — confirmation requise",
+            sharedHistoryNotice: "Historique partagé (lecture seule)",
             acceptBooking: "Accepter",
             requestChange: "Demander un changement",
             cancelBooking: "Annuler la demande",
             cancelConfirmation: "Confirmer l'annulation de cette demande ?",
+            unlinkClaim: "Délier de mon compte",
+            unlinkClaimConfirmation: "Délier cette réservation de votre compte ? La réservation et son historique seront conservés.",
+            claimUnlinked: "La réservation a été déliée de votre compte.",
             actionSaved: "Réservation mise à jour.",
             actionError: "L'action n'a pas pu être effectuée.",
+            shareHistory: (name) => `Partager l'historique avec ${name}`,
+            shareHistoryConfirmation: (name) => `Demander à partager l'historique de cette réservation avec ${name} ?`,
+            shareHistorySent: "Demande de partage envoyée.",
             statuses: {
                 pending: "En attente",
                 accepted: "Acceptée",
@@ -505,6 +734,44 @@ export const UI_STRINGS = {
             unfavorite: "Retirer des favoris",
             idLabel: "Identifiant :",
             savedEmpty: "Aucun professionnel enregistré pour le moment."
+        },
+        historyShare: {
+            title: "Partage d'historique",
+            close: "Fermer",
+            intro: "Partagez l'historique d'une réservation avec un autre compte client vérifié et lié à la même réservation. Les deux personnes doivent accepter ; l'une ou l'autre peut révoquer à tout moment.",
+            incomingTitle: "Demandes reçues",
+            outgoingTitle: "Demandes envoyées",
+            activeTitle: "Partages actifs",
+            empty: "Aucun partage d'historique pour le moment.",
+            scopeBooking: "Cette réservation",
+            scopeProfessional: "Toutes les réservations avec ce professionnel",
+            scopeAll: "Toutes mes réservations",
+            approve: "Accepter",
+            decline: "Refuser",
+            revoke: "Révoquer",
+            revokeConfirmation: "Révoquer ce partage d'historique ?",
+            approved: "Partage d'historique accepté.",
+            revoked: "Partage d'historique révoqué.",
+            actionError: "L'action n'a pas pu être effectuée."
+        }
+    },
+    shared: {
+        bookingMessages: {
+            title: "Messages de la réservation",
+            close: "Fermer",
+            loading: "Chargement des messages...",
+            empty: "Aucun message pour le moment.",
+            loadError: "Les messages n'ont pas pu être chargés.",
+            bodyLabel: "Votre message",
+            notifyEmail: "Prévenir l'autre personne par email",
+            send: "Envoyer",
+            saved: "Message enregistré.",
+            queued: "Message enregistré et notification mise en file.",
+            emailQueued: "notification email en attente",
+            emailFailed: "notification email en échec",
+            error: "Le message n'a pas pu être envoyé.",
+            you: "Vous",
+            other: "Autre participant"
         }
     },
     publicProfile: {
@@ -522,6 +789,10 @@ export const UI_STRINGS = {
         startLabel: "Début",
         endLabel: "Fin",
         requestTitle: "Demander ce créneau",
+        serviceLabel: "Service ou forfait",
+        noService: "Choisissez un service",
+        intakeTitle: "Avant votre première réservation",
+        intakeRequired: "Répondez à cette question.",
         request: "Envoyer la demande",
         loginRequired: "Connectez-vous ou créez un compte client pour réserver ce créneau.",
         signIn: "Se connecter",
@@ -531,6 +802,12 @@ export const UI_STRINGS = {
         error: "La demande n'a pas pu être envoyée.",
         invalidRange: "La fin doit être après le début.",
         occupied: "Ce créneau est déjà pris.",
+        occupiedSlot: "Occupé",
+        emptySlot: "Libre",
+        unavailableSlot: "Indisponible",
+        waitlist: "Être prévenu si le créneau se libère",
+        waitlistSaved: "Vous serez prévenu si ce créneau se libère.",
+        waitlistError: "L'inscription sur la liste d'attente a échoué.",
         noSchedule: "Aucune disponibilité publique n'est encore affichée."
     }
 };

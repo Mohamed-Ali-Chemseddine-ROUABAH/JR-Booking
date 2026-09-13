@@ -1,11 +1,11 @@
 # Cloud Functions architecture
 
 - **Production file:** `functions/index.js`
-- **Purpose:** Audit logging, Google Calendar OAuth entry points, and privileged account provisioning/lifecycle.
+- **Purpose:** Audit logging, Google Calendar OAuth entry points, privileged account provisioning/lifecycle, and trusted booking contact and identity mutations.
 - **Imports:** `firebase-admin`, `firebase-functions/v2/firestore`, and `firebase-functions/v2/https`.
 - **DOM owner:** None.
-- **Firestore/Storage:** Writes audit entries into `logs`; OAuth state is stored briefly in `calendarOAuthStates`; refresh tokens are stored only in `gcalTokens/{uid}`; provisioning and lifecycle functions update authorized profile records.
-- **Security rules:** `logs` denies all client writes; Admin SDK writes bypass rules as intended.
+- **Firestore/Storage:** Writes audit entries into `logs`; OAuth state is stored briefly in `calendarOAuthStates`; refresh tokens are stored only in `gcalTokens/{uid}`; provisioning and lifecycle functions update authorized profile records. `createProfessionalBooking` and `updateProfessionalBooking` validate professional claims and profile ownership, normalize the complete booking-contact set, and write booking/contact changes transactionally. `issueBookingClaim`, `previewBookingClaim`, `resolveBookingClaim`, `unlinkBookingClaim`, and `resolveBookingClaimConflict` own the single-use verified-email claim lifecycle; `listBookingClaimConflicts` returns administrators only sanitized unresolved review records. Raw tokens appear only in queued links and are stored only as SHA-256 document IDs.
+- **Security rules:** `logs` denies all client writes; Admin SDK writes bypass rules as intended. Direct booking writes cannot add or alter contact, claim, or series identity fields.
 - **Feature flag:** None for audit logging; Calendar OAuth requires `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`, and `GOOGLE_CALENDAR_SCOPES` deployment configuration.
 - **Mockup references:** Calendar OAuth is prototype-only until Phase 14.
-- **Verification:** Phase 3 syntax check and emulator/deploy pipeline check.
+- **Verification:** Phase 3 syntax check and emulator/deploy pipeline check; `tests/booking-contacts-emulator.test.cjs` verifies professional authorization, trusted contact create/update, audit events, and direct-write denial locally. `tests/booking-claims-emulator.test.cjs` verifies issuance, email ownership, attempt revocation, acceptance, rejection, replay, expiry, unlink, conflict review, admin resolution, and claim audit events.

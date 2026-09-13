@@ -27,4 +27,4 @@ Booking update rules are role-scoped: clients may change only their own pending/
 
 ## UI behavior
 
-The professional opens `Base clients` from the settings menu, filters the derived client list, opens one client, and saves overrides. Missing records are treated as empty on first edit. Block/unblock/ban escalation, typed erasure with grace period, action history, and PDF export remain subsequent Phase 11 slices.
+The professional opens `Base clients` from the settings menu, filters the derived client list, opens one client, and saves overrides. Missing records are treated as empty on first edit. Block/unblock/ban escalation, typed erasure with grace period, action history, and local PDF export are available in the client detail flow.

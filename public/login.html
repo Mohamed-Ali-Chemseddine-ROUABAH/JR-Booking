@@ -43,6 +43,7 @@
 
           <div class="auth-actions">
             <button class="btn btn-solid" type="submit" data-ui="submit"></button>
+            <button class="btn btn-ghost" type="button" id="magic-link-button" data-ui="magic-link"></button>
             <button class="btn btn-ghost" type="button" id="reset-button" data-ui="reset-link"></button>
           </div>
 
@@ -57,13 +58,23 @@
 
 <script type="module">
   import { UI_STRINGS } from './js/core/strings-fr.js';
-  import { getAuthErrorMessage, getRoleHomePath, getUserRole, isAuthConfigured, sendResetLink, signInWithEmail } from './js/core/auth-guard.js';
+  import {
+    completeMagicLinkSignIn,
+    getAuthErrorMessage,
+    getRoleHomePath,
+    getUserRole,
+    isAuthConfigured,
+    sendMagicLink,
+    sendResetLink,
+    signInWithEmail
+  } from './js/core/auth-guard.js';
   import { showNotification } from './js/shared/notifications.js';
 
   const strings = UI_STRINGS.auth;
   const form = document.querySelector('#login-form');
   const status = document.querySelector('#auth-status');
   const resetButton = document.querySelector('#reset-button');
+  const magicLinkButton = document.querySelector('#magic-link-button');
   const submitButton = form.querySelector('button[type="submit"]');
 
   document.title = strings.login.pageTitle;
@@ -77,12 +88,25 @@
   document.querySelector('[data-ui="email-label"]').textContent = strings.shared.emailLabel;
   document.querySelector('[data-ui="password-label"]').textContent = strings.shared.passwordLabel;
   document.querySelector('[data-ui="submit"]').textContent = strings.login.submit;
+  document.querySelector('[data-ui="magic-link"]').textContent = strings.login.magicLink;
   document.querySelector('[data-ui="reset-link"]').textContent = strings.login.resetLink;
   document.querySelector('[data-ui="register-client"]').textContent = strings.login.registerClient;
   document.querySelector('[data-ui="back-home"]').textContent = strings.shared.backHome;
 
   if (!isAuthConfigured()) {
     status.textContent = strings.shared.firebasePending;
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const isMagicLinkFlow = urlParams.get('mode') === 'email-link' || urlParams.has('oobCode');
+  const isOobLinkFlow = urlParams.has('oobCode');
+  if (isMagicLinkFlow && !isOobLinkFlow) {
+    status.textContent = strings.login.magicLinkReady;
+  }
+
+  if (isOobLinkFlow) {
+    magicLinkButton.textContent = 'Valider le lien de connexion';
+    status.textContent = strings.login.magicLinkReady;
   }
 
   form.addEventListener('submit', async (event) => {
@@ -111,6 +135,49 @@
       showNotification(status.textContent, 'error');
     } finally {
       submitButton.disabled = false;
+    }
+  });
+
+  magicLinkButton.addEventListener('click', async () => {
+    const email = form.elements.email.value.trim();
+    if (!email) {
+      status.textContent = isOobLinkFlow ? strings.login.missingEmailForMagicLink : strings.login.missingEmailForReset;
+      return;
+    }
+
+    magicLinkButton.disabled = true;
+    status.textContent = strings.shared.submitting;
+
+    if (isOobLinkFlow) {
+      try {
+        const credential = await completeMagicLinkSignIn({ email, url: window.location.href });
+        const role = await getUserRole(credential.user);
+        const roleLabel = role === 'professional'
+          ? strings.login.professionalRole.toLocaleLowerCase('fr-FR')
+          : strings.login.clientRole.toLocaleLowerCase('fr-FR');
+        status.textContent = strings.login.success(roleLabel);
+        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+        const safeReturnTo = returnTo && /^[-a-z0-9_/]+\.html$/i.test(returnTo) ? returnTo : null;
+        window.location.assign(safeReturnTo || getRoleHomePath(role));
+      } catch (error) {
+        status.textContent = getAuthErrorMessage(error);
+        showNotification(status.textContent, 'error');
+      } finally {
+        magicLinkButton.disabled = false;
+      }
+      return;
+    }
+
+    try {
+      const returnTo = urlParams.get('returnTo');
+      await sendMagicLink({ email, returnTo });
+      status.textContent = strings.login.magicLinkSent;
+      showNotification(status.textContent, 'success');
+    } catch (error) {
+      status.textContent = getAuthErrorMessage(error);
+      showNotification(status.textContent, 'error');
+    } finally {
+      magicLinkButton.disabled = false;
     }
   });
 

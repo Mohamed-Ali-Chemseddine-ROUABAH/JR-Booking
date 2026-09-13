@@ -12,8 +12,8 @@ Provides the Phase 14 Google Calendar configuration surface and the first server
 
 ## UI
 
-The professional opens the panel from the schedule's `Synchronisation calendrier` button. It provides the ghost/solid choice, stores the default reminder interval, and starts OAuth when the account is not connected. The dashboard loads the current seven-day event window and renders imported events as unavailable slots; ghost events remain visually distinct and read-only.
+The professional opens the panel from the schedule's `Synchronisation calendrier` button. It provides the ghost/solid choice, stores the default reminder interval, starts OAuth when the account is not connected, and can register a Google Calendar watch channel after OAuth. The dashboard loads the visible event window and renders imported events as unavailable slots; ghost events remain visually distinct and read-only. Previous, today, next, and 1/3/7-day view changes refetch the corresponding bounded Google Calendar range.
 
 ## Security and scope
 
-Refresh tokens remain server-only in `gcalTokens/{proId}` and are never returned to the browser. Client schedule code receives only event IDs, titles, times, presentation mode, and the optional Google link. Push webhooks, event export/editing, automatic refetch on week navigation, and reminder delivery remain subsequent Phase 14 work.
+Refresh tokens, channel IDs, channel tokens, and resource IDs remain server-only in `gcalTokens/{proId}` and are never returned to the browser. `calendarWebhook` accepts only matching Google channel headers, records a refresh signal, and returns no token data. `syncBookingToGoogleCalendar` creates or updates a Google event for an owned booking and stores only the event ID on the booking; the action is available from the professional booking context menu. `calendarReminderWorker` runs every 15 minutes, uses `calendarSettings.reminderMinutes`, queues one Trigger Email reminder for accepted bookings, and marks `calendarReminderQueuedAt` transactionally to prevent duplicates. Client schedule code receives only event IDs, titles, times, presentation mode, and the optional Google link.

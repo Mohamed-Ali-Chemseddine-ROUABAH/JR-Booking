@@ -13,6 +13,7 @@ Builds print-ready professional dashboard reports without a server or production
 
 - Professional schedule report with date, time, client, status, amount, and summary totals.
 - Statistics activity report with the active date/status filters and booking rows.
+- CRM client-history report with the selected client's identity and filtered booking/status history.
 
 ## Privacy
 
