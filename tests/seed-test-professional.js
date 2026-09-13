@@ -16,8 +16,9 @@ if (!/^localhost:\d+$|^127\.0\.0\.1:\d+$/.test(authHost)) {
     process.exit(1);
 }
 
+const crypto = require("node:crypto");
 const email = process.env.TEST_PRO_EMAIL || "pro.test@jr-booking-premium.local";
-const password = process.env.TEST_PRO_PASSWORD || "ChangeMe123!";
+const password = process.env.TEST_PRO_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
 const displayName = process.env.TEST_PRO_DISPLAY_NAME || "Professionnel Test";
 const baseUrl = `http://${authHost}/identitytoolkit.googleapis.com/v1`;
 

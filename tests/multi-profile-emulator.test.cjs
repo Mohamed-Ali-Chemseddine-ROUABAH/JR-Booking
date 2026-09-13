@@ -18,7 +18,7 @@ test("admin creates an additional owned professional profile", { timeout: 30000 
     const suffix = crypto.randomUUID();
     const adminEmail = `profiles-admin-${suffix}@example.test`;
     const ownerEmail = `profiles-owner-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     let adminUid;
     let ownerUid;
     let profileId;

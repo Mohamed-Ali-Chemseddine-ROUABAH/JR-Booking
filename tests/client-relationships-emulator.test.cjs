@@ -20,9 +20,10 @@ const firestore = app.firestore();
 
 test("mutual history relationship consent flow", { timeout: 45000 }, async () => {
     const unique = crypto.randomUUID();
-    const clientA = await createUser(`history-a-${unique}@example.test`, "ChangeMe123!");
-    const clientB = await createUser(`history-b-${unique}@example.test`, "ChangeMe123!");
-    const outsider = await createUser(`history-outsider-${unique}@example.test`, "ChangeMe123!");
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
+    const clientA = await createUser(`history-a-${unique}@example.test`, password);
+    const clientB = await createUser(`history-b-${unique}@example.test`, password);
+    const outsider = await createUser(`history-outsider-${unique}@example.test`, password);
     const bookingId = `booking-${unique}`;
     const relationshipId = buildKey(clientA.uid, clientB.uid, "booking", bookingId);
 

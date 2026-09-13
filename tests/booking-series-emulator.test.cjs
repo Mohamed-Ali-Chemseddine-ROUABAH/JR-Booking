@@ -21,7 +21,7 @@ test("trusted recurring booking scope flow", { timeout: 45000 }, async () => {
     const email = `series-pro-${suffix}@example.test`;
     const clientEmail = `series-client-${suffix}@example.test`;
     const otherClientEmail = `series-other-client-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     const uid = (await postJson(`http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key`, {
         email,
         password,

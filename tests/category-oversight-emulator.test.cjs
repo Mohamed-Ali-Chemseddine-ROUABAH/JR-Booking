@@ -15,7 +15,7 @@ test("admin category inventory and rename", { timeout: 30000 }, async () => {
     const suffix = crypto.randomUUID();
     const adminEmail = `category-admin-${suffix}@example.test`;
     const userEmail = `category-user-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     const profileId = `category-profile-${suffix}`;
     let adminUid;
     let userUid;

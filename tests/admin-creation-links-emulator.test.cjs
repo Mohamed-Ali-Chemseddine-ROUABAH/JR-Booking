@@ -18,7 +18,7 @@ test("admin creation link lifecycle", { timeout: 30000 }, async () => {
     const suffix = crypto.randomUUID();
     const adminEmail = `creation-admin-${suffix}@example.test`;
     const proEmail = `creation-pro-${suffix}@example.test`;
-    const adminPassword = "ChangeMe123!";
+    const adminPassword = process.env.TEST_ADMIN_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     const proPassword = "ProPass123!";
     let adminUid;
     let linkId;

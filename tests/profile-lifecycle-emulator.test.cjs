@@ -15,7 +15,7 @@ test("admin schedules and cancels profile erasure", { timeout: 30000 }, async ()
     const suffix = crypto.randomUUID();
     const adminEmail = `lifecycle-admin-${suffix}@example.test`;
     const ownerEmail = `lifecycle-owner-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     let adminUid;
     let ownerUid;
     const profileId = `lifecycle-${suffix}`;

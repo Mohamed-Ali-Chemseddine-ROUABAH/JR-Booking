@@ -15,7 +15,7 @@ test("admin redacts public profile content", { timeout: 30000 }, async () => {
     const suffix = crypto.randomUUID();
     const adminEmail = `moderation-admin-${suffix}@example.test`;
     const userEmail = `moderation-user-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     const profileId = `moderation-profile-${suffix}`;
     let adminUid;
     let userUid;

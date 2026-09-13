@@ -15,7 +15,7 @@ test("admin reviews professional applications in bulk", { timeout: 30000 }, asyn
     const suffix = crypto.randomUUID();
     const adminEmail = `bulk-admin-${suffix}@example.test`;
     const clientEmail = `bulk-client-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     let adminUid;
     let clientUid;
     const requestIds = [`bulk-request-a-${suffix}`, `bulk-request-b-${suffix}`];

@@ -101,7 +101,7 @@ test("verified booking claim lifecycle", { timeout: 45000 }, async () => {
 });
 
 async function createUser(email, claims) {
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     const signup = await postJson(`http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key`, { email, password, returnSecureToken: true });
     await app.auth().updateUser(signup.localId, { emailVerified: true });
     await app.auth().setCustomUserClaims(signup.localId, claims);

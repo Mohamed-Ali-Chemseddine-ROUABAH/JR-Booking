@@ -9,9 +9,10 @@ if (!authHost || !/^localhost:\d+$|^127\.0\.0\.1:\d+$/.test(authHost)) {
     process.exit(1);
 }
 
+const crypto = require("node:crypto");
 const admin = require("../functions/node_modules/firebase-admin");
 const email = process.env.TEST_ADMIN_EMAIL || "admin.test@jr-booking-premium.local";
-const password = process.env.TEST_ADMIN_PASSWORD || "ChangeMe123!";
+const password = process.env.TEST_ADMIN_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
 const projectId = process.env.FIREBASE_PROJECT_ID || "jr-booking-premium";
 admin.initializeApp({ projectId });
 

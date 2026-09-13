@@ -18,7 +18,7 @@ test("admin account recovery preserves linked data", { timeout: 30000 }, async (
     const suffix = crypto.randomUUID();
     const adminEmail = `recovery-admin-${suffix}@example.test`;
     const userEmail = `recovery-user-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     let adminUid;
     let userUid;
     try {

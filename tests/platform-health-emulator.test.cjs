@@ -14,7 +14,7 @@ test("admin reads aggregate platform health", { timeout: 30000 }, async () => {
     const suffix = crypto.randomUUID();
     const adminEmail = `health-admin-${suffix}@example.test`;
     const clientEmail = `health-client-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     let adminUid;
     let clientUid;
     try {

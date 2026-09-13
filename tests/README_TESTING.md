@@ -13,7 +13,7 @@ $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"; $env:FIREBASE_PROJECT_ID = 
 Default emulator credentials:
 
 - Email: `pro.test@jr-booking-premium.local`
-- Password: `ChangeMe123!`
+- Password: set `TEST_PRO_PASSWORD` yourself, or use the randomly generated password printed by the seed helper.
 
 ## Phase 13 test admin
 
@@ -26,7 +26,7 @@ $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"; node tests\seed-test-admin.
 Default admin credentials:
 
 - Email: `admin.test@jr-booking-premium.local`
-- Password: `ChangeMe123!`
+- Password: set `TEST_ADMIN_PASSWORD` yourself, or use the randomly generated password printed by the seed helper.
 
 The helper sets `admin=true` and `role=admin` only in the local Auth emulator.
 

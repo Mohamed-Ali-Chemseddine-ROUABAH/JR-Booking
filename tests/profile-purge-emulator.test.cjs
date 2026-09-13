@@ -15,7 +15,7 @@ test("admin purges only an expired limbo profile", { timeout: 30000 }, async () 
     const suffix = crypto.randomUUID();
     const adminEmail = `purge-admin-${suffix}@example.test`;
     const ownerEmail = `purge-owner-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     const profileId = `purge-profile-${suffix}`;
     let adminUid;
     let ownerUid;

@@ -16,7 +16,7 @@ test("admin queues a bounded client broadcast", { timeout: 30000 }, async () => 
     const adminEmail = `broadcast-admin-${suffix}@example.test`;
     const proEmail = `broadcast-pro-${suffix}@example.test`;
     const clientEmail = `broadcast-client-${suffix}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     let adminUid;
     let proUid;
     let clientUid;

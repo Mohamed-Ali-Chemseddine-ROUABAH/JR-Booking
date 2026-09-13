@@ -22,7 +22,7 @@ const firestore = app.firestore();
 test("trusted professional booking contact flow", { timeout: 30000 }, async () => {
     const unique = crypto.randomUUID();
     const email = `pro-${unique}@example.test`;
-    const password = "ChangeMe123!";
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
     let uid;
     let bookingId;
     const directBookingIds = [];
