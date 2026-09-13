@@ -26,17 +26,23 @@ The `paymentInfo` map contains `enabled`, `rib`, `bankTransfer`, `wero`, `weroPh
 
 The `movementInfo` map contains `online`, `movement`, `address`, `addressVisible`, `transportation`, `transportationVisible`, and `zones` (`min`, `max`, and `fee` per distance band). The address remains private; client-side distance and surcharge calculation is added only when client address data is available.
 
+The `quickReplies` array contains up to twenty private reusable message templates with `{label, body}` fields. Templates are read only by profile owners or administrators and are never mirrored to public profiles or client documents.
+
+The `delegates` map is keyed by an existing Auth UID. Each entry contains `email`, `displayName`, `permissions` (`manageBookings` and/or `manageMessages`), `status`, `addedAt`, and `updatedAt`. Delegates are profile-scoped and never become owners; sensitive profile settings and private preparation notes remain owner-only.
+
 ### `clientAccounts/{clientId}`
 
 Client-owned account profile document.
 
 Fields: `displayName`, `address`, `timezone`, `savedProfessionals`. The address is client-private and is used only when a booking involves professional movement. `savedProfessionals` is an array of `{proId, displayName, idTag}` entries the client chose to favorite (heart toggle) from the dashboard professional search; it uses the same owner-only read/update rule already in place and needed no `firestore.rules` change.
 
-### `bookings/{bookingId}` and `bookings/{bookingId}/messages/{messageId}`
+### `bookings/{bookingId}`, `bookings/{bookingId}/messages/{messageId}`, and `bookings/{bookingId}/private/professional`
 
 Reservation documents and reservation-linked messages. Access is limited to the involved client, professional, or admin. Client-created bookings may contain the client's own `clientAddress` and an optional immutable-at-creation `service` snapshot with `name`, `durationMinutes`, and `price`; once the professional calculates movement, `movementQuote` contains only `distanceKm`, `travelMinutes`, the matched `zone`, and `surcharge`, never the professional's private origin or full movement settings. Active bookings may also contain a sanitized `paymentContext` with enabled payment options, `durationHours`, `ratePerUnit`, `surcharge`, and calculated `balance`; it never grants clients access to `proProfiles`.
 
 Message fields: `senderUid`, `senderRole`, `body`, `createdAt`, `notificationStatus` (`pending`, `not-requested`, `queued`, `sent`, `failed`), and optional `mailId`. Messages are created through the trusted `sendBookingMessage` callable; the browser can only read an authorized thread. The message is saved independently from email delivery.
+
+Private preparation notes are never fields on `bookings/{bookingId}`. The owner/admin-only `bookings/{bookingId}/private/professional` document stores `prepNotes` (maximum 2000 characters), `updatedAt`, and `updatedBy`. Trusted callable functions read and update it; client and delegate reads are denied.
 
 Booking identity fields planned for the reservation-linking slice: `clientId` (nullable until the primary contact claims the booking), `serviceRecipientUid` (nullable until the participant claims it), and `contacts`. `contacts` is capped at ten entries, contains exactly one active primary contact, and uses `{contactId, email, role, notify, verifiedAt, linkedUid}`. `role` is one of `primary`, `guardian`, `payer`, `participant`, or `assistant`; email is normalized lowercase; `notify` is Boolean; and the server alone sets the nullable `verifiedAt` and `linkedUid`. Duplicate normalized email/role pairs are rejected. Contact emails are notification routes, not account ownership.
 
@@ -54,7 +60,7 @@ New-field rule allow-list for this slice:
 
 ### `waitlistEntries/{proId}/entries/{entryId}`
 
-Trusted waitlist enrollment records a client's requested professional/time window with `clientId`, `proId`, `start`, `end`, `status`, `notified`, and `createdAt`. Clients join through `joinBookingWaitlist`; direct browser writes are denied. The owning professional or the client can read an entry, while notification processing remains server-side.
+Trusted waitlist enrollment records a client's requested professional/time window with `clientId`, `proId`, `start`, `end`, `status`, `notified`, `createdAt`, and optional `notifiedAt`. Clients join through `joinBookingWaitlist`; direct browser writes are denied. The owning professional or the client can read an entry, while notification processing remains server-side.
 
 ### `clientRelationships/{relationshipId}`
 
@@ -83,6 +89,14 @@ Trigger Email extension queue. Only trusted server-side functions create system 
 Mail fields are normalized by the server: `to`, `message.subject`, `message.text`, `message.html`, `templateId`, `category`, `sourceId`, `createdAt`, and safe delivery metadata written by the extension. The queue never stores SMTP credentials, Gmail passwords, OAuth refresh tokens, or arbitrary user-supplied sender addresses.
 
 For the email-first professional application, server-side Functions create these documents after the application or approval transaction succeeds. The document must contain the recipient, a subject, and the provider-specific message fields configured by the installed Trigger Email extension. The application UI reports `email queued` only after this write succeeds; actual delivery is verified separately by the extension's processed status and a real test mailbox.
+
+### `notifications/{uid}/items/{notificationId}`
+
+Server-created in-app notifications for an authenticated user. Booking creation/status changes, booking messages, and waitlist releases create documents with `type`, `bookingId`, optional `messageId`, `proId`, `title`, `body`, `createdAt`, and nullable `readAt`. Notification payloads do not contain `clientId` or client contact data. Notifications for an additional professional profile are written to its owner Auth UIDs and to active delegates holding the relevant permission, never to a non-auth profile ID. The recipient may read and update only `readAt`; clients cannot create or delete notifications.
+
+### `proClientRecords/{proId}_{clientId}`
+
+Private professional CRM record for one client relationship. In addition to lifecycle and relationship fields, `tags` contains up to twenty profile-scoped strings. Tags are never copied to public profiles or client accounts.
 
 ### `professionalRequests/{applicationId}`
 

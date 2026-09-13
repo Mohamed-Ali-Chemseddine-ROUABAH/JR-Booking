@@ -3,7 +3,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 const strings = UI_STRINGS.proDashboard.sidebar;
 let escapeHandler;
 
-export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit, onSyncCalendar, onMeetingLinks }) {
+export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit, onSyncCalendar, onMeetingLinks, onPrepNotes }) {
     closeBookingContextMenu();
     const menu = document.createElement("div");
     menu.className = "booking-context-menu glass-ghost";
@@ -13,14 +13,15 @@ export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit, 
     menu.style.left = `${Math.min(x, window.innerWidth - 230)}px`;
     menu.style.top = `${Math.min(y, window.innerHeight - 220)}px`;
     menu.innerHTML = [
-        booking.status === "pending" ? menuButton("accepted", strings.acceptBooking) : "",
-        booking.status === "pending" ? menuButton("rejected", strings.rejectBooking) : "",
-        booking.status === "accepted" ? menuButton("done", strings.completeBooking) : "",
-        booking.status === "accepted" ? menuButton("no-show", strings.noShowBooking) : "",
-        menuButton("edit", strings.editBooking),
-        menuButton("sync-calendar", strings.syncCalendarBooking),
-        menuButton("meeting-links", strings.meetingLinks),
-        booking.status !== "pending" ? menuButton("pending", strings.returnPending) : ""
+        onStatusChange && booking.status === "pending" ? menuButton("accepted", strings.acceptBooking) : "",
+        onStatusChange && booking.status === "pending" ? menuButton("rejected", strings.rejectBooking) : "",
+        onStatusChange && booking.status === "accepted" ? menuButton("done", strings.completeBooking) : "",
+        onStatusChange && booking.status === "accepted" ? menuButton("no-show", strings.noShowBooking) : "",
+        onEdit ? menuButton("edit", strings.editBooking) : "",
+        onSyncCalendar ? menuButton("sync-calendar", strings.syncCalendarBooking) : "",
+        onMeetingLinks ? menuButton("meeting-links", strings.meetingLinks) : "",
+        onPrepNotes ? menuButton("prep-notes", strings.prepNotes) : "",
+        onStatusChange && booking.status !== "pending" ? menuButton("pending", strings.returnPending) : ""
     ].join("");
     document.body.append(menu);
     menu.querySelectorAll("[data-context-action]").forEach((button) => {
@@ -32,6 +33,8 @@ export function openBookingContextMenu({ booking, x, y, onStatusChange, onEdit, 
                 await onSyncCalendar?.(booking);
             } else if (button.dataset.contextAction === "meeting-links") {
                 await onMeetingLinks?.(booking);
+            } else if (button.dataset.contextAction === "prep-notes") {
+                await onPrepNotes?.(booking);
             } else {
                 await onStatusChange?.(booking.id, button.dataset.contextAction, booking.status);
             }

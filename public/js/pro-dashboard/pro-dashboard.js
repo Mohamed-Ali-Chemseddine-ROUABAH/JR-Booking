@@ -3,7 +3,7 @@ import { collection, doc, getDocs, getDoc, query, where } from "https://www.gsta
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { showNotification } from "../shared/notifications.js?v=undo-20260907";
-import { initializeSchedule } from "../schedule/schedule-render.js?v=calendar-sync-20260910b";
+import { initializeSchedule } from "../schedule/schedule-render.js?v=ui-controls-20260913";
 import { initializeSidebarFeed } from "../sidebar/sidebar-feed.js";
 import { initializeProNavbar } from "./navbar-pro.js?v=crm-20260909";
 import { initializeWorkingHours } from "./working-hours.js";
@@ -12,6 +12,9 @@ import { initializePaymentInfo } from "./payment-info.js";
 import { initializeMovementInfo } from "./movement-info.js";
 import { initializeServicesPackages } from "./services-packages.js";
 import { initializeIntakeQuestionnaire } from "./intake-questionnaire.js";
+import { initializeQuickReplies } from "./quick-replies.js";
+import { initializeDelegatedAccess } from "./delegated-access.js";
+import { initializeDirectLinks } from "./direct-links.js";
 import { initializeClientDatabase } from "./client-database.js?v=crm-erasure-20260909";
 import { initializeStatistics } from "./statistics.js?v=stats-20260909";
 import { initializeBookingCreation } from "./booking-creation.js";
@@ -23,7 +26,10 @@ import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
 import { initializeCalendarSync, loadGoogleCalendarEvents } from "../schedule/schedule-gcal-sync.js?v=calendar-sync-20260910b";
 import { buildProfessionalScheduleReport, openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
+import { getIdTokenResult } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeBookingMessages } from "../shared/booking-messages.js";
+import { initializeBookingPrepNotes } from "./booking-prep-notes.js";
+import { initializeTodayView, initializeNotificationCenter } from "./today-view.js";
 
 const strings = UI_STRINGS.proDashboard;
 const layout = document.querySelector("[data-dashboard-layout]");
@@ -35,15 +41,28 @@ status.textContent = strings.loading;
 requireAuth({
     allowedRoles: ["professional"],
     onAuthorized: async ({ user }) => {
-        const profiles = await loadOwnedProfiles(user.uid);
+        const tokenResult = await getIdTokenResult(user, true);
+        const delegatedProfileIds = tokenResult.claims.delegate === true
+            ? (Array.isArray(tokenResult.claims.delegateProfileIds) ? tokenResult.claims.delegateProfileIds.map(String) : [String(tokenResult.claims.delegateProfileId || "")]).filter(Boolean)
+            : [];
+        const ownedProfiles = await loadOwnedProfiles(user.uid, tokenResult.claims.professional === true);
+        const ownedProfileIds = new Set(ownedProfiles.map((profile) => profile.id));
+        const delegatedProfiles = delegatedProfileIds.filter((id) => !ownedProfileIds.has(id)).map((id) => ({ id, displayName: `Profil délégué · ${id.slice(0, 8)}` }));
+        const profiles = [...ownedProfiles, ...delegatedProfiles];
         const storedProfileId = sessionStorage.getItem("jr-active-professional-profile");
-        const activeProfileId = profiles.some((profile) => profile.id === storedProfileId) ? storedProfileId : user.uid;
+        const activeProfileId = profiles.some((profile) => profile.id === storedProfileId) ? storedProfileId : (profiles[0]?.id || user.uid);
+        const isDelegate = delegatedProfiles.some((profile) => profile.id === activeProfileId);
         const profileUser = { ...user, uid: activeProfileId };
+        let delegateAccess = isDelegate ? await loadDelegatedBookings(activeProfileId) : null;
+        const canManageBookings = !isDelegate || delegateAccess.permissions.includes("manageBookings");
+        const canManageMessages = !isDelegate || delegateAccess.permissions.includes("manageMessages");
         let dashboardBookings = [];
         initializeProNavbar(document.querySelector("[data-pro-navbar]"), {
             user: profileUser,
             profiles,
             activeProfileId,
+            canManageSettings: !isDelegate,
+            onNotifications: () => initializeNotificationCenter(document.body, { bookings: dashboardBookings, userId: user.uid, onSelectBooking: (bookingId) => sidebar?.selectBooking(bookingId) }),
             onProfileChange: (profileId) => {
                 sessionStorage.setItem("jr-active-professional-profile", profileId);
                 window.location.reload();
@@ -55,25 +74,32 @@ requireAuth({
             onMovementInfo: () => initializeMovementInfo({ user: profileUser }),
             onServices: () => initializeServicesPackages({ user: profileUser }),
             onIntake: () => initializeIntakeQuestionnaire({ user: profileUser }),
+            onQuickReplies: () => initializeQuickReplies({ user: profileUser }),
+            onDelegatedAccess: () => initializeDelegatedAccess({ user: profileUser }),
+            onDirectLinks: () => initializeDirectLinks({ user: profileUser }),
             onPersonalInfo: () => initializePersonalInfo({ user: profileUser }),
             onClientDatabase: () => initializeClientDatabase({ user: profileUser }),
             onStatistics: () => initializeStatistics({ user: profileUser })
         });
         const workingHours = await loadWorkingHours(activeProfileId);
-        const bookings = await loadBookings(activeProfileId);
+        const bookings = delegateAccess?.bookings || await loadBookings(activeProfileId);
         const calendarEvents = await loadCalendarEvents();
         dashboardBookings = bookings;
+        initializeTodayView(document.querySelector("[data-today-root]"), bookings);
         let sidebar;
+        document.querySelector("[data-today-root]").addEventListener("today-booking-selected", (event) => sidebar?.selectBooking(event.detail));
         let activeFilter = "pending";
         const renderDashboard = (currentBookings) => {
             sidebar = initializeSidebarFeed(document.querySelector("[data-sidebar-root]"), {
                 bookings: currentBookings,
                 onToggleSidebar: collapseSidebar,
-                onStatusChange: handleBookingStatus,
+                onStatusChange: canManageBookings ? handleBookingStatus : undefined,
+                onBatchStatus: canManageBookings ? handleBatchStatus : undefined,
                 initialFilter: activeFilter,
                 onFilterChange: (filter) => { activeFilter = filter; },
-                onMessages: (booking) => initializeBookingMessages({ booking, userId: profileUser.uid, userRole: "professional" }),
-                onEditBooking: (booking) => initializeBookingEdit({ booking, onSaved: refreshDashboard })
+                onMessages: canManageMessages ? (booking) => initializeBookingMessages({ booking, userId: user.uid, profileId: activeProfileId, userRole: "professional" }) : undefined,
+                onPrepNotes: isDelegate ? undefined : (booking) => initializeBookingPrepNotes({ booking, onSaved: refreshDashboard }),
+                onEditBooking: canManageBookings ? (booking) => initializeBookingEdit({ booking, onSaved: refreshDashboard }) : undefined
             });
             initializeSchedule(document.querySelector("[data-schedule-root]"), {
                 daysToShow: workingHours.viewDays,
@@ -88,27 +114,32 @@ requireAuth({
                         booking,
                         x,
                         y,
-                        onStatusChange: handleBookingStatus,
-                        onEdit: (selectedBooking) => initializeBookingEdit({ booking: selectedBooking, onSaved: refreshDashboard })
+                        onStatusChange: canManageBookings ? handleBookingStatus : undefined,
+                        onEdit: canManageBookings ? (selectedBooking) => initializeBookingEdit({ booking: selectedBooking, onSaved: refreshDashboard }) : undefined,
+                        onPrepNotes: isDelegate ? undefined : (selectedBooking) => initializeBookingPrepNotes({ booking: selectedBooking, onSaved: refreshDashboard })
                     });
                 },
                 onCalendarSync: () => initializeCalendarSync({ user: profileUser }),
                 onCalendarRangeChange: ({ from, to }) => loadCalendarEvents({ from, to }),
-                onSyncCalendar: syncBookingToCalendar,
-                onMeetingLinks: manageMeetingLinks,
-                onCreateBooking: (details) => initializeBookingCreation({ user: profileUser, details, onSaved: refreshDashboard })
+                onSyncCalendar: canManageBookings ? syncBookingToCalendar : undefined,
+                onMeetingLinks: canManageBookings ? manageMeetingLinks : undefined,
+                onPrepNotes: isDelegate ? undefined : (booking) => initializeBookingPrepNotes({ booking, onSaved: refreshDashboard }),
+                onCreateBooking: isDelegate ? undefined : (details) => initializeBookingCreation({ user: profileUser, details, onSaved: refreshDashboard })
             });
         };
         const refreshDashboard = async () => {
-            const updatedBookings = await loadBookings(activeProfileId);
+            if (isDelegate) delegateAccess = await loadDelegatedBookings(activeProfileId);
+            const updatedBookings = delegateAccess?.bookings || await loadBookings(activeProfileId);
             dashboardBookings = updatedBookings;
+            initializeTodayView(document.querySelector("[data-today-root]"), updatedBookings);
             renderDashboard(updatedBookings);
         };
-        const handleBookingStatus = async (bookingId, nextStatus, previousStatus) => {
+        const handleBookingStatus = async (bookingId, nextStatus, previousStatus, { silent = false } = {}) => {
             if (nextStatus === "rejected" && !window.confirm(strings.sidebar.rejectConfirmation)) return;
             try {
                 await updateBookingStatus(bookingId, nextStatus);
                 await refreshDashboard();
+                if (silent) return;
                 showNotification(strings.sidebar.actionSaved, "success", {
                     label: strings.sidebar.undoAction,
                     onClick: async () => {
@@ -121,6 +152,16 @@ requireAuth({
                         }
                     }
                 });
+            } catch {
+                showNotification(strings.sidebar.actionError, "error");
+            }
+        };
+
+        const handleBatchStatus = async (selectedBookings, nextStatus) => {
+            try {
+                await httpsCallable(getFirebaseFunctions(), "batchUpdateBookingStatus")({ bookingIds: selectedBookings.map((booking) => booking.id), status: nextStatus });
+                await refreshDashboard();
+                showNotification(strings.sidebar.batchSaved, "success");
             } catch {
                 showNotification(strings.sidebar.actionError, "error");
             }
@@ -139,14 +180,14 @@ requireAuth({
     }
 });
 
-async function loadOwnedProfiles(authUid) {
+async function loadOwnedProfiles(authUid, includePrimaryFallback = true) {
     try {
         const snapshot = await getDocs(query(collection(getFirestoreDb(), "proProfiles"), where("owners", "array-contains", authUid)));
         const profiles = snapshot.docs.map((item) => ({ id: item.id, ...item.data(), displayName: item.data().personalInfo?.displayName || item.data().displayName || item.id }));
-        if (!profiles.some((profile) => profile.id === authUid)) profiles.unshift({ id: authUid, displayName: "Profil principal" });
+        if (includePrimaryFallback && !profiles.some((profile) => profile.id === authUid)) profiles.unshift({ id: authUid, displayName: "Profil principal" });
         return profiles;
     } catch {
-        return [{ id: authUid, displayName: "Profil principal" }];
+        return includePrimaryFallback ? [{ id: authUid, displayName: "Profil principal" }] : [];
     }
 }
 
@@ -262,4 +303,9 @@ async function manageMeetingLinks(booking) {
         await httpsCallable(getFirebaseFunctions(), "updateBookingMeetingLinks")({ bookingId: booking.id, links });
         showNotification(strings.sidebar.meetingLinksSaved, "success");
     } catch { showNotification(strings.sidebar.meetingLinksError, "error"); }
+}
+
+async function loadDelegatedBookings(profileId) {
+    const result = await httpsCallable(getFirebaseFunctions(), "listDelegatedBookings")({ profileId });
+    return result.data;
 }

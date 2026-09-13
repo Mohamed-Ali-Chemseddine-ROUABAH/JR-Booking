@@ -95,3 +95,23 @@ $env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"; $env:FIRESTORE_EMULATOR_HOS
 ```
 
 The integration test uses the Firestore REST API directly (not the Admin SDK, which bypasses rules) with real client ID tokens. It covers pre-consent read denial, rejection of self-targeting and UID-forging create attempts, denial of an outsider's read/act attempts, pending-state read denial, recipient-only approval, active-state read access, rejection of scope tampering, requester/recipient-only revocation with honest actor attribution, and post-revocation read denial, then removes its emulator-only fixtures.
+
+## Professional dashboard interaction tests
+
+Run the complete suite serially when sharing one emulator set; parallel execution can cause unrelated test timeouts:
+
+```powershell
+$env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"; $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"; $env:FUNCTIONS_EMULATOR_HOST = "127.0.0.1:5001"; $env:FIREBASE_STORAGE_EMULATOR_HOST = "127.0.0.1:9199"; $env:FIREBASE_PROJECT_ID = "jr-booking-premium"; $testFiles = Get-ChildItem tests -File | Where-Object { $_.Name -match '\.test\.(cjs|mjs|js)$' } | ForEach-Object { $_.FullName }; node --test --test-concurrency=1 $testFiles
+```
+
+Run the dependency-free Today widget interaction tests:
+
+```powershell
+node --test tests\today-widget-toggle.test.mjs
+```
+
+With Auth, Firestore, and Functions emulators running, verify delegated projections, independent booking/message permissions, private preparation-note isolation, atomic batch updates, multi-profile removal, and profile-aware notification recipients:
+
+```powershell
+$env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"; $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"; $env:FUNCTIONS_EMULATOR_HOST = "127.0.0.1:5001"; $env:FIREBASE_PROJECT_ID = "jr-booking-premium"; node --test tests\delegated-access-emulator.test.cjs
+```

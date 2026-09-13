@@ -6,6 +6,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.publicProfile;
 const profileId = new URLSearchParams(window.location.search).get("pro");
+const requestedService = new URLSearchParams(window.location.search).get("service");
 const status = document.querySelector("[data-profile-status]");
 const content = document.querySelector("[data-profile-content]");
 const form = document.querySelector("[data-profile-form]");
@@ -64,6 +65,7 @@ function renderProfile() {
     document.querySelector("[data-profile-waitlist]").textContent = strings.waitlist;
     const services = document.querySelector("[data-profile-services]");
     services.replaceChildren(new Option(strings.noService, ""), ...(profile.services || []).map((service, index) => new Option(`${service.name} · ${service.durationMinutes || service.duration} min · ${Number(service.price).toFixed(2)} €`, String(index))));
+    if (requestedService !== null && profile.services?.[Number(requestedService)]) services.value = requestedService;
     document.querySelector("[data-profile-login-required]").textContent = strings.loginRequired;
     document.querySelector("[data-profile-sign-in]").textContent = strings.signIn;
     document.querySelector("[data-profile-register]").textContent = strings.register;

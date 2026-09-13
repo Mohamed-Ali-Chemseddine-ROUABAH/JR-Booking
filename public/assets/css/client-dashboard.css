@@ -1,22 +1,27 @@
 .client-dashboard-screen {
   min-height: 100vh;
-  padding: 28px 0 44px;
+  padding: 0 0 44px;
 }
 
 .client-dashboard-wrap {
   width: min(1180px, calc(100vw - 40px));
   margin: 0 auto;
+  padding-top: 16px;
 }
 
 .pro-topbar {
   position: relative;
   z-index: 50;
   min-height: 74px;
-  padding: 16px 18px;
+  width: 100%;
+  padding: 16px max(18px, calc((100vw - 1180px) / 2 + 18px));
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
 }
 
 .pro-brand,
@@ -69,6 +74,10 @@
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+.navbar-icon-action { width: 42px; height: 42px; padding: 9px; }
+.navbar-icon-action svg { display: block; width: 22px; height: 22px; }
+.navbar-logout-action { color: var(--ink-300); }
 
 .pro-account {
   min-width: 0;

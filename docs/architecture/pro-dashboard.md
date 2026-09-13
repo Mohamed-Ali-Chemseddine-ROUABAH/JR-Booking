@@ -3,7 +3,15 @@
 - **Production file:** `public/pro-dashboard.html`
 - **Purpose:** Phase 4 professional dashboard shell with protected navbar, responsive sidebar feed stub, and seven-day schedule grid stub.
 - **Imports:** `public/js/pro-dashboard/pro-dashboard.js`, `public/js/pro-dashboard/navbar-pro.js`, `public/js/sidebar/sidebar-feed.js`, `public/js/schedule/schedule-render.js`, `public/js/core/auth-guard.js`, `public/js/core/strings-fr.js`.
-- **Settings menu wiring:** `navbar-pro.js` opens `working-hours.js` for the first settings item and `personal-info.js` for the fifth ("Informations personnelles"), matching the fixed order of `UI_STRINGS.proDashboard.navbar.settingsItems`; the remaining items are not yet wired to a module.
+- **Settings menu wiring:** `navbar-pro.js` opens the settings modules by the fixed order of `UI_STRINGS.proDashboard.navbar.settingsItems`, including `quick-replies.js` for reusable booking-message templates.
+- **Booking tools:** `booking-prep-notes.js` opens from the sidebar and booking context menu, and reads/writes the owner-only `bookings/{bookingId}/private/professional` document through trusted Functions.
+- **Delegated access:** `delegated-access.js` manages existing Auth accounts through trusted Functions; delegated users load server-sanitized bookings for any assigned profile, see only actions granted by `manageBookings` or `manageMessages`, and never receive owner settings or private client/payment/note fields.
+- **Today and notifications:** `today-view.js` projects the active profile's loaded booking DTOs into today's next appointment, daily lineup, and persistent booking/message/waitlist notification panel. Profile notifications resolve to owner/delegate Auth UIDs.
+- **Unified communication:** `client-communication-history.js` opens a chronological, read-only message timeline across the active professional's bookings for one CRM client.
+- **Batch booking actions:** `sidebar/batch-actions.js` adds pending-booking selection and grouped accept/reject actions; `batchUpdateBookingStatus` validates every selected booking before committing all status changes atomically.
+- **Direct sharing:** `direct-links.js` generates public profile/service links and QR presentation without exposing private profile or booking data.
+- **CRM tags:** `client-database.js` stores up to twenty profile-scoped client tags in `proClientRecords.tags`.
+- **Mobile navigation:** `navbar-pro.js` collapses the complete professional action group behind one accessible menu trigger below the responsive breakpoint.
 - **DOM owner:** The page owns only the top-level roots; each module initializes its own root with explicit setup functions.
 - **Firestore/Storage:** The dashboard discovers `proProfiles` documents whose `owners` array contains the authenticated professional UID. When more than one profile exists, the navbar selector stores the selected profile ID in same-origin session storage and reloads the dashboard; schedule, booking, settings, CRM, and statistics modules receive the selected profile ID as their profile context while Firebase Auth remains the original owner identity.
 - **Multi-profile provisioning:** Administrators create additional owned profile documents through `createAdditionalProfessionalProfile`, which writes the private profile, public mirror, and audit event without creating a second Auth account.

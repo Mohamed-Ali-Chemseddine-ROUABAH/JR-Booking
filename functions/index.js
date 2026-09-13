@@ -60,6 +60,62 @@ exports.writeAuditLog = onDocumentWritten("{collectionId}/{documentId}", async (
     });
 });
 
+exports.createBookingNotification = onDocumentWritten("bookings/{bookingId}", async (event) => {
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!after) return;
+    const bookingId = event.params.bookingId;
+    const changes = event.data.before.exists ? event.data.after.data().status !== before.status : true;
+    if (!changes) return;
+    const type = !before ? "booking-created" : `booking-${after.status || "updated"}`;
+    const professionalRecipients = await resolveProfessionalRecipientUids(after.proId, "manageBookings");
+    const recipients = [...new Set([...professionalRecipients, after.clientId].filter(Boolean))];
+    await Promise.all(recipients.map((uid) => admin.firestore().collection("notifications").doc(uid).collection("items").doc(`${bookingId}-${type}`).set({
+        type,
+        bookingId,
+        proId: after.proId || null,
+        status: after.status || null,
+        title: type === "booking-created" ? "Nouvelle réservation" : "Réservation mise à jour",
+        body: `La réservation ${bookingId} nécessite votre attention.`,
+        createdAt: new Date(),
+        readAt: null
+    }, { merge: true })));
+});
+
+exports.createMessageNotification = onDocumentWritten("bookings/{bookingId}/messages/{messageId}", async (event) => {
+    if (event.data.before.exists || !event.data.after.exists) return;
+    const message = event.data.after.data();
+    const bookingSnapshot = await admin.firestore().collection("bookings").doc(event.params.bookingId).get();
+    if (!bookingSnapshot.exists) return;
+    const booking = bookingSnapshot.data();
+    const recipients = message.senderRole === "professional"
+        ? [booking.clientId].filter(Boolean)
+        : await resolveProfessionalRecipientUids(booking.proId, "manageMessages");
+    await Promise.all([...new Set(recipients)].map((recipientUid) => admin.firestore().collection("notifications").doc(recipientUid).collection("items").doc(`message-${event.params.bookingId}-${event.params.messageId}`).set({
+        type: "booking-message",
+        bookingId: event.params.bookingId,
+        messageId: event.params.messageId,
+        proId: booking.proId || null,
+        title: "Nouveau message",
+        body: String(message.body || "").slice(0, 160),
+        createdAt: new Date(),
+        readAt: null
+    })));
+});
+
+exports.notifyWaitlistOnBookingRelease = onDocumentWritten("bookings/{bookingId}", async (event) => {
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!before || !after || !["rejected", "cancelled"].includes(after.status) || before.status === after.status) return;
+    const entries = await admin.firestore().collection("waitlistEntries").doc(after.proId).collection("entries").where("start", "==", after.start).where("end", "==", after.end).where("notified", "==", false).limit(25).get();
+    await Promise.all(entries.docs.map(async (entry) => {
+        const data = entry.data();
+        if (!data.clientId) return;
+        await admin.firestore().collection("notifications").doc(data.clientId).collection("items").doc(`waitlist-${event.params.bookingId}-${entry.id}`).set({ type: "waitlist-slot-opened", bookingId: event.params.bookingId, proId: after.proId, title: "Un créneau s'est libéré", body: "Un créneau correspondant à votre liste d'attente est disponible.", createdAt: new Date(), readAt: null });
+        await entry.ref.update({ notified: true, notifiedAt: new Date() });
+    }));
+});
+
 exports.calendarReminderWorker = onSchedule({ schedule: "every 15 minutes", timeZone: "Europe/Paris" }, async () => {
     const now = new Date();
     const horizon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -323,6 +379,111 @@ exports.createAdditionalProfessionalProfile = onCall(async (request) => {
     return { profileId, ownerUid, displayName };
 });
 
+exports.addProfessionalDelegate = onCall(async (request) => {
+    const actorUid = requireAuthenticatedUid(request);
+    const profileId = String(request.data?.profileId || "").trim();
+    const email = String(request.data?.email || "").trim().toLowerCase();
+    const permissions = Array.isArray(request.data?.permissions) ? request.data.permissions : [];
+    if (!profileId || !/^\S+@\S+\.\S+$/.test(email) || !permissions.length || permissions.some((permission) => !["manageBookings", "manageMessages"].includes(permission))) {
+        throw new HttpsError("invalid-argument", "A profile, email, and valid delegate permissions are required.");
+    }
+    const firestore = admin.firestore();
+    const profileRef = firestore.collection("proProfiles").doc(profileId);
+    const profileSnapshot = await profileRef.get();
+    const profile = profileSnapshot.data() || {};
+    if (!profileSnapshot.exists || !(profileId === actorUid || profile.owners?.includes(actorUid))) throw new HttpsError("permission-denied", "Profile ownership required.");
+    let delegate;
+    try {
+        delegate = await admin.auth().getUserByEmail(email);
+    } catch (error) {
+        if (error.code === "auth/user-not-found") throw new HttpsError("not-found", "Delegate account not found.");
+        throw error;
+    }
+    if (delegate.uid === actorUid || profile.owners?.includes(delegate.uid)) throw new HttpsError("invalid-argument", "An owner cannot be added as a delegate.");
+    const now = new Date();
+    const delegates = { ...(profile.delegates || {}), [delegate.uid]: { email, displayName: delegate.displayName || email, permissions: [...new Set(permissions)], status: "active", addedAt: profile.delegates?.[delegate.uid]?.addedAt || now, updatedAt: now } };
+    await profileRef.update({ delegates });
+    const delegateProfileIds = [...new Set([...(delegate.customClaims?.delegateProfileIds || []), profileId])].slice(0, 20);
+    const claims = { ...(delegate.customClaims || {}), role: "professional", delegate: true, delegateProfileIds };
+    delete claims.delegateProfileId;
+    await admin.auth().setCustomUserClaims(delegate.uid, claims);
+    await firestore.collection("logs").add({ type: "professional-delegate-added", at: now, actorUid, actorRole: "professional", outcome: "success", metadata: { profileId, delegateUid: delegate.uid, permissions: [...new Set(permissions)] } });
+    return { profileId, delegateUid: delegate.uid, permissions: [...new Set(permissions)], status: "active" };
+});
+
+exports.removeProfessionalDelegate = onCall(async (request) => {
+    const actorUid = requireAuthenticatedUid(request);
+    const profileId = String(request.data?.profileId || "").trim();
+    const delegateUid = String(request.data?.delegateUid || "").trim();
+    const firestore = admin.firestore();
+    const profileRef = firestore.collection("proProfiles").doc(profileId);
+    const profileSnapshot = await profileRef.get();
+    const profile = profileSnapshot.data() || {};
+    if (!profileSnapshot.exists || !(profileId === actorUid || profile.owners?.includes(actorUid))) throw new HttpsError("permission-denied", "Profile ownership required.");
+    if (!profile.delegates?.[delegateUid]) throw new HttpsError("not-found", "Delegate not found.");
+    const delegates = { ...(profile.delegates || {}) };
+    delete delegates[delegateUid];
+    await profileRef.update({ delegates });
+    const delegate = await admin.auth().getUser(delegateUid);
+    const claims = { ...(delegate.customClaims || {}) };
+    const delegateProfileIds = (claims.delegateProfileIds || []).filter((assignedProfileId) => assignedProfileId !== profileId);
+    if (delegateProfileIds.length) {
+        claims.delegateProfileIds = delegateProfileIds;
+        claims.delegate = true;
+    } else {
+        delete claims.delegate;
+        delete claims.delegateProfileIds;
+        delete claims.delegateProfileId;
+        if (claims.role === "professional" && !claims.professional) delete claims.role;
+    }
+    await admin.auth().setCustomUserClaims(delegateUid, claims);
+    await firestore.collection("logs").add({ type: "professional-delegate-removed", at: new Date(), actorUid, actorRole: "professional", outcome: "success", metadata: { profileId, delegateUid } });
+    return { profileId, delegateUid, status: "removed" };
+});
+
+exports.listDelegatedBookings = onCall(async (request) => {
+    const actorUid = requireAuthenticatedUid(request);
+    const profileId = String(request.data?.profileId || "").trim();
+    if (!profileId) throw new HttpsError("invalid-argument", "Profile ID is required.");
+    const profileSnapshot = await admin.firestore().collection("proProfiles").doc(profileId).get();
+    const delegate = profileSnapshot.data()?.delegates?.[actorUid];
+    if (!profileSnapshot.exists || delegate?.status !== "active") throw new HttpsError("permission-denied", "Active delegation required.");
+    const permissions = [...new Set((delegate.permissions || []).filter((permission) => ["manageBookings", "manageMessages"].includes(permission)))];
+    if (!permissions.length) throw new HttpsError("permission-denied", "Delegate permission required.");
+    const snapshot = await admin.firestore().collection("bookings").where("proId", "==", profileId).limit(500).get();
+    return {
+        profileId,
+        displayName: profileSnapshot.data()?.personalInfo?.displayName || profileSnapshot.data()?.displayName || "Profil délégué",
+        permissions,
+        bookings: snapshot.docs.map((bookingDocument) => sanitizeDelegatedBooking(bookingDocument.id, bookingDocument.data()))
+    };
+});
+
+exports.batchUpdateBookingStatus = onCall(async (request) => {
+    const actorUid = requireAuthenticatedUid(request);
+    const bookingIds = [...new Set((Array.isArray(request.data?.bookingIds) ? request.data.bookingIds : []).map((id) => String(id).trim()).filter(Boolean))];
+    const status = String(request.data?.status || "").trim();
+    if (!bookingIds.length || bookingIds.length > 50 || !["pending", "accepted", "rejected", "done", "no-show"].includes(status)) {
+        throw new HttpsError("invalid-argument", "Use 1 to 50 booking IDs and a valid status.");
+    }
+    const firestore = admin.firestore();
+    await firestore.runTransaction(async (transaction) => {
+        const snapshots = await Promise.all(bookingIds.map((bookingId) => transaction.get(firestore.collection("bookings").doc(bookingId))));
+        for (const snapshot of snapshots) {
+            if (!snapshot.exists) throw new HttpsError("not-found", "Booking not found.");
+            const booking = snapshot.data();
+            const authorized = request.auth.token.admin
+                || booking.proId === actorUid
+                || await isProfessionalProfileOwner(booking.proId, actorUid)
+                || await hasServerDelegatePermission(booking.proId, actorUid, "manageBookings");
+            if (!authorized) throw new HttpsError("permission-denied", "Booking management permission required.");
+        }
+        const statusEntry = { status, at: new Date().toISOString() };
+        snapshots.forEach((snapshot) => transaction.update(snapshot.ref, { status, statusHistory: FieldValue.arrayUnion(statusEntry) }));
+    });
+    return { updated: bookingIds.length, status };
+});
+
 exports.scheduleProfessionalProfileErasure = onCall(async (request) => {
     if (!request.auth?.token?.admin) throw new HttpsError("permission-denied", "Administrator claim required.");
     const profileId = String(request.data?.profileId || "").trim();
@@ -540,11 +701,41 @@ exports.updateBookingMeetingLinks = onCall(async (request) => {
     if (!bookingId || links.length > 5 || links.some((link) => !link?.label || !/^https:\/\//i.test(link.url || ""))) throw new HttpsError("invalid-argument", "Use up to five HTTPS meeting links.");
     const bookingRef = admin.firestore().collection("bookings").doc(bookingId);
     const bookingSnapshot = await bookingRef.get();
-    if (!bookingSnapshot.exists || bookingSnapshot.data().proId !== actorUid) throw new HttpsError("permission-denied", "Booking ownership required.");
+    if (!bookingSnapshot.exists || !(bookingSnapshot.data().proId === actorUid || await isProfessionalProfileOwner(bookingSnapshot.data().proId, actorUid) || await hasServerDelegatePermission(bookingSnapshot.data().proId, actorUid, "manageBookings"))) throw new HttpsError("permission-denied", "Booking ownership required.");
     const normalized = links.map((link) => ({ label: String(link.label).trim().slice(0, 80), url: String(link.url).trim().slice(0, 500) }));
     await bookingRef.update({ meetingLinks: normalized });
     await admin.firestore().collection("logs").add({ type: "booking-meeting-links-updated", at: new Date(), actorUid, actorRole: "professional", outcome: "success", metadata: { bookingId, linkCount: normalized.length } });
     return { bookingId, links: normalized };
+});
+
+exports.getBookingPrepNotes = onCall(async (request) => {
+    const actorUid = requireAuthenticatedUid(request);
+    const bookingId = String(request.data?.bookingId || "").trim();
+    if (!bookingId) throw new HttpsError("invalid-argument", "Booking ID is required.");
+    const bookingSnapshot = await admin.firestore().collection("bookings").doc(bookingId).get();
+    if (!bookingSnapshot.exists) throw new HttpsError("not-found", "Booking not found.");
+    const booking = bookingSnapshot.data();
+    if (!request.auth.token.admin && booking.proId !== actorUid && !await isProfessionalProfileOwner(booking.proId, actorUid)) {
+        throw new HttpsError("permission-denied", "Profile ownership required.");
+    }
+    const noteSnapshot = await bookingSnapshot.ref.collection("private").doc("professional").get();
+    return { bookingId, prepNotes: String(noteSnapshot.data()?.prepNotes || "") };
+});
+
+exports.updateBookingPrepNotes = onCall(async (request) => {
+    const actorUid = requireAuthenticatedUid(request);
+    const bookingId = String(request.data?.bookingId || "").trim();
+    const prepNotes = String(request.data?.prepNotes || "").trim().slice(0, 2000);
+    if (!bookingId) throw new HttpsError("invalid-argument", "Booking ID is required.");
+    const bookingSnapshot = await admin.firestore().collection("bookings").doc(bookingId).get();
+    if (!bookingSnapshot.exists) throw new HttpsError("not-found", "Booking not found.");
+    const booking = bookingSnapshot.data();
+    if (!request.auth.token.admin && booking.proId !== actorUid && !await isProfessionalProfileOwner(booking.proId, actorUid)) {
+        throw new HttpsError("permission-denied", "Profile ownership required.");
+    }
+    await bookingSnapshot.ref.collection("private").doc("professional").set({ prepNotes, updatedAt: new Date(), updatedBy: actorUid }, { merge: true });
+    await admin.firestore().collection("logs").add({ type: "booking-prep-notes-updated", at: new Date(), actorUid, actorRole: request.auth.token.admin ? "admin" : "professional", outcome: "success", metadata: { bookingId } });
+    return { bookingId, saved: true };
 });
 
 exports.sendBookingMessage = onCall(async (request) => {
@@ -558,7 +749,9 @@ exports.sendBookingMessage = onCall(async (request) => {
     const bookingSnapshot = await firestore.collection("bookings").doc(bookingId).get();
     if (!bookingSnapshot.exists) throw new HttpsError("not-found", "Booking not found.");
     const booking = bookingSnapshot.data();
-    const isProfessional = actorUid === booking.proId || await isProfessionalProfileOwner(booking.proId, actorUid);
+    const isProfessional = actorUid === booking.proId
+        || await isProfessionalProfileOwner(booking.proId, actorUid)
+        || await hasServerDelegatePermission(booking.proId, actorUid, "manageMessages");
     const isClient = actorUid === booking.clientId;
     if (!isProfessional && !isClient) throw new HttpsError("permission-denied", "Booking access required.");
 
@@ -1404,4 +1597,35 @@ function bookingClaimAuditEvent({ type, actorUid, actorRole, bookingId, contactI
         requestId,
         metadata
     };
+}
+
+async function hasServerDelegatePermission(proId, actorUid, permission) {
+    const profile = await admin.firestore().collection("proProfiles").doc(proId).get();
+    const delegate = profile.data()?.delegates?.[actorUid];
+    return profile.exists && delegate?.status === "active" && delegate.permissions?.includes(permission);
+}
+
+function sanitizeDelegatedBooking(id, booking) {
+    const allowedFields = [
+        "proId", "start", "end", "status", "statusHistory", "service", "createdAt", "meetingLinks"
+    ];
+    return allowedFields.reduce((sanitized, field) => {
+        if (booking[field] === undefined) return sanitized;
+        sanitized[field] = field === "service"
+            ? { name: String(booking.service?.name || ""), durationMinutes: Number(booking.service?.durationMinutes) || 0 }
+            : booking[field];
+        return sanitized;
+    }, { id });
+}
+
+async function resolveProfessionalRecipientUids(proId, delegatePermission) {
+    if (!proId) return [];
+    const profile = await admin.firestore().collection("proProfiles").doc(proId).get();
+    if (!profile.exists) return [proId];
+    const data = profile.data();
+    const owners = Array.isArray(data.owners) ? data.owners : [];
+    const delegates = Object.entries(data.delegates || {})
+        .filter(([, delegate]) => delegate?.status === "active" && delegate.permissions?.includes(delegatePermission))
+        .map(([uid]) => uid);
+    return [...new Set([...owners, ...delegates])];
 }

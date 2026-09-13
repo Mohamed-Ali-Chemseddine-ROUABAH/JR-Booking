@@ -16,24 +16,144 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 
 ### Current project checkpoint / Point de reprise actuel
 
-- **Last verified date / Derniere verification:** 2026-09-13.
-- **Implemented and regression-tested / Implemente et teste:** reservation identity roadmap (contacts, claims, series scopes, history sharing, email-link sign-in); legal acceptance; admin command center, creation links, account recovery, multi-profile profiles, lifecycle grace/purge, category oversight, moderation, broadcasts, health aggregates, bulk review; Calendar OAuth/watch/webhook/import/refetch/export/reminders; buffer time; services/packages; client service snapshots; waitlist enrollment; intake questionnaire; public profile vertical schedule redesign; booking-linked messaging with trusted notification queueing.
-- **Automated regression / Regression automatisee:** complete local emulator/unit suite currently passes 33/33; Firestore rules compile; recent frontend modules parse; live Function/Hosting checks have been performed for deployed slices.
-- **Human/browser pending / Humain/navigateur en attente:** full populated-browser sign-off for waitlist click-through, admin bulk/category/moderation/lifecycle/multi-profile controls, public profile booking/intake/waitlist flow, and real Google OAuth/mailbox delivery. These are verification tasks, not reasons to reimplement the completed backend slices.
-- **Next implementation slice / Prochaine tranche:** quick replies, followed by private preparation notes, delegated access, notification center/today view, and unified communication history.
+- **Last verified date / Derniere verification:** 2026-09-14.
+- **Implemented and regression-tested / Implemente et teste:** reservation identity roadmap (contacts, claims, series scopes, history sharing, email-link sign-in); legal acceptance; admin command center, creation links, account recovery, multi-profile profiles, lifecycle grace/purge, category oversight, moderation, broadcasts, health aggregates, bulk review; Calendar OAuth/watch/webhook/import/refetch/export/reminders; buffer time; services/packages; client service snapshots; waitlist enrollment; intake questionnaire; public profile vertical schedule redesign; booking-linked messaging with trusted notification queueing; professional quick replies; profile-scoped delegated access; local Today view and persistent booking/message notification panel; unified client communication history.
+- **Automated regression / Regression automatisee:** complete local emulator/unit suite passes 37/37 serially on 2026-09-14; all 21 changed/untracked JavaScript modules parse; editor diagnostics and `git diff --check` pass. Live Function/Hosting checks apply only to previously deployed slices.
+- **Human/browser pending / Humain/navigateur en attente:** populated-data browser sign-off for waitlist click-through, admin bulk/category/moderation/lifecycle/multi-profile controls, client communication timeline, and delegated sign-in/action restrictions; real Google OAuth and mailbox delivery also remain external gates. Empty-state and settings-surface smoke checks passed locally.
+- **Next implementation slice / Prochaine tranche:** final UI polish, populated-browser verification, and remaining external delivery gates.
+
+### Phase 8 - Professional batch booking actions / Actions groupees des reservations
+
+- **Mockup reference / Reference mockup:** professional sidebar selection, grouped accept/reject controls, and confirmation feedback.
+- **Production owner / Responsable production:** `public/js/sidebar/batch-actions.js`, `public/js/sidebar/sidebar-feed.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/assets/css/pro-dashboard.css`, and existing booking status rules.
+- **Data and rules / Donnees et regles:** pending bookings can be selected individually or with select-all; grouped accept/reject invokes `batchUpdateBookingStatus`, which authorizes every selected booking before committing the complete status set in one Firestore transaction.
+- **Build check / Auto-verification:** focused delegated-access emulator coverage proves an authorized two-booking batch succeeds and a mixed unauthorized batch leaves every booking unchanged; changed modules pass syntax and diff checks.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez la sidebar avec plusieurs demandes en attente et cochez deux reservations. / Open the sidebar with several pending requests and select two bookings.
+  2. Cliquez Accepter la selection puis confirmez. / Click Accept selection and confirm.
+  3. Verifiez que les demandes changent d'etat ensemble, que le compteur revient a zero et que les actions disparaissent du filtre En attente. / Verify statuses change together, the count resets, and actions disappear from Pending.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; toolbar wraps without horizontal overflow.
+- **Privacy check / Verification confidentialite:** only the active professional's authorized pending bookings are selectable; owner/admin/`manageBookings` authorization is checked for every item before any write occurs.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Grouped selection, confirmation, status orchestration, and responsive toolbar implemented; automated validation passed. Browser populated verification remains pending.
+
+### Phase 9 - Direct profile and service links / Liens directs du profil et des services
+
+- **Mockup reference / Reference mockup:** professional shareable booking link/QR action and public profile service selector.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/direct-links.js`, `public/js/pro-dashboard/navbar-pro.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/profile-public/profile-view.js`, and `public/assets/css/pro-dashboard.css`.
+- **Data and rules / Donnees et regles:** links contain only the public profile ID and an optional public service index. The public profile preselects the requested service when valid; no new Firestore write is required.
+- **Build check / Auto-verification:** focused syntax and diagnostics checks plus the complete serial local emulator suite pass 37/37; rules dry-run remains the final deployment gate.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez Reglages puis Liens directs et copiez le lien general. / Open Settings then Direct links and copy the general link.
+  2. Affichez le QR d'un service et ouvrez le lien dans un nouvel onglet. / Show a service QR code and open its link in a new tab.
+  3. Verifiez que le profil public preselectionne le service sans exposer de donnees privees. / Verify the public profile preselects the service without exposing private data.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; link rows, copy controls, and QR remain inside the modal.
+- **Privacy check / Verification confidentialite:** URL payload contains no client, booking, payment, message, or private profile fields.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Direct profile/service links, copy action, QR presentation, and public service preselection implemented; browser verification remains pending.
+
+### Phase 9 / 11 - CRM client tags / Tags clients CRM
+
+- **Mockup reference / Reference mockup:** CRM client organization and profile-scoped client management.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/client-database.js`, `public/js/core/strings-fr.js`, `public/assets/css/pro-dashboard.css`, and `proClientRecords` rules.
+- **Data and rules / Donnees et regles:** a professional can store up to 20 comma-separated tags on `proClientRecords/{proId}_{clientId}`; tags are private to that professional and are not public search categories.
+- **Build check / Auto-verification:** full serial local suite passes 37/37; syntax and rules checks pass.
+- **Human steps / Etapes humaines:** add tags to a client, save, reopen the client, and verify persistence and profile scoping.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Bounded tag editor and persistence implemented; browser verification remains pending.
+
+### Phase 4 / 9 - Responsive professional mobile navigation / Navigation mobile professionnelle
+
+- **Mockup reference / Reference mockup:** mobile navbar with one accessible menu trigger containing account, print, notifications, settings, and logout.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/navbar-pro.js`, `public/assets/css/pro-dashboard.css`, `public/js/core/strings-fr.js`.
+- **Data and rules / Donnees et regles:** UI-only; no new collection or rule.
+- **Build check / Auto-verification:** syntax, diagnostics, full 34-test suite, and diff checks pass.
+- **Human steps / Etapes humaines:** resize to 375 px, open Menu, verify all actions are inside the expanded group, then close it and verify the schedule remains usable.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Accessible mobile trigger and responsive action group implemented; browser verification remains pending.
 - **Resume rule / Regle de reprise:** start from this checkpoint and the first `Partial` row below; do not restart any item listed under Implemented and regression-tested.
+
+### Phase 11 - Unified client communication history / Historique unifie des communications client
+
+- **Mockup reference / Reference mockup:** CRM client history and reservation message-thread surfaces.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/client-communication-history.js`, `public/js/pro-dashboard/client-database.js`, `public/assets/css/pro-dashboard.css`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** the professional CRM reads authorized `bookings/{bookingId}/messages` subcollections for one active-profile client and renders a read-only chronological view. No new collection or write path is introduced.
+- **Build check / Auto-verification:** full serial local emulator suite passes 37/37; new modules pass syntax and diagnostics checks; Firestore rules remain compiled successfully.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez Reglages puis Base clients et ouvrez un client ayant plusieurs reservations. / Open Settings then Client database and open a client with several bookings.
+  2. Cliquez Historique des messages et verifiez l'ordre chronologique, l'auteur et la reservation source. / Click Message history and verify chronological order, author, and source booking.
+  3. Comparez avec le fil d'une reservation et verifiez qu'aucun autre client n'est visible. / Compare it with one booking thread and verify no other client is visible.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; timeline cards wrap without horizontal overflow.
+- **Privacy check / Verification confidentialite:** only the active-profile professional can load the CRM view; the timeline is read-only and does not expose messages to client/public surfaces.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Unified chronological message timeline and polished CRM action added; automated validation passed. Browser verification remains pending.
+
+### Phase 8-11 - Today view and booking notification panel / Vue Aujourd'hui et notifications de reservations
+
+- **Mockup reference / Reference mockup:** professional navbar notification bell and compact Today widget.
+- **Production owner / Responsable production:** `public/pro-dashboard.html`, `public/js/pro-dashboard/today-view.js`, `public/js/pro-dashboard/today-widget-toggle.mjs`, `public/js/pro-dashboard/navbar-pro.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/assets/css/pro-dashboard.css`.
+- **Data and rules / Donnees et regles:** the module projects authorized active-profile booking DTOs into today's appointments and accepted upcoming reminders, while the notification panel reads persistent `notifications/{uid}/items` for booking, message, and waitlist events and falls back to pending/upcoming booking DTOs when unavailable. Richer notification preferences remain future work.
+- **Build check / Auto-verification:** complete serial local emulator suite passes 37/37; dashboard modules pass syntax checks; Firestore rules compile; `git diff --check` passes. Empty Today widget interactions pass 3/3 focused Node tests (`tests/today-widget-toggle.test.mjs`).
+- **Human steps / Etapes humaines:**
+  1. Ouvrez le tableau professionnel avec des reservations aujourd'hui et une demande en attente. / Open the professional dashboard with today's bookings and one pending request.
+  2. Verifiez le prochain rendez-vous et la liste du jour sous la barre de navigation. / Verify the next appointment and daily lineup below the navbar.
+  3. Ouvrez l'icone Notifications, selectionnez une demande, puis verifiez que la reservation correspondante est selectionnee dans la sidebar. / Open Notifications, select a request, and verify the matching booking is selected in the sidebar.
+  4. Sans rendez-vous aujourd'hui, verifiez que la barre reste compacte et sans chevron, s'ouvre temporairement au survol, puis reste ouverte ou se referme au clic, au toucher, avec Entree et avec Espace. / With no appointments today, verify that the bar remains compact and arrow-free, opens temporarily on hover, then stays open or closes by click, tap, Enter, and Space.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; the Today widget and notification panel remain readable without horizontal overflow.
+- **Privacy check / Verification confidentialite:** only bookings already authorized for the active professional profile feed the projection; no client or public surface reads notification data.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Today widget, SVG notification control, pending/upcoming panel, sidebar selection, and compact empty-state interactions implemented; full automated validation and focused interaction tests passed. Browser verification remains pending.
+
+### Phase 8-11 - Persistent booking notifications / Notifications persistantes de reservation
+
+- **Mockup reference / Reference mockup:** professional navbar notification bell and booking attention panel.
+- **Production owner / Responsable production:** `functions/index.js` (`createBookingNotification`, `createMessageNotification`), `firestore.rules`, `public/js/pro-dashboard/today-view.js`, and `public/js/pro-dashboard/pro-dashboard.js`.
+- **Data and rules / Donnees et regles:** trusted Firestore triggers create `notifications/{uid}/items/{notificationId}` for booking creation/status changes and new booking messages. Additional profile IDs are resolved to owner Auth UIDs and active delegates with the relevant permission. Recipients can read their own notifications and update only nullable `readAt`; direct client creation/deletion is denied.
+- **Build check / Auto-verification:** complete serial local emulator suite passes 37/37; Functions and browser syntax checks pass; Firestore rules compile; `git diff --check` passes.
+- **Human steps / Etapes humaines:**
+  1. Creez ou modifiez une reservation, puis ouvrez Notifications dans le tableau professionnel. / Create or update a booking, then open Notifications in the professional dashboard.
+  2. Envoyez un message dans un fil et verifiez qu'une notification persistante apparait pour le destinataire autorise. / Send a thread message and verify a persistent notification appears for the authorized recipient.
+  3. Cliquez une notification et rechargez la page; verifiez qu'elle est marquee comme lue et qu'un compte non autorise ne peut pas la lire. / Select a notification and reload; verify it is marked read and an unauthorized account cannot read it.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; unread/read notification rows remain readable without horizontal overflow.
+- **Privacy check / Verification confidentialite:** notification documents contain only safe booking/message references and a short body; mail, payment, private-note, and unrelated-client data are excluded.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Persistent trigger-backed notifications and read-state rules implemented; automated validation passed. A disposable emulator QA fixture created a pending booking, an accepted booking, a booking message, and notification documents; the professional sidebar showed the booking and the notification panel opened without blocking on Firestore hydration. Fixtures were deleted afterward. Full populated read-state and Today-date rendering remain pending for human sign-off.
+
+### Phase 8 - Waitlist release notifications / Notifications de liberation de liste d'attente
+
+- **Mockup reference / Reference mockup:** occupied public slot, waitlist enrollment, and notification center.
+- **Production owner / Responsable production:** `functions/index.js` (`notifyWaitlistOnBookingRelease`), `notifications/{uid}/items`, and existing waitlist entries.
+- **Data and rules / Donnees et regles:** when a matching booking becomes rejected or cancelled, up to 25 unnotified waitlist entries for the same professional/start/end receive a persistent in-app notification and are marked notified server-side. Direct waitlist writes remain denied.
+- **Build check / Auto-verification:** full local suite, Function syntax, and Firestore rules validation pass.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Server-side waitlist release notification trigger implemented; real mailbox delivery and populated browser click-through remain pending.
+
+### Phase 8 / 13 - Profile-scoped delegated access / Acces delegue par profil
+
+- **Mockup reference / Reference mockup:** professional settings delegated-access panel and restricted booking-management actions.
+- **Production owner / Responsable production:** `functions/index.js` (`addProfessionalDelegate`, `removeProfessionalDelegate`, `listDelegatedBookings`), `public/js/pro-dashboard/delegated-access.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/pro-dashboard/navbar-pro.js`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** an owner can grant `manageBookings` and/or `manageMessages` independently on multiple profiles. Delegates cannot read booking documents directly; the trusted listing callable returns only schedule/service/status fields and omits client identity/contact/address/intake, payment, pricing, movement, and note data. Removing one profile preserves other active assignments.
+- **Build check / Auto-verification:** `tests/delegated-access-emulator.test.cjs` passes direct-read denial, sanitized projection, booking update permission, messages-only read/send, bookings-only denial, owner-only notes, atomic authorized/unauthorized batches, owner/delegate notification routing, multi-profile removal, and post-removal denial. Rules and touched modules pass focused checks.
+- **Human steps / Etapes humaines:**
+  1. Depuis Réglages > Accès délégué, ajoutez un compte Auth existant avec une permission. / From Settings > Delegated access, add an existing Auth account with one permission.
+  2. Connectez-vous avec le compte délégué et vérifiez que seul le profil assigné apparaît, sans réglages propriétaires. / Sign in with the delegate account and verify only the assigned profile appears, without owner settings.
+  3. Vérifiez les actions autorisées, puis retirez l'accès et confirmez que les réservations ne sont plus accessibles. / Verify permitted actions, then remove access and confirm bookings are no longer accessible.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; delegate list and permission controls remain readable without horizontal overflow.
+- **Privacy check / Verification confidentialite:** claims and profile maps are server-controlled; delegates never become owners and receive no client identity/contact/address/intake, payment, movement, pricing, private-note, profile-setting, or erasure data/control.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Hardened with server-sanitized projections, independent message permission, additive multi-profile claims, atomic batches, private-note isolation, and profile-aware notifications; focused emulator test passes. Browser verification remains pending.
 
 | Area | Status | Remaining scope |
 |---|---|---|
 | Phases 0-4: setup, scaffolding, auth, security, dashboard shell | Implemented | Live Function parity was restored selectively on 2026-09-13; Artifact Registry cleanup policy remains operational follow-up. |
-| Phases 5-8: working time, discovery, schedule, booking operations | Partial | Core flows, configurable buffer time, professional services/package settings, client service snapshots, trusted waitlist enrollment, intake questionnaire answers, and booking meeting links exist. Messaging, quick replies, private notes, delegates, and notification/today views remain. |
+| Phases 5-8: working time, discovery, schedule, booking operations | Partial | Core flows, configurable buffer time, professional services/package settings, client service snapshots, trusted waitlist enrollment/release notification, intake questionnaire answers, meeting links, messaging, quick replies, private notes, delegates, atomic batch actions, and persistent notification/today views exist. Populated-browser parity and richer notification preferences remain. |
 
 ### Phase 8 - Booking-linked meeting links / Liens de reunion lies aux reservations
 
 - **Mockup reference / Reference mockup:** professional booking context menu with links action and authorized client booking surface.
 - **Production owner / Responsable production:** `functions/index.js` (`updateBookingMeetingLinks`), `public/js/pro-dashboard/booking-context-menu.js`, `public/js/pro-dashboard/pro-dashboard.js`, and `firestore.rules`.
 - **Data and rules / Donnees et regles:** the owning professional can replace up to five sanitized HTTPS `{label,url}` links on a booking through the trusted callable; direct unauthorized writes are denied and an audit event is recorded.
-- **Build check / Auto-verification:** syntax, rules compilation, and the complete 33-test suite pass. Browser interaction remains pending.
+- **Build check / Auto-verification:** syntax, rules compilation, and the complete 34-test suite pass. Browser interaction remains pending.
 - **Human result / Resultat humain:** `Pending`
 - **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Trusted meeting-link callable and context-menu action implemented; full browser verification remains pending.
 
@@ -42,7 +162,7 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 - **Mockup reference / Reference mockup:** professional booking sidebar/context menu message action and the matching client reservation thread.
 - **Production owner / Responsable production:** `functions/index.js` (`sendBookingMessage`), `public/js/shared/booking-messages.js`, `public/js/sidebar/sidebar-feed.js`, `public/js/client-dashboard/client-bookings.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/client-dashboard/client-dashboard.js`, `firestore.rules`, and `functions/index.js` mail queue.
 - **Data and rules / Donnees et regles:** messages are stored under `bookings/{bookingId}/messages/{messageId}` by the trusted callable only. The booking client or professional may send; authorized shared-history clients may read; unrelated clients and direct browser writes are denied. Optional notification queueing honors `notificationPreferences/{uid}.messageEmail`, and a failed queue attempt leaves the saved message intact.
-- **Build check / Auto-verification:** focused booking-series emulator regression and complete local suite pass 33/33; `functions/index.js` and the shared browser module pass syntax checks; Firestore rules diagnostics pass. Real Trigger Email delivery remains an external setup gate.
+- **Build check / Auto-verification:** focused booking-series emulator regression and complete serial suite pass 37/37; `functions/index.js` and the shared browser module pass syntax checks; Firestore rules diagnostics pass. Real Trigger Email delivery remains an external setup gate.
 - **Human steps / Etapes humaines:**
   1. Ouvrez une reservation comme professionnel et envoyez un message depuis la carte. / Open a booking as the professional and send a message from the card.
   2. Ouvrez la meme reservation comme client, lisez le fil et repondez avec ou sans notification email. / Open the same booking as the client, read the thread, and reply with or without email notification.
@@ -57,7 +177,7 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 - **Mockup reference / Reference mockup:** occupied public schedule slot and client booking/waitlist flow.
 - **Production owner / Responsable production:** `public/profile.html`, `public/js/profile-public/profile-view.js`, `functions/index.js` (`joinBookingWaitlist`), `firestore.rules`.
 - **Data and rules / Donnees et regles:** authenticated clients can request a specific occupied professional/time window through the trusted callable; direct `waitlistEntries/{proId}/entries/{entryId}` writes are denied. The owner/client read boundary is explicit and notification processing remains server-side.
-- **Build check / Auto-verification:** rules compile, complete emulator suite passes 33/33, callable is deployed, and live Hosting exposes the waitlist control and callable client code.
+- **Build check / Auto-verification:** rules compile, complete serial emulator suite passes 37/37, callable is deployed, and live Hosting exposes the waitlist control and callable client code.
 - **Human result / Resultat humain:** `Pending`
 - **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Browser service-selection fixture was cleaned up after visual verification; waitlist live marker was confirmed after a Hosting republish. Full occupied-slot click-through remains pending.
 | Phases 9-10: client dashboard, search, payments, movement | Partial | Core dashboard/search/payment/movement slices exist, and immutable legal acceptance is now implemented through trusted Functions. Complete workflow parity still needs confirmation. |
@@ -175,7 +295,7 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - [ ] Public and unrelated-client bookings show only anonymous unavailable time ranges.
 - [ ] A client sees only their own booking details and authorized payment data.
 - [ ] A professional sees bookings for only the active profile and can use schedule/sidebar actions.
-- [ ] A delegate sees only granted booking-management actions.
+- [x] A delegate sees only granted booking-management actions. Verified by sanitized callable projection, conditional dashboard controls, and focused emulator permissions on 2026-09-14; populated browser sign-off remains tracked separately.
 - [ ] A context menu, modal, dropdown, or mobile navigation control closes cleanly and does not overlap interactive UI.
 - [ ] A form has clear validation and autosave/saved feedback.
 - [ ] A reversible status or configuration change can be undone where the specification requires it.
@@ -454,12 +574,12 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - **Human steps / Etapes humaines:**
   1. Connectez-vous avec un compte professionnel, puis ouvrez `pro-dashboard.html`. / Sign in with a professional account, then open `pro-dashboard.html`.
   2. Ouvrez le menu Reglages et verifiez les sections attendues. / Open the Settings menu and verify the expected sections.
-  3. Repliez puis affichez la sidebar; verifiez que le planning reste visible. / Collapse then expand the sidebar; verify the schedule remains visible.
+  3. Repliez puis affichez la sidebar; verifiez que les sept jours du planning restent visibles sans defilement horizontal. / Collapse then expand the sidebar; verify that all seven schedule days remain visible without horizontal scrolling.
   4. Verifiez que la grille du planning affiche une vue vide sur sept jours sans donnees de client. / Verify the schedule grid shows an empty seven-day view without client data.
-- **Responsive check / Verification responsive:** desktop width 1440 px; mobile width 375 px with schedule first and sidebar below.
+- **Responsive check / Verification responsive:** desktop width 1440 px with the sidebar open and mobile width 375 px with the schedule first; all selected days fit inside the schedule panel without horizontal dragging and all day/time/slot/booking text is centered in its cell.
 - **Privacy check / Verification confidentialite:** anonymous users are redirected to login; the shell renders no private booking, client, payment, or message fields.
 - **Human result / Resultat humain:** `Pass`
-- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Verified locally on Auth emulator: signed into pro-dashboard.html, verified settings dropdown options, sidebar toggle, responsive breakpoint, and empty 7-day schedule grid.
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - The schedule's fixed 860 px minimum was removed; focused CSS assertions confirm flexible day tracks and compact mobile sizing. Previous Auth emulator verification covered login, settings, sidebar toggle, responsive breakpoint, and the empty 7-day grid.
 
 ### Phase 9b - Client Professional Search, Lock, and Favorites / Recherche, verrouillage et favoris professionnels cote client
 
@@ -478,3 +598,33 @@ Use this checklist when a production module replaces a mockup behavior. / Utilis
 - **Privacy check / Verification confidentialite:** the client sees only the same anonymous unavailable time ranges already exposed by the public profile view; no other client's identity or booking detail is exposed.
 - **Human result / Resultat humain:** `Pass`
 - **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Verified locally on browser and emulator: search matched seeded professionals with id tooltips, schedule locking rendered busy slots as "Indisponible", unlock cleared overlay, favoriting persisted across reloads, and multi-professional locking rendered isolated busy slots without state leakage. - Implemented and AI authenticated browser smoke test passed against local emulators (search matched a seeded professional, lock rendered the seeded busy slot as "Indisponible" on the correct day/hour, unlock cleared it immediately, saving/removing a favorite persisted correctly across a page reload). Human confirmation remains required. Fixed a follow-up bug found by the human: locking a professional who was not also saved as a favorite left no way to unlock (only the favorites chip toggled lock state); added a persistent "Planning verrouille" banner with its own "Deverrouiller" button, shown whenever a professional is locked regardless of favorites, and re-verified unlock works from it. Redesigned per human feedback: replaced the banner with a small chip/bubble merged into the favorited-professionals row (lock icon, active color); replaced the favorites list's remove ("x") control with a heart toggle (empty outline vs filled red) fully independent of lock state; added a hover tooltip showing the professional's `idTag` both in search results and in the chip row. Re-verified live: id tooltip shows before any action, heart favorite/unfavorite does not disturb the locked chip's position or lock state, unlock still works by clicking the chip body. Extended smoke test to three seeded professionals (Camille Rousseau, Sofia Martins, Yanis Belkacem) with distinct busy slots on the same day: search returned all three with distinct id tooltips; favorited all three; locking each in turn correctly showed only that professional's own busy slot and lock icon, with no cross-professional overlay or state leakage; unlocking cleared the overlay while leaving the favorites row untouched; all three favorites persisted together across a reload. Fixed a visual bug found by the human via screenshot comparison: the heart icon's custom path rendered as an indistinct blob at 12px (notch between the two lobes not visible), and a CSS specificity bug (`.professional-chip button { color: inherit }` outranking `.professional-chip-heart`'s intended muted color) made the unfavorited heart's color unreliable; replaced the path with a standard symmetric heart glyph at 14px and raised the heart-color rules' specificity so both empty-outline and filled-red states render crisply and reliably; lock icon confirmed to already render only on the actually-locked chip (verified across all three professionals), not "always present".
+
+### Phase 8 - Private booking preparation notes / Notes privees de preparation
+
+- **Mockup reference / Reference mockup:** professional booking sidebar and context menu private-note action.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/booking-prep-notes.js`, `public/js/pro-dashboard/booking-context-menu.js`, `public/js/sidebar/sidebar-feed.js`, `public/js/pro-dashboard/pro-dashboard.js`, `firestore.rules`.
+- **Data and rules / Donnees et regles:** `bookings/{bookingId}/private/professional.prepNotes` is capped at 2000 characters and read/written through owner/admin-only callables. The parent booking never contains the note; clients, shared-history readers, and delegates are denied by rules.
+- **Build check / Auto-verification:** focused syntax and diff checks pass; `tests/delegated-access-emulator.test.cjs` proves owner read/write and client/delegate direct-read denial. Browser verification remains pending.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez une reservation depuis la sidebar puis choisissez Note privee. / Open a booking from the sidebar and choose Private note.
+  2. Ecrivez une note, enregistrez-la, fermez puis rouvrez l'editeur. / Write a note, save it, close and reopen the editor.
+  3. Verifiez que le client et le profil public ne voient jamais cette note. / Verify the client and public profile never see the note.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; the note modal remains readable without horizontal overflow.
+- **Privacy check / Verification confidentialite:** only the owning professional profile or an administrator can read/update the separate private document; the client and delegate cannot read, write, or receive it through booking projections.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Private notes moved out of client-readable booking documents into an owner/admin-only subdocument; emulator privacy assertions pass. Browser verification remains pending.
+
+### Phase 8 - Professional quick replies / Reponses rapides professionnelles
+
+- **Mockup reference / Reference mockup:** professional settings menu and booking message composer with reusable message templates.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/quick-replies.js`, `public/js/pro-dashboard/navbar-pro.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/shared/booking-messages.js`, `public/js/core/strings-fr.js`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** up to 20 `{label,body}` templates are stored privately in `proProfiles/{profileId}.quickReplies`; only profile owners or administrators can read/update them. Selecting a template only fills the composer; final message creation still uses `sendBookingMessage`.
+- **Build check / Auto-verification:** complete serial local emulator suite passes 37/37; focused module syntax checks and editor diagnostics pass; `git diff --check` passes. Browser interaction remains pending.
+- **Human steps / Etapes humaines:**
+  1. Ouvrez Reglages puis Reponses rapides et creez deux modeles. / Open Settings then Quick replies and create two templates.
+  2. Ouvrez un fil de reservation, selectionnez un modele et modifiez le texte avant l'envoi. / Open a booking thread, select a template, and edit the text before sending.
+  3. Verifiez qu'un client ne voit ni les modeles ni l'editeur de reglages. / Verify a client sees neither the templates nor the settings editor.
+- **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; template rows and the composer wrap without horizontal overflow.
+- **Privacy check / Verification confidentialite:** templates remain in the owning private professional profile and are never copied into public profile, client, booking, or mail data.
+- **Human result / Resultat humain:** `Pending`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Settings module, active-profile wiring, and composer selection implemented; browser verification remains pending.

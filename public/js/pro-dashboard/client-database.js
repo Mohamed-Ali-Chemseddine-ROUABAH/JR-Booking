@@ -3,6 +3,7 @@ import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { escapeHtml } from "../core/utils.js";
 import { openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
+import { initializeClientCommunicationHistory } from "./client-communication-history.js";
 
 const strings = UI_STRINGS.proDashboard.clientDatabase;
 const eraseConfirmationPhrase = "SUPPRIMER CE CLIENT";
@@ -64,7 +65,17 @@ async function openClientEditor(modal, user, client) {
     editor.className = "working-hours-section client-database-editor";
     const isBlocked = record.relationshipStatus === "blocked";
     const erasePending = record.eraseRequest?.status === "pending";
+    const tagsField = document.createElement("label");
+    tagsField.className = "working-hours-field client-tags-field";
+    tagsField.innerHTML = `<span>${strings.tagsLabel}</span><input data-client-tags type="text" maxlength="300" value="${escapeAttribute((record.tags || []).join(", "))}" placeholder="${strings.tagsPlaceholder}"><small>${strings.tagsHelp}</small>`;
     editor.innerHTML = `<h3>${escapeHtml(client.name)}</h3><label class="working-hours-field"><span>${strings.rateLabel}</span><input data-client-rate type="number" min="0" step="0.01" value="${escapeAttribute(record.customRate ?? "")}"></label><label class="working-hours-field"><span>${strings.zoneLabel}</span><input data-client-zone type="number" min="0" step="0.01" value="${escapeAttribute(record.movementSurcharge ?? "")}"></label><div class="working-hours-actions"><button class="btn btn-solid" type="button" data-client-save>${strings.save}</button><button class="btn btn-ghost" type="button" data-client-block>${isBlocked ? strings.unblock : strings.block}</button><button class="btn btn-ghost" type="button" data-client-ban>${strings.requestBan}</button><button class="btn btn-ghost" type="button" data-client-export>${strings.exportPdf}</button></div><section class="client-history"><h4>${strings.historyTitle}</h4><div class="working-hours-fields"><label class="working-hours-field"><span>${strings.historyTypeLabel}</span><select data-history-type><option value="">${strings.historyAll}</option><option value="booking">${strings.historyBooking}</option><option value="status">${strings.historyStatus}</option></select></label><label class="working-hours-field"><span>${strings.historyDateLabel}</span><input data-history-date type="date"></label></div><div data-history-list>${renderHistory(history)}</div></section><div class="client-database-danger"><strong>${strings.eraseTitle}</strong><p>${erasePending ? strings.erasePending(record.eraseRequest.scheduledFor) : strings.eraseHelp}</p>${erasePending ? `<button class="btn btn-ghost" type="button" data-client-erase-cancel>${strings.cancelErase}</button>` : `<label class="working-hours-field"><span>${strings.erasePhraseLabel}</span><input data-client-erase-phrase type="text" autocomplete="off"></label><button class="btn btn-ghost" type="button" data-client-erase>${strings.erase}</button>`}<span class="working-hours-feedback" data-erase-feedback role="alert"></span></div><span class="working-hours-feedback" data-client-feedback role="status"></span>`;
+    editor.querySelector("[data-client-rate]").before(tagsField);
+    const communicationButton = document.createElement("button");
+    communicationButton.className = "btn btn-ghost";
+    communicationButton.type = "button";
+    communicationButton.dataset.clientCommunication = "";
+    communicationButton.textContent = strings.communicationHistory;
+    editor.querySelector("[data-client-block]").before(communicationButton);
     modal.querySelector("[data-client-list]").replaceChildren(editor);
     const refreshHistory = () => {
         const type = editor.querySelector("[data-history-type]").value;
@@ -74,10 +85,12 @@ async function openClientEditor(modal, user, client) {
     editor.querySelector("[data-history-type]").addEventListener("change", refreshHistory);
     editor.querySelector("[data-history-date]").addEventListener("change", refreshHistory);
     editor.querySelector("[data-client-export]").addEventListener("click", () => exportClientReport(client, history));
+    editor.querySelector("[data-client-communication]")?.addEventListener("click", () => initializeClientCommunicationHistory({ client }));
     editor.querySelector("[data-client-save]").addEventListener("click", async () => {
         const feedback = editor.querySelector("[data-client-feedback]");
         try {
-            await setDoc(recordRef, { proId: user.uid, clientId: client.id, customRate: editor.querySelector("[data-client-rate]").value, movementSurcharge: editor.querySelector("[data-client-zone]").value }, { merge: true });
+            const tags = editor.querySelector("[data-client-tags]").value.split(",").map((tag) => tag.trim()).filter(Boolean).slice(0, 20);
+            await setDoc(recordRef, { proId: user.uid, clientId: client.id, customRate: editor.querySelector("[data-client-rate]").value, movementSurcharge: editor.querySelector("[data-client-zone]").value, tags }, { merge: true });
             feedback.textContent = strings.saved;
         } catch {
             feedback.textContent = strings.saveError;

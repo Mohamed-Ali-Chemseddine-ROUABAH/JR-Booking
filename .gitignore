@@ -11,6 +11,10 @@ extensions/*.env
 *.key
 service-account*.json
 firebase-adminsdk*.json
+.runtimeconfig.json
+application_default_credentials.json
+credentials.json
+*serviceAccount*.json
 
 # Node / Firebase
 node_modules/

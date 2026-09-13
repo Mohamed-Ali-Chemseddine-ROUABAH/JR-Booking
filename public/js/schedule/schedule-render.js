@@ -15,9 +15,9 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
             </div>
             <div class="schedule-tools">
                 <button class="icon-button" type="button" aria-label="${UI_STRINGS.proDashboard.sidebar.expand}" title="${UI_STRINGS.proDashboard.sidebar.expand}" data-sidebar-expand>›</button>
-                <button class="chip-button" type="button" data-navigation="previous">${strings.previous}</button>
+                <button class="icon-button schedule-nav-button" type="button" data-navigation="previous" aria-label="${strings.previous}" title="${strings.previous}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button>
                 <button class="chip-button is-active" type="button" data-navigation="today">${strings.today}</button>
-                <button class="chip-button" type="button" data-navigation="next">${strings.next}</button>
+                <button class="icon-button schedule-nav-button" type="button" data-navigation="next" aria-label="${strings.next}" title="${strings.next}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5 7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button>
                 <button class="chip-button" type="button" data-calendar-sync>${strings.sync}</button>
                 <div class="schedule-view-switch" role="group" aria-label="${strings.title}">
                     <button class="chip-button${daysToShow === 1 ? " is-active" : ""}" type="button" data-days="1">${strings.viewOne}</button>

@@ -8,15 +8,16 @@
     <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
     <link rel="stylesheet" href="assets/css/glass-theme.css">
     <script src="firebase-config.js?v=local-emulator-routing-20260910"></script>
-    <link rel="stylesheet" href="assets/css/pro-dashboard.css?v=stats-dropdown-20260909">
+    <link rel="stylesheet" href="assets/css/pro-dashboard.css?v=fit-schedule-20260914">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 <main class="pro-dashboard-screen" data-dashboard-shell>
+  <header class="glass pro-topbar" data-pro-navbar></header>
   <div class="pro-dashboard-wrap">
-    <header class="glass pro-topbar" data-pro-navbar></header>
-
     <p class="dashboard-status" data-dashboard-status role="status" aria-live="polite"></p>
+
+    <section data-today-root></section>
 
     <section class="dashboard-layout" data-dashboard-layout>
       <aside class="glass pro-sidebar" data-sidebar-root></aside>
@@ -25,7 +26,7 @@
   </div>
 </main>
 
-<script type="module" src="js/pro-dashboard/pro-dashboard.js?v=calendar-sync-20260910b"></script>
+<script type="module" src="js/pro-dashboard/pro-dashboard.js?v=quiet-today-20260913c"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </body>
 </html>
