@@ -1,8 +1,10 @@
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { clearDraft, loadDraft, saveDraft } from "../core/draft-storage.mjs";
 
 const strings = UI_STRINGS.proDashboard.services;
+const draftKey = (uid) => `jr-booking-services-draft-${uid}`;
 
 export async function initializeServicesPackages({ user }) {
     const modal = document.createElement("div");
@@ -16,16 +18,21 @@ export async function initializeServicesPackages({ user }) {
     const feedback = modal.querySelector("[data-services-feedback]");
     try {
         const snapshot = await getDoc(doc(getFirestoreDb(), "proProfiles", user.uid));
-        (snapshot.data()?.services || []).forEach((service) => addServiceRow(list, service));
+        const draft = loadDraft(draftKey(user.uid));
+        (draft?.services || snapshot.data()?.services || []).forEach((service) => addServiceRow(list, service));
+        if (draft) feedback.textContent = strings.draftRestored;
     } catch { feedback.textContent = strings.loadError; }
-    modal.querySelector("[data-services-add]").addEventListener("click", () => addServiceRow(list));
-    modal.addEventListener("click", (event) => { if (event.target.matches("[data-service-remove]")) event.target.closest("[data-service-row]").remove(); });
+    const saveCurrentDraft = () => saveDraft(draftKey(user.uid), { services: readServices(list) });
+    modal.querySelector("[data-services-add]").addEventListener("click", () => { addServiceRow(list); saveCurrentDraft(); });
+    modal.addEventListener("input", saveCurrentDraft);
+    modal.addEventListener("click", (event) => { if (event.target.matches("[data-service-remove]")) { event.target.closest("[data-service-row]").remove(); saveCurrentDraft(); } });
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const services = [...list.querySelectorAll("[data-service-row]")].map((row) => ({ name: row.querySelector("[name='serviceName']").value.trim(), durationMinutes: Number(row.querySelector("[name='serviceDuration']").value), price: Number(row.querySelector("[name='servicePrice']").value) })).filter((service) => service.name && service.durationMinutes > 0 && service.price >= 0);
+        const services = readServices(list);
         try {
             await setDoc(doc(getFirestoreDb(), "proProfiles", user.uid), { owners: [user.uid], services }, { merge: true });
             await setDoc(doc(getFirestoreDb(), "publicProfiles", user.uid), { owners: [user.uid], services, updatedAt: new Date() }, { merge: true });
+            clearDraft(draftKey(user.uid));
             feedback.textContent = strings.saved;
         } catch { feedback.textContent = strings.saveError; }
     });
@@ -42,4 +49,8 @@ function addServiceRow(container, service = {}) {
     row.querySelector("[name='serviceDuration']").value = service.durationMinutes || 60;
     row.querySelector("[name='servicePrice']").value = service.price ?? 0;
     container.append(row);
+}
+
+function readServices(list) {
+    return [...list.querySelectorAll("[data-service-row]")].map((row) => ({ name: row.querySelector("[name='serviceName']").value.trim(), durationMinutes: Number(row.querySelector("[name='serviceDuration']").value), price: Number(row.querySelector("[name='servicePrice']").value) })).filter((service) => service.name && service.durationMinutes > 0 && service.price >= 0);
 }

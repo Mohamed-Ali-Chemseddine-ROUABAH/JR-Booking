@@ -11,6 +11,7 @@
 - **Batch booking actions:** `sidebar/batch-actions.js` adds pending-booking selection and grouped accept/reject actions; `batchUpdateBookingStatus` validates every selected booking before committing all status changes atomically.
 - **Direct sharing:** `direct-links.js` generates public profile/service links and QR presentation without exposing private profile or booking data.
 - **CRM tags:** `client-database.js` stores up to twenty profile-scoped client tags in `proClientRecords.tags`.
+- **CRM pricing:** `client-database.js` stores profile-scoped `customRate` and `movementSurcharge` overrides; `client-pricing.mjs` applies them to the authorized booking `paymentContext` without exposing CRM records.
 - **Mobile navigation:** `navbar-pro.js` collapses the complete professional action group behind one accessible menu trigger below the responsive breakpoint.
 - **DOM owner:** The page owns only the top-level roots; each module initializes its own root with explicit setup functions.
 - **Firestore/Storage:** The dashboard discovers `proProfiles` documents whose `owners` array contains the authenticated professional UID. When more than one profile exists, the navbar selector stores the selected profile ID in same-origin session storage and reloads the dashboard; schedule, booking, settings, CRM, and statistics modules receive the selected profile ID as their profile context while Firebase Auth remains the original owner identity.

@@ -3,6 +3,7 @@ import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { watchAuthState } from "../core/auth-guard.js";
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { normalizeScheduleSettings } from "../schedule/schedule-settings.mjs";
 
 const strings = UI_STRINGS.publicProfile;
 const profileId = new URLSearchParams(window.location.search).get("pro");
@@ -126,6 +127,11 @@ function renderDetails(visible) {
 
 function renderSchedule() {
     const schedule = document.querySelector("[data-profile-schedule]");
+    const availability = profile.scheduleAvailability || {};
+    const scheduleSettings = normalizeScheduleSettings(availability.scheduleSettings);
+    const startHour = Number(String(availability.startTime || "09:00").slice(0, 2));
+    const endHour = Number(String(availability.endTime || "17:00").slice(0, 2));
+    const workingDays = Array.isArray(availability.workingDays) && availability.workingDays.length ? availability.workingDays : [1, 2, 3, 4, 5];
     const days = Array.from({ length: 7 }, (_, index) => {
         const date = new Date();
         date.setHours(0, 0, 0, 0);
@@ -142,7 +148,7 @@ function renderSchedule() {
     });
     const grid = document.createElement("div");
     grid.className = "profile-schedule-grid";
-    for (let hour = 9; hour < 17; hour += 1) {
+    for (let hour = startHour; hour < endHour; hour += 1) {
         const start = `${String(hour).padStart(2, "0")}:00`;
         const end = `${String(hour + 1).padStart(2, "0")}:00`;
         const time = document.createElement("span");
@@ -153,10 +159,12 @@ function renderSchedule() {
             const slot = document.createElement("button");
             slot.type = "button";
             slot.className = "profile-slot";
-            slot.textContent = isBusy(toIsoDate(date), start, end) ? strings.occupiedSlot : strings.emptySlot;
+            const active = workingDays.includes(date.getDay() || 7) && isPublicDateActive(toIsoDate(date), scheduleSettings);
+            slot.textContent = !active ? strings.unavailableSlot : isBusy(toIsoDate(date), start, end) ? strings.occupiedSlot : strings.emptySlot;
             slot.dataset.date = toIsoDate(date);
             slot.dataset.start = start;
             slot.dataset.end = end;
+            if (!active) slot.disabled = true;
             if (isBusy(slot.dataset.date, start, end)) {
                 slot.classList.add("is-busy");
                 slot.title = strings.occupied;
@@ -171,9 +179,23 @@ function renderSchedule() {
 function selectSlot(slot) {
     form.elements.date.value = slot.dataset.date;
     form.elements.start.value = slot.dataset.start;
-    form.elements.end.value = slot.dataset.end;
+    const selectedService = profile.services?.[Number(form.elements.serviceId.value)];
+    const durationMinutes = selectedService?.durationMinutes || selectedService?.duration || 0;
+    form.elements.end.value = durationMinutes ? addMinutes(slot.dataset.start, durationMinutes) : slot.dataset.end;
     form.scrollIntoView({ behavior: "smooth", block: "nearest" });
     form.querySelector("[data-profile-waitlist]").hidden = !slot.classList.contains("is-busy");
+}
+
+function isPublicDateActive(date, settings) {
+    return settings.activationMode === "permanent"
+        || (settings.activationMode === "from-date" && (!settings.activationDate || date >= settings.activationDate))
+        || (settings.activationMode === "single-day" && date === settings.activationDate);
+}
+
+function addMinutes(time, minutes) {
+    const [hours, currentMinutes] = time.split(":").map(Number);
+    const total = hours * 60 + currentMinutes + Number(minutes);
+    return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
 function isBusy(date, start, end) {

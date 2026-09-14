@@ -80,7 +80,7 @@ Immutable server-written evidence of registration or later policy acceptance. Fi
 
 ### `notificationPreferences/{uid}`
 
-Private user-owned delivery preferences. Fields: `messageEmail` (`immediate`, `daily`, `none`), `bookingEmail` (`immediate`, `none`), `reminderEmail` (`immediate`, `none`), `timezone`, and `updatedAt`. Security rules allow only the owner or an admin to read or update this document. Security and essential transaction emails ignore opt-out preferences where legally or operationally required.
+Private user-owned delivery preferences. Fields: `messageEmail`, `bookingEmail`, and `reminderEmail` (`immediate`, `digest`, or `none`), plus `updatedAt`. Security rules allow only the owner or an admin to read or update this document. Message email uses `immediate` for current delivery or `digest` for the daily 08:00-08:15 Europe/Paris worker. Unread booking-message notifications may receive server-only `digestQueuedFor` and `digestQueuedAt` fields after being included in a digest. Security and essential transaction emails ignore opt-out preferences where legally or operationally required.
 
 ### `mail/{messageId}`
 
@@ -92,11 +92,11 @@ For the email-first professional application, server-side Functions create these
 
 ### `notifications/{uid}/items/{notificationId}`
 
-Server-created in-app notifications for an authenticated user. Booking creation/status changes, booking messages, and waitlist releases create documents with `type`, `bookingId`, optional `messageId`, `proId`, `title`, `body`, `createdAt`, and nullable `readAt`. Notification payloads do not contain `clientId` or client contact data. Notifications for an additional professional profile are written to its owner Auth UIDs and to active delegates holding the relevant permission, never to a non-auth profile ID. The recipient may read and update only `readAt`; clients cannot create or delete notifications.
+Server-created in-app notifications for an authenticated user. Booking creation/status/time/service/price changes, booking messages, reminders, and waitlist releases create documents with `type`, `bookingId`, optional `messageId`, `proId`, `title`, `body`, `createdAt`, and nullable `readAt`. Digest processing may add server-only `digestQueuedFor` and `digestQueuedAt` fields. Notification payloads do not contain `clientId` or client contact data. Notifications for an additional professional profile are written to its owner Auth UIDs and to active delegates holding the relevant permission, never to a non-auth profile ID. The recipient may read and update only `readAt`; clients cannot create or delete notifications.
 
 ### `proClientRecords/{proId}_{clientId}`
 
-Private professional CRM record for one client relationship. In addition to lifecycle and relationship fields, `tags` contains up to twenty profile-scoped strings. Tags are never copied to public profiles or client accounts.
+Private professional CRM record for one client relationship. `customRate` is an optional non-negative per-unit price override and `movementSurcharge` is an optional non-negative client-specific movement fee override. In addition to lifecycle and relationship fields, `tags` contains up to twenty profile-scoped strings. Overrides are applied in the professional's authorized booking context and are never copied to public profiles or client accounts.
 
 ### `professionalRequests/{applicationId}`
 
@@ -114,7 +114,7 @@ Server-written audit events for submission, email verification, admin decision, 
 
 Tamper-proof audit trail written by trusted Functions only and readable by admins only. Common fields are `type`, `at`, `actorUid`, `actorRole`, `outcome`, `bookingId`, optional `seriesId`, optional `relationshipId`, optional `contactId`, `requestId` for idempotency, and safe `metadata`; raw tokens and full email addresses are forbidden.
 
-Reservation-identity event types are `booking-contact-added`, `booking-contact-updated`, `booking-contact-removed`, `booking-claim-requested`, `booking-claim-succeeded`, `booking-claim-rejected`, `booking-claim-conflict`, `booking-claim-conflict-resolved`, `booking-claim-unlinked`, `booking-series-modified`, `history-share-requested`, `history-share-approved`, `history-share-revoked`, and `legal-acceptance-recorded`. Failed trusted operations also emit the applicable type with `outcome: "failure"` and a safe reason code when doing so does not create an enumeration risk.
+Reservation-identity event types are `booking-contact-added`, `booking-contact-updated`, `booking-contact-removed`, `booking-claim-requested`, `booking-claim-succeeded`, `booking-claim-rejected`, `booking-claim-conflict`, `booking-claim-conflict-resolved`, `booking-claim-unlinked`, `booking-series-modified`, `history-share-requested`, `history-share-approved`, `history-share-revoked`, and `legal-acceptance-recorded`. Account recovery uses `account-recovery-issued` with safe `preservedData` and `wipedLinkedData` metadata. Failed trusted operations also emit the applicable type with `outcome: "failure"` and a safe reason code when doing so does not create an enumeration risk.
 
 ### `gcalTokens/{proId}`
 

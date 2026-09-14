@@ -1,6 +1,7 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { debounce, escapeHtml, normalizeSearchTerm } from "../core/utils.js";
 import { findPublicProfiles } from "../search/search-professional.js";
+import { initializeQuietWidgetToggle } from "../pro-dashboard/today-widget-toggle.mjs?v=search-retract-20260914";
 
 const strings = UI_STRINGS.clientDashboard.professionalSearch;
 
@@ -14,15 +15,26 @@ export function initializeProfessionalSearch(container, {
     onSave,
     onRemove
 } = {}) {
+    const count = savedProfessionals.length;
+    container.classList.add("is-quiet");
     container.innerHTML = `
-        <h2>${strings.title}</h2>
-        <div class="professional-search-pill">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" data-professional-search-input aria-label="${strings.title}" placeholder="${strings.placeholder}">
+        <div class="professional-search-header" data-search-toggle role="button" aria-expanded="false" aria-controls="professional-search-body" tabindex="0">
+            <div>
+                <span class="eyebrow">${strings.eyebrow}</span>
+                <h2>${strings.title}</h2>
+            </div>
+            <span class="professional-search-count">${count} ${count === 1 ? strings.savedCountOne : strings.savedCountOther}</span>
         </div>
-        <div class="professional-search-results" data-professional-search-results aria-live="polite"></div>
-        ${renderChips(savedProfessionals, lockedProId, lockedDisplayName, lockedIdTag)}
+        <div class="professional-search-body" id="professional-search-body" aria-hidden="true">
+            <div class="professional-search-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" data-professional-search-input aria-label="${strings.title}" placeholder="${strings.placeholder}">
+            </div>
+            <div class="professional-search-results" data-professional-search-results aria-live="polite"></div>
+            ${renderChips(savedProfessionals, lockedProId, lockedDisplayName, lockedIdTag)}
+        </div>
     `;
+    initializeQuietWidgetToggle(container, { detailsSelector: ".professional-search-body", toggleSelector: "[data-search-toggle]" });
 
     const input = container.querySelector("[data-professional-search-input]");
     const results = container.querySelector("[data-professional-search-results]");

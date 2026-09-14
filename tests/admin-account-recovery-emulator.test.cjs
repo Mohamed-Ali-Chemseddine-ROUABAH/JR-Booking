@@ -45,6 +45,47 @@ test("admin account recovery preserves linked data", { timeout: 30000 }, async (
     }
 });
 
+test("admin account recovery can wipe linked data with exact confirmation", { timeout: 30000 }, async () => {
+    const suffix = crypto.randomUUID();
+    const adminEmail = `wipe-admin-${suffix}@example.test`;
+    const userEmail = `wipe-user-${suffix}@example.test`;
+    const password = process.env.TEST_PASSWORD || `Test-${crypto.randomUUID()}-Aa1!`;
+    let adminUid;
+    let userUid;
+    try {
+        const adminAuth = await postJson(`http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key`, { email: adminEmail, password, returnSecureToken: true });
+        adminUid = adminAuth.localId;
+        await app.auth().setCustomUserClaims(adminUid, { admin: true, role: "admin" });
+        const userAuth = await postJson(`http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signUp?key=fake-api-key`, { email: userEmail, password, returnSecureToken: true });
+        userUid = userAuth.localId;
+        const bookingId = `wipe-booking-${suffix}`;
+        await firestore.collection("proProfiles").doc(userUid).set({ owners: [userUid], accountStatus: "active" });
+        await firestore.collection("publicProfiles").doc(userUid).set({ displayName: "Wipe User" });
+        await firestore.collection("busySlots").doc(userUid).collection("slots").doc("slot").set({ start: "2026-09-20T09:00", end: "2026-09-20T10:00" });
+        await firestore.collection("clientAccounts").doc(userUid).set({ displayName: "Wipe User" });
+        await firestore.collection("notificationPreferences").doc(userUid).set({ messageEmail: "immediate", bookingEmail: "immediate", reminderEmail: "immediate", updatedAt: new Date() });
+        await firestore.collection("notifications").doc(userUid).collection("items").doc("notification").set({ type: "booking-message", readAt: null });
+        await firestore.collection("bookings").doc(bookingId).set({ proId: userUid, clientId: userUid, status: "pending" });
+        await firestore.collection("bookings").doc(bookingId).collection("messages").doc("message").set({ body: "private" });
+        await firestore.collection("waitlistEntries").doc(userUid).collection("entries").doc(`entry-${suffix}`).set({ clientId: userUid, proId: userUid });
+        const adminSession = await postJson(`http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake-api-key`, { email: adminEmail, password, returnSecureToken: true });
+
+        await assert.rejects(() => callFunction("issueAccountRecovery", adminSession.idToken, { targetUid: userUid, wipeLinkedData: true, confirmation: "wrong" }), /FAILED_PRECONDITION|failed-precondition/);
+        const result = await callFunction("issueAccountRecovery", adminSession.idToken, { targetUid: userUid, wipeLinkedData: true, confirmation: "EFFACER TOUTES LES DONNEES" });
+        assert.equal(result.wipedLinkedData, true);
+        assert.equal(result.preservedData, false);
+        assert.equal((await app.auth().getUser(userUid)).uid, userUid);
+        assert.equal((await firestore.collection("proProfiles").doc(userUid).get()).exists, false);
+        assert.equal((await firestore.collection("publicProfiles").doc(userUid).get()).exists, false);
+        assert.equal((await firestore.collection("clientAccounts").doc(userUid).get()).exists, false);
+        assert.equal((await firestore.collection("bookings").doc(bookingId).get()).exists, false);
+        assert.equal((await firestore.collection("notifications").doc(userUid).get()).exists, false);
+    } finally {
+        if (adminUid) await app.auth().deleteUser(adminUid).catch(() => {});
+        if (userUid) await app.auth().deleteUser(userUid).catch(() => {});
+    }
+});
+
 async function callFunction(name, idToken, data) {
     const response = await fetch(`http://${functionsHost}/${projectId}/us-central1/${name}`, { method: "POST", headers: { Authorization: `Bearer ${idToken}`, "Content-Type": "application/json" }, body: JSON.stringify({ data }) });
     const payload = await response.json();

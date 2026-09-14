@@ -13,13 +13,39 @@ export function openPrintDocument(html) {
     return true;
 }
 
-export function buildProfessionalScheduleReport({ professionalName, bookings, strings }) {
-    const rows = bookings
+export function buildProfessionalScheduleReport({ professionalName, bookings, strings, mode = "schedule", anonymizeClients = true }) {
+    const includePrices = mode === "prices" || mode === "summary";
+    const summaryOnly = mode === "summary";
+    const reportBookings = mode === "monthly"
+        ? bookings.filter((booking) => {
+            const date = new Date(booking.start);
+            const now = new Date();
+            return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        })
+        : bookings;
+    const rows = reportBookings
         .slice()
         .sort((left, right) => new Date(left.start) - new Date(right.start))
-        .map((booking) => `<tr><td>${escapeHtml(formatDate(booking.start))}</td><td>${escapeHtml(formatTime(booking.start))} - ${escapeHtml(formatTime(booking.end))}</td><td>${escapeHtml(booking.clientDisplayName || booking.clientEmail || booking.guestContact?.name || strings.guest)}</td><td><span class="status status-${escapeHtml(booking.status || "unknown")}">${escapeHtml(strings.statuses[booking.status] || booking.status || "")}</span></td><td>${escapeHtml(formatEuro(Number(booking.customPrice ?? booking.paymentContext?.balance ?? 0)))}</td></tr>`)
+        .map((booking) => `<tr><td>${escapeHtml(formatDate(booking.start))}</td><td>${escapeHtml(formatTime(booking.start))} - ${escapeHtml(formatTime(booking.end))}</td><td>${escapeHtml(mode === "schedule" && anonymizeClients ? strings.anonymous : booking.clientDisplayName || booking.clientEmail || booking.guestContact?.name || strings.guest)}</td><td><span class="status status-${escapeHtml(booking.status || "unknown")}">${escapeHtml(strings.statuses[booking.status] || booking.status || "")}</span></td>${includePrices ? `<td>${escapeHtml(formatEuro(resolveBookingPrice(booking)))}</td>` : ""}</tr>`)
         .join("");
-    return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(strings.title)}</title><style>${reportStyles()}</style></head><body><header><div class="eyebrow">JR BOOKING PREMIUM</div><h1>${escapeHtml(strings.title)}</h1><p>${escapeHtml(professionalName || strings.professional)} · ${escapeHtml(new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date()))}</p></header><section class="summary"><div><small>${escapeHtml(strings.total)}</small><strong>${bookings.length}</strong></div><div><small>${escapeHtml(strings.totalRevenue)}</small><strong>${escapeHtml(formatEuro(bookings.reduce((total, booking) => total + Number(booking.customPrice ?? booking.paymentContext?.balance ?? 0), 0)))}</strong></div></section><table><thead><tr><th>${escapeHtml(strings.date)}</th><th>${escapeHtml(strings.time)}</th><th>${escapeHtml(strings.client)}</th><th>${escapeHtml(strings.status)}</th><th>${escapeHtml(strings.amount)}</th></tr></thead><tbody>${rows || `<tr><td colspan="5">${escapeHtml(strings.empty)}</td></tr>`}</tbody></table></body></html>`;
+    const columns = `<th>${escapeHtml(strings.date)}</th><th>${escapeHtml(strings.time)}</th><th>${escapeHtml(strings.client)}</th><th>${escapeHtml(strings.status)}</th>${includePrices ? `<th>${escapeHtml(strings.amount)}</th>` : ""}`;
+    const body = summaryOnly ? "" : `<table><thead><tr>${columns}</tr></thead><tbody>${rows || `<tr><td colspan="${includePrices ? 5 : 4}">${escapeHtml(strings.empty)}</td></tr>`}</tbody></table>`;
+    const revenue = calculateReportRevenue(reportBookings);
+    return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(strings.title)}</title><style>${reportStyles()}</style></head><body><header><div class="eyebrow">JR BOOKING PREMIUM</div><h1>${escapeHtml(strings.title)}</h1><p>${escapeHtml(professionalName || strings.professional)} · ${escapeHtml(new Intl.DateTimeFormat("fr-FR", { dateStyle: "long" }).format(new Date()))}</p></header><section class="summary"><div><small>${escapeHtml(strings.total)}</small><strong>${reportBookings.length}</strong></div><div><small>${escapeHtml(strings.grossRevenue || strings.totalRevenue)}</small><strong>${escapeHtml(formatEuro(revenue.grossRevenue))}</strong></div><div><small>${escapeHtml(strings.doneRevenue || strings.totalRevenue)}</small><strong>${escapeHtml(formatEuro(revenue.realizedRevenue))}</strong></div><div><small>${escapeHtml(strings.pendingRevenue || strings.totalRevenue)}</small><strong>${escapeHtml(formatEuro(revenue.inProgressRevenue))}</strong></div></section>${body}</body></html>`;
+}
+
+export function calculateReportRevenue(bookings) {
+    const realizedRevenue = sumResolvedPrices(bookings.filter((booking) => booking.status === "done"));
+    const inProgressRevenue = sumResolvedPrices(bookings.filter((booking) => booking.status === "pending" || booking.status === "accepted"));
+    return { realizedRevenue, inProgressRevenue, grossRevenue: realizedRevenue + inProgressRevenue };
+}
+
+function sumResolvedPrices(bookings) {
+    return bookings.reduce((total, booking) => total + Number(booking.customPrice ?? booking.paymentContext?.balance ?? booking.service?.price ?? 0), 0);
+}
+
+function resolveBookingPrice(booking) {
+    return Number(booking.customPrice ?? booking.paymentContext?.balance ?? booking.service?.price ?? 0);
 }
 
 function reportStyles() {

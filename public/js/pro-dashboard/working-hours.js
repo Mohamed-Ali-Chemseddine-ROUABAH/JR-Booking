@@ -1,6 +1,8 @@
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { clearDraft, loadDraft, saveDraft } from "../core/draft-storage.mjs";
+import { buildPublicScheduleSettings, normalizeScheduleSettings } from "../schedule/schedule-settings.mjs";
 
 const strings = UI_STRINGS.proDashboard.workingHours;
 const defaultSettings = {
@@ -13,7 +15,9 @@ const defaultSettings = {
     recurringBreak: { start: "12:00", end: "13:00" },
     absences: [],
     exceptions: []
+    ,scheduleSettings: normalizeScheduleSettings()
 };
+const draftKey = (uid) => `jr-booking-working-hours-draft-${uid}`;
 
 export async function initializeWorkingHours({ user }) {
     const modal = createModal();
@@ -22,7 +26,10 @@ export async function initializeWorkingHours({ user }) {
 
     try {
         const snapshot = await getDoc(doc(getFirestoreDb(), "proProfiles", user.uid));
-        populateForm(form, normalizeSettings(snapshot.exists() ? snapshot.data().workingHours : defaultSettings));
+        const savedSettings = normalizeSettings(snapshot.exists() ? snapshot.data().workingHours : defaultSettings);
+        const draft = loadDraft(draftKey(user.uid));
+        populateForm(form, normalizeSettings(draft ? { ...savedSettings, ...draft } : savedSettings));
+        if (draft) feedback.textContent = strings.draftRestored;
     } catch {
         feedback.textContent = strings.loadError;
     }
@@ -36,6 +43,12 @@ export async function initializeWorkingHours({ user }) {
                 owners: [user.uid],
                 workingHours: readForm(form)
             }, { merge: true });
+            await setDoc(doc(getFirestoreDb(), "publicProfiles", user.uid), {
+                owners: [user.uid],
+                scheduleAvailability: buildPublicScheduleSettings(readForm(form)),
+                updatedAt: new Date()
+            }, { merge: true });
+            clearDraft(draftKey(user.uid));
             feedback.textContent = strings.saved;
         } catch {
             feedback.textContent = strings.saveError;
@@ -45,6 +58,7 @@ export async function initializeWorkingHours({ user }) {
     modal.querySelector("[data-working-hours-close]").addEventListener("click", () => modal.remove());
     modal.querySelector("[data-add-absence]").addEventListener("click", () => addAbsenceRow(modal.querySelector("[data-absences]")));
     modal.querySelector("[data-add-exception]").addEventListener("click", () => addExceptionRow(modal.querySelector("[data-exceptions]")));
+    form.addEventListener("input", () => saveDraft(draftKey(user.uid), readForm(form)));
     modal.addEventListener("click", (event) => {
         if (event.target.matches("[data-remove-row]")) {
             event.target.closest(".working-hours-repeatable-row").remove();
@@ -79,6 +93,19 @@ function createModal() {
                     ${field("viewDays", "number", strings.viewDaysLabel, "1", "7")}
                     ${field("bufferMinutes", "number", strings.bufferLabel, "0", "120")}
                     <label class="working-hours-field"><span>${strings.timezoneLabel}</span><select name="timezone"><option value="Europe/Paris">Europe/Paris</option><option value="UTC">UTC</option><option value="America/Montreal">America/Montreal</option></select></label>
+                </div>
+            </section>
+            <section class="working-hours-section">
+                <h3>${strings.scheduleTypeTitle}</h3>
+                <div class="working-hours-fields">
+                    <label class="working-hours-field"><span>${strings.scheduleMethodLabel}</span><select name="scheduleMethod"><option value="drag">${strings.dragMethod}</option><option value="fixed">${strings.fixedMethod}</option></select></label>
+                    <label class="working-hours-field"><span>${strings.slotDurationLabel}</span><input name="slotDurationMinutes" type="number" min="15" max="1440" step="15"></label>
+                    <label class="personal-info-checkbox"><input name="allowMultipleSlots" type="checkbox">${strings.allowMultipleSlots}</label>
+                    <label class="working-hours-field"><span>${strings.maxSlotsLabel}</span><input name="maxSlots" type="number" min="1" max="20"></label>
+                    <label class="personal-info-checkbox"><input name="recurrenceAllowed" type="checkbox">${strings.recurrenceAllowed}</label>
+                    <label class="working-hours-field"><span>${strings.maxRecurrencesLabel}</span><input name="maxRecurrences" type="number" min="1" max="52"></label>
+                    <label class="working-hours-field"><span>${strings.activationModeLabel}</span><select name="activationMode"><option value="permanent">${strings.activationPermanent}</option><option value="from-date">${strings.activationFromDate}</option><option value="single-day">${strings.activationSingleDay}</option></select></label>
+                    <label class="working-hours-field"><span>${strings.activationDateLabel}</span><input name="activationDate" type="date"></label>
                 </div>
             </section>
             <section class="working-hours-section">
@@ -118,6 +145,15 @@ function populateForm(form, settings) {
     form.viewDays.value = settings.viewDays;
     form.bufferMinutes.value = settings.bufferMinutes;
     form.timezone.value = settings.timezone;
+    const scheduleSettings = normalizeScheduleSettings(settings.scheduleSettings);
+    form.scheduleMethod.value = scheduleSettings.method;
+    form.slotDurationMinutes.value = scheduleSettings.slotDurationMinutes;
+    form.allowMultipleSlots.checked = scheduleSettings.allowMultipleSlots;
+    form.maxSlots.value = scheduleSettings.maxSlots;
+    form.recurrenceAllowed.checked = scheduleSettings.recurrenceAllowed;
+    form.maxRecurrences.value = scheduleSettings.maxRecurrences;
+    form.activationMode.value = scheduleSettings.activationMode;
+    form.activationDate.value = scheduleSettings.activationDate;
     form.breakStart.value = settings.recurringBreak.start;
     form.breakEnd.value = settings.recurringBreak.end;
     settings.absences.forEach((absence) => addAbsenceRow(form.closest(".working-hours-modal").querySelector("[data-absences]"), absence));
@@ -145,7 +181,17 @@ function readForm(form) {
             date: row.querySelector("[name='exceptionDate']").value,
             start: row.querySelector("[name='exceptionStart']").value,
             end: row.querySelector("[name='exceptionEnd']").value
-        })).filter((exception) => exception.date)
+        })).filter((exception) => exception.date),
+        scheduleSettings: normalizeScheduleSettings({
+            method: form.scheduleMethod.value,
+            slotDurationMinutes: form.slotDurationMinutes.value,
+            allowMultipleSlots: form.allowMultipleSlots.checked,
+            maxSlots: form.maxSlots.value,
+            recurrenceAllowed: form.recurrenceAllowed.checked,
+            maxRecurrences: form.maxRecurrences.value,
+            activationMode: form.activationMode.value,
+            activationDate: form.activationDate.value
+        })
     };
 }
 

@@ -5,7 +5,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 import { showNotification } from "../shared/notifications.js?v=undo-20260907";
 import { initializeSchedule } from "../schedule/schedule-render.js?v=ui-controls-20260913";
 import { initializeSidebarFeed } from "../sidebar/sidebar-feed.js";
-import { initializeProNavbar } from "./navbar-pro.js?v=crm-20260909";
+import { initializeProNavbar } from "./navbar-pro.js?v=navbar-parity-20260914";
 import { initializeWorkingHours } from "./working-hours.js";
 import { initializePersonalInfo } from "./personal-info.js";
 import { initializePaymentInfo } from "./payment-info.js";
@@ -17,14 +17,17 @@ import { initializeDelegatedAccess } from "./delegated-access.js";
 import { initializeDirectLinks } from "./direct-links.js";
 import { initializeClientDatabase } from "./client-database.js?v=crm-erasure-20260909";
 import { initializeStatistics } from "./statistics.js?v=stats-20260909";
+import { initializeNotificationPreferences } from "./notification-preferences.js";
 import { initializeBookingCreation } from "./booking-creation.js";
 import { updateBookingStatus, updateBookingDetails } from "./booking-actions.js";
 import { initializeBookingEdit } from "./booking-edit.js";
 import { openBookingContextMenu } from "./booking-context-menu.js";
 import { calculateMovementQuote } from "./movement-pricing.js";
+import { applyClientPricingOverrides } from "./client-pricing.mjs";
 import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
 import { initializeCalendarSync, loadGoogleCalendarEvents } from "../schedule/schedule-gcal-sync.js?v=calendar-sync-20260910b";
 import { buildProfessionalScheduleReport, openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
+import { buildProfessionalDataExport, downloadJsonFile } from "../shared/export-data.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getIdTokenResult } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeBookingMessages } from "../shared/booking-messages.js";
@@ -62,13 +65,13 @@ requireAuth({
             profiles,
             activeProfileId,
             canManageSettings: !isDelegate,
-            onNotifications: () => initializeNotificationCenter(document.body, { bookings: dashboardBookings, userId: user.uid, onSelectBooking: (bookingId) => sidebar?.selectBooking(bookingId) }),
+            onNotifications: () => initializeNotificationCenter(document.body, { bookings: dashboardBookings, timezone: workingHours?.timezone || "Europe/Paris", userId: user.uid, onSelectBooking: (bookingId) => sidebar?.selectBooking(bookingId) }),
             onProfileChange: (profileId) => {
                 sessionStorage.setItem("jr-active-professional-profile", profileId);
                 window.location.reload();
             },
             onLogout: handleLogout,
-            onPrint: () => openPrintDocument(buildProfessionalScheduleReport({ professionalName: user.displayName || user.email, bookings: dashboardBookings, strings: UI_STRINGS.proDashboard.navbar.printReport })),
+            onPrint: ({ mode, anonymizeClients }) => openPrintDocument(buildProfessionalScheduleReport({ professionalName: user.displayName || user.email, bookings: dashboardBookings, mode, anonymizeClients, strings: UI_STRINGS.proDashboard.navbar.printReport })),
             onWorkingHours: () => initializeWorkingHours({ user: profileUser }),
             onPaymentInfo: () => initializePaymentInfo({ user: profileUser }),
             onMovementInfo: () => initializeMovementInfo({ user: profileUser }),
@@ -78,14 +81,16 @@ requireAuth({
             onDelegatedAccess: () => initializeDelegatedAccess({ user: profileUser }),
             onDirectLinks: () => initializeDirectLinks({ user: profileUser }),
             onPersonalInfo: () => initializePersonalInfo({ user: profileUser }),
-            onClientDatabase: () => initializeClientDatabase({ user: profileUser }),
-            onStatistics: () => initializeStatistics({ user: profileUser })
+            onExportData: () => downloadJsonFile(`jr-booking-${activeProfileId}-data.json`, buildProfessionalDataExport({ user, profileId: activeProfileId, bookings: dashboardBookings })),
+            onClientDatabase: () => initializeClientDatabase({ user: profileUser, timezone: workingHours?.timezone || "Europe/Paris" }),
+            onStatistics: () => initializeStatistics({ user: profileUser }),
+            onNotificationPreferences: () => initializeNotificationPreferences({ user })
         });
         const workingHours = await loadWorkingHours(activeProfileId);
         const bookings = delegateAccess?.bookings || await loadBookings(activeProfileId);
         const calendarEvents = await loadCalendarEvents();
         dashboardBookings = bookings;
-        initializeTodayView(document.querySelector("[data-today-root]"), bookings);
+        initializeTodayView(document.querySelector("[data-today-root]"), bookings, workingHours.timezone);
         let sidebar;
         document.querySelector("[data-today-root]").addEventListener("today-booking-selected", (event) => sidebar?.selectBooking(event.detail));
         let activeFilter = "pending";
@@ -103,6 +108,7 @@ requireAuth({
             });
             initializeSchedule(document.querySelector("[data-schedule-root]"), {
                 daysToShow: workingHours.viewDays,
+                timezone: workingHours.timezone,
                 workingHours,
                 bookings: currentBookings,
                 calendarEvents,
@@ -131,7 +137,7 @@ requireAuth({
             if (isDelegate) delegateAccess = await loadDelegatedBookings(activeProfileId);
             const updatedBookings = delegateAccess?.bookings || await loadBookings(activeProfileId);
             dashboardBookings = updatedBookings;
-            initializeTodayView(document.querySelector("[data-today-root]"), updatedBookings);
+            initializeTodayView(document.querySelector("[data-today-root]"), updatedBookings, workingHours.timezone);
             renderDashboard(updatedBookings);
         };
         const handleBookingStatus = async (bookingId, nextStatus, previousStatus, { silent = false } = {}) => {
@@ -243,16 +249,18 @@ async function loadBookings(userId) {
         const profileSnapshot = await getDoc(doc(getFirestoreDb(), "proProfiles", userId));
         const movementInfo = profileSnapshot.data()?.movementInfo;
         const paymentInfo = profileSnapshot.data()?.paymentInfo;
+        const clientRecordsSnapshot = await getDocs(query(collection(getFirestoreDb(), "proClientRecords"), where("proId", "==", userId)));
+        const clientRecords = Object.fromEntries(clientRecordsSnapshot.docs.map((record) => [record.data().clientId, record.data()]));
         if ((!movementInfo?.movement || !movementInfo.address) && !paymentInfo?.enabled) {
             return bookings;
         }
-        return Promise.all(bookings.map((booking) => saveBookingContext(booking, movementInfo, paymentInfo)));
+        return Promise.all(bookings.map((booking) => saveBookingContext(booking, movementInfo, paymentInfo, clientRecords[booking.clientId] || {})));
     } catch {
         return [];
     }
 }
 
-async function saveBookingContext(booking, movementInfo, paymentInfo) {
+async function saveBookingContext(booking, movementInfo, paymentInfo, clientRecord = {}) {
     if (booking.status === "rejected") {
         return booking;
     }
@@ -264,20 +272,19 @@ async function saveBookingContext(booking, movementInfo, paymentInfo) {
             zones: movementInfo.zones || []
         });
     }
-    const paymentContext = paymentInfo?.enabled ? buildPaymentContext(booking, paymentInfo, movementQuote) : null;
+    const paymentContext = paymentInfo?.enabled ? buildPaymentContext(booking, paymentInfo, movementQuote, clientRecord) : null;
     if (!movementQuote && !paymentContext) return booking;
     const updates = {};
     if (movementQuote && !booking.movementQuote) updates.movementQuote = movementQuote;
-    if (paymentContext && !booking.paymentContext) updates.paymentContext = paymentContext;
+    if (paymentContext && JSON.stringify(paymentContext) !== JSON.stringify(booking.paymentContext || null)) updates.paymentContext = paymentContext;
     if (!Object.keys(updates).length) return { ...booking, movementQuote, paymentContext: booking.paymentContext };
     await updateBookingDetails(booking.id, updates);
     return { ...booking, ...updates };
 }
 
-function buildPaymentContext(booking, paymentInfo, movementQuote) {
+function buildPaymentContext(booking, paymentInfo, movementQuote, clientRecord) {
     const durationHours = Math.round(((new Date(booking.end) - new Date(booking.start)) / 3600000) * 100) / 100;
-    const ratePerUnit = Number(paymentInfo.ratePerUnit) || 0;
-    const surcharge = Number(movementQuote?.surcharge) || 0;
+    const { ratePerUnit, surcharge } = applyClientPricingOverrides({ paymentInfo, movementQuote, clientRecord });
     return {
         bankTransfer: Boolean(paymentInfo.bankTransfer),
         rib: paymentInfo.bankTransfer ? paymentInfo.rib : "",

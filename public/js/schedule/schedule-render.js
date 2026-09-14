@@ -1,12 +1,14 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { normalizeScheduleSettings } from "./schedule-settings.mjs";
+import { buildFixedBookingDetails, toggleFixedSlotSelection } from "./schedule-selection.mjs";
 
 const strings = UI_STRINGS.proDashboard.schedule;
 const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
 
-export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, onCalendarRangeChange, daysToShow = 7, workingHours = {}, bookings = [], calendarEvents = [] } = {}) {
+export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, onCalendarRangeChange, daysToShow = 7, timezone = "Europe/Paris", workingHours = {}, bookings = [], calendarEvents = [] } = {}) {
     let selectedDays = daysToShow;
     let weekOffset = 0;
-    const visibleDays = getVisibleDays(selectedDays, weekOffset);
+    const visibleDays = getVisibleDays(selectedDays, weekOffset, timezone);
     container.innerHTML = `
         <div class="schedule-head">
             <div class="schedule-title">
@@ -28,7 +30,7 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
         </div>
         <div class="schedule-scroll">
             <div class="schedule-grid" role="grid" aria-label="${strings.title}">
-                ${renderGrid(getVisibleDays(selectedDays, weekOffset), workingHours, bookings, calendarEvents)}
+                ${renderGrid(getVisibleDays(selectedDays, weekOffset, timezone), workingHours, bookings, calendarEvents, timezone)}
             </div>
         </div>
     `;
@@ -43,7 +45,6 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
             refreshCalendarRange();
         });
     });
-    attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu);
     container.querySelector("[data-navigation='previous']").addEventListener("click", () => {
         weekOffset -= 1;
         refreshCalendarRange();
@@ -56,14 +57,14 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
         weekOffset += 1;
         refreshCalendarRange();
     });
-    renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+    renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, timezone, onCreateBooking, onSelectBooking, onBookingContextMenu);
 
     async function refreshCalendarRange() {
-        const visibleDays = getVisibleDays(selectedDays, weekOffset);
+        const visibleDays = getVisibleDays(selectedDays, weekOffset, timezone);
         if (onCalendarRangeChange) {
             calendarEvents = await onCalendarRangeChange({ from: visibleDays[0].date, to: endOfDay(visibleDays[visibleDays.length - 1].date) });
         }
-        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu);
+        renderScheduleGrid(container, selectedDays, weekOffset, workingHours, bookings, calendarEvents, timezone, onCreateBooking, onSelectBooking, onBookingContextMenu);
     }
 }
 
@@ -73,23 +74,23 @@ function endOfDay(date) {
     return end;
 }
 
-function renderScheduleGrid(container, daysToShow, weekOffset, workingHours, bookings, calendarEvents, onCreateBooking, onSelectBooking, onBookingContextMenu) {
-    const visibleDays = getVisibleDays(daysToShow, weekOffset);
+function renderScheduleGrid(container, daysToShow, weekOffset, workingHours, bookings, calendarEvents, timezone, onCreateBooking, onSelectBooking, onBookingContextMenu) {
+    const visibleDays = getVisibleDays(daysToShow, weekOffset, timezone);
     const grid = container.querySelector(".schedule-grid");
     grid.style.setProperty("--schedule-day-count", String(visibleDays.length));
-    grid.innerHTML = renderGrid(visibleDays, workingHours, bookings, calendarEvents);
-    attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu);
+    grid.innerHTML = renderGrid(visibleDays, workingHours, bookings, calendarEvents, timezone);
+    attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu, normalizeScheduleSettings(workingHours.scheduleSettings));
     container.querySelector(".schedule-summary").textContent = `${strings.summary.replace("{days}", visibleDays.length)} · ${formatDateRange(visibleDays)}`;
 }
 
-function renderGrid(visibleDays, workingHours, bookings, calendarEvents) {
+function renderGrid(visibleDays, workingHours, bookings, calendarEvents, timezone) {
     const header = [`<div class="schedule-cell schedule-day" role="columnheader"></div>`]
         .concat(visibleDays.map((day) => `<div class="schedule-cell schedule-day" role="columnheader"><span>${day.label}</span><small>${day.shortDate}</small></div>`))
         .join("");
 
     const rows = hours.map((hour) => {
         const slots = visibleDays
-            .map((day) => renderSlot(hour, day, workingHours, bookings, calendarEvents))
+            .map((day) => renderSlot(hour, day, workingHours, bookings, calendarEvents, timezone))
             .join("");
 
         return `<div class="schedule-cell schedule-time" role="rowheader">${hour}</div>${slots}`;
@@ -98,7 +99,8 @@ function renderGrid(visibleDays, workingHours, bookings, calendarEvents) {
     return header + rows;
 }
 
-function renderSlot(hour, day, workingHours, bookings, calendarEvents) {
+function renderSlot(hour, day, workingHours, bookings, calendarEvents, timezone) {
+    const scheduleSettings = normalizeScheduleSettings(workingHours.scheduleSettings);
     const dayNumber = day.date.getDay() || 7;
     const isWorkingDay = workingHours.workingDays?.includes(dayNumber) ?? true;
     const absence = (workingHours.absences || []).some((item) => item.start && item.end && day.isoDate >= item.start && day.isoDate <= item.end);
@@ -109,10 +111,13 @@ function renderSlot(hour, day, workingHours, bookings, calendarEvents) {
     const breakStart = workingHours.recurringBreak?.start || "12:00";
     const breakEnd = workingHours.recurringBreak?.end || "13:00";
     const isBreak = hour >= breakStart && hour < breakEnd;
-    const booking = findBooking(bookings, day.isoDate, hour);
+    const booking = findBooking(bookings, day.isoDate, hour, timezone);
     const calendarEvent = findCalendarEvent(calendarEvents, day.isoDate, hour);
     const inBuffer = isWithinBookingBuffer(day, hour, bookings, Number(workingHours.bufferMinutes) || 0);
-    const available = isWorkingDay && isWithinHours && !isBreak && !absence && !booking && !inBuffer;
+    const activeOnDate = scheduleSettings.activationMode === "permanent"
+        || (scheduleSettings.activationMode === "from-date" && (!scheduleSettings.activationDate || day.isoDate >= scheduleSettings.activationDate))
+        || (scheduleSettings.activationMode === "single-day" && day.isoDate === scheduleSettings.activationDate);
+    const available = activeOnDate && isWorkingDay && isWithinHours && !isBreak && !absence && !booking && !inBuffer;
     if (booking) {
         const status = ["pending", "accepted", "done", "no-show"].includes(booking.status) ? booking.status : "pending";
         const clientLabel = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || strings.bookingLabel);
@@ -128,8 +133,8 @@ function renderSlot(hour, day, workingHours, bookings, calendarEvents) {
     return `<div class="schedule-cell ${className}" role="gridcell" data-schedule-date="${day.isoDate}" data-schedule-hour="${hour}" data-available="${available}">${label}</div>`;
 }
 
-function getVisibleDays(daysToShow, weekOffset) {
-    const monday = getMonday(new Date());
+function getVisibleDays(daysToShow, weekOffset, timezone) {
+    const monday = getMonday(new Date(`${getZonedDate(new Date(), timezone)}T00:00:00`));
     monday.setDate(monday.getDate() + (weekOffset * 7));
 
     return Array.from({ length: daysToShow }, (_, index) => {
@@ -139,7 +144,7 @@ function getVisibleDays(daysToShow, weekOffset) {
             date,
             isoDate: toIsoDate(date),
             label: strings.days[index],
-            shortDate: new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(date)
+            shortDate: formatIsoShortDate(toIsoDate(date))
         };
     });
 }
@@ -165,10 +170,11 @@ function formatDateRange(days) {
     return first === last ? first : `${first}–${last}`;
 }
 
-function findBooking(bookings, isoDate, hour) {
+function findBooking(bookings, isoDate, hour, timezone) {
     return bookings.find((booking) => {
         const start = toDate(booking.start);
-        return start && toIsoDate(start) === isoDate && start.getHours() === Number(hour.slice(0, 2)) && booking.status !== "rejected";
+        const parts = start ? getZonedParts(start, timezone) : null;
+        return parts && parts.date === isoDate && parts.hour === Number(hour.slice(0, 2)) && booking.status !== "rejected";
     });
 }
 
@@ -193,7 +199,12 @@ function escapeHtml(value) {
     })[character]);
 }
 
-function attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu) {
+function attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu, scheduleSettings) {
+    let selectedFixedSlots = [];
+    const clearFixedSelection = () => {
+        selectedFixedSlots = [];
+        container.querySelectorAll(".schedule-slot-fixed-selected").forEach((cell) => cell.classList.remove("schedule-slot-fixed-selected"));
+    };
     container.querySelectorAll(".schedule-slot").forEach((slot) => {
         slot.addEventListener("click", () => {
             if (slot.dataset.bookingId) {
@@ -206,14 +217,40 @@ function attachBookingCreation(container, onCreateBooking, onSelectBooking, onBo
             onBookingContextMenu?.({ bookingId: slot.dataset.bookingId, x: event.clientX, y: event.clientY });
         });
         slot.addEventListener("dblclick", () => {
-            if (slot.dataset.available === "true") {
+            if (slot.dataset.available === "true" && scheduleSettings.method === "drag") {
                 onCreateBooking?.({ date: slot.dataset.scheduleDate, hour: slot.dataset.scheduleHour });
             }
         });
-        if (slot.dataset.available === "true") {
+        if (slot.dataset.available === "true" && scheduleSettings.method === "drag") {
             slot.addEventListener("mousedown", (event) => startDragSelection(event, container, slot, onCreateBooking));
         }
+        if (slot.dataset.available === "true" && scheduleSettings.method === "fixed") {
+            slot.addEventListener("click", (event) => {
+                const slotDetails = { date: slot.dataset.scheduleDate, hour: slot.dataset.scheduleHour };
+                if (!scheduleSettings.allowMultipleSlots) {
+                    onCreateBooking?.({ ...slotDetails, endHour: addMinutesToHour(slotDetails.hour, scheduleSettings.slotDurationMinutes) });
+                    return;
+                }
+                if (event.detail > 1) {
+                    const details = buildFixedBookingDetails(selectedFixedSlots, scheduleSettings.slotDurationMinutes);
+                    clearFixedSelection();
+                    onCreateBooking?.(details);
+                    return;
+                }
+                const next = toggleFixedSlotSelection(selectedFixedSlots, slotDetails, scheduleSettings.maxSlots);
+                if (next.length === selectedFixedSlots.length && !next.some((item) => item.date === slotDetails.date && item.hour === slotDetails.hour)) return;
+                selectedFixedSlots = next;
+                container.querySelectorAll(".schedule-slot-fixed-selected").forEach((cell) => cell.classList.remove("schedule-slot-fixed-selected"));
+                selectedFixedSlots.forEach((item) => findScheduleSlot(container, item.date, item.hour)?.classList.add("schedule-slot-fixed-selected"));
+            });
+        }
     });
+}
+
+function addMinutesToHour(hour, minutes) {
+    const [hours, currentMinutes] = hour.split(":").map(Number);
+    const total = hours * 60 + currentMinutes + minutes;
+    return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
 function startDragSelection(startEvent, container, startSlot, onCreateBooking) {
@@ -317,4 +354,18 @@ function isWithinBookingBuffer(day, hour, bookings, bufferMinutes) {
         const expandedEnd = new Date(end.getTime() + bufferMinutes * 60000);
         return expandedStart < slotEnd && expandedEnd > slotStart;
     });
+}
+
+function getZonedDate(value, timezone) {
+    return getZonedParts(value, timezone).date;
+}
+
+function getZonedParts(value, timezone) {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(value);
+    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return { date: `${values.year}-${values.month}-${values.day}`, hour: Number(values.hour) };
+}
+
+function formatIsoShortDate(isoDate) {
+    return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(new Date(`${isoDate}T12:00:00Z`));
 }

@@ -3,9 +3,11 @@
 *This document tracks the required manual configuration steps. Until every item is checked off `[x]`, the project is in a "Setup Pending" state.*
 *Ce document suit les Ã©tapes de configuration manuelle requises. Tant que chaque Ã©lÃ©ment n'est pas cochÃ© `[x]`, le projet est dans un Ã©tat "Configuration en attente".*
 
-**AI execution note / Note d'execution IA:** Follow the token-efficient workflow in `MASTER_SPECIFICATION.md`: read only the files needed for the current checklist item, avoid screenshots and browser inspection unless explicitly requested, run the narrowest available validation, and report the direct local browser URL when visual testing is needed.
+**AI execution note / Note d'execution IA:** Follow the token-efficient workflow in `MASTER_SPECIFICATION.md`: read only the files needed for the current checklist item, avoid screenshots and browser inspection unless explicitly requested, run the narrowest available validation, and report the direct local browser URL when visual testing is needed. The AI performs every possible verification itself and asks the human to participate only when the check is impossible for the AI; then it gives one step at a time and records the result.
 
 **Resume checkpoint / Point de reprise:** Before starting a new conversation, read `docs/verification/VERIFICATION_LOG.md` -> `Current project checkpoint`. It records completed implementation slices, the latest regression total, pending human/external gates, and the next implementation slice; completed work must not be restarted.
+
+**Completion handoff / Transmission de fin:** When a feature is finished, update the verification log with `DONE`, `AI VERIFIED - HUMAN CHECK OPTIONAL`, `HUMAN + AI VERIFIED`, or `BLOCKED - EXTERNAL/HUMAN ACTION REQUIRED`. Always tell the human what was completed, what evidence was collected, and which feature will be developed and tested next.
 
 ## Phase 0: Human Environment Setup / Configuration de l'environnement
 
@@ -39,6 +41,7 @@
 
 ### Production deployment parity / Parite du deploiement production
 
+- **Value-driven production rule / Regle de production guidee par la valeur:** choose the amount of work that best advances the product while keeping the result understandable and verifiable. Architecture improvements, refactors, UI polish, performance work, infrastructure, and adjacent roadmap items are allowed when they have a clear user, security, reliability, maintainability, or future-cost benefit. Before editing, state the intended outcome and the cheapest useful proof. Do not spend AI effort on work with no credible payoff, and record completed slices and remaining uncertainty in the verification log.
 - Selective deployment completed on 2026-09-13. The live inventory now includes the repository's booking claims, professional booking contact/series, history-share auditing, onboarding, and Calendar Functions without deleting unrelated existing Functions.
 - Firebase returned a non-code deployment warning because Artifact Registry cleanup policy configuration in `europe-west9` still needs to be set with `firebase functions:artifacts:setpolicy` or an equivalent explicit retention decision.
 - [ ] **Publiez la tranche professionnelle du 2026-09-14 apres validation locale. / Deploy the 2026-09-14 professional-dashboard slice after local validation.** Required targets: `functions:addProfessionalDelegate`, `functions:removeProfessionalDelegate`, `functions:listDelegatedBookings`, `functions:getBookingPrepNotes`, `functions:updateBookingPrepNotes`, `functions:batchUpdateBookingStatus`, notification triggers, `firestore:rules`, and `hosting`. This remains unchecked until Firebase reports a successful production deployment.

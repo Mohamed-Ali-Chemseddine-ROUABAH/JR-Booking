@@ -17,8 +17,13 @@ export function initializeBookingEdit({ booking, onSaved }) {
             <div class="working-hours-fields">
                 <label class="working-hours-field"><span>Début</span><input name="start" type="datetime-local" required></label>
                 <label class="working-hours-field"><span>Fin</span><input name="end" type="datetime-local" required></label>
+                <label class="working-hours-field"><span>${strings.serviceLabel}</span><input name="serviceName" type="text" maxlength="120" value="${escapeAttribute(booking.service?.name || "")}"></label>
+                <label class="working-hours-field"><span>${strings.serviceDurationLabel}</span><input name="serviceDuration" type="number" min="1" max="1440" value="${Number(booking.service?.durationMinutes) || ""}"></label>
+                <label class="working-hours-field"><span>${strings.servicePriceLabel}</span><input name="servicePrice" type="number" min="0" max="100000" step="0.01" value="${Number(booking.service?.price) || 0}"></label>
+                <label class="working-hours-field"><span>${strings.customPriceLabel}</span><input name="customPrice" type="number" min="0" max="100000" step="0.01" value="${booking.customPrice ?? ""}"></label>
                 ${booking.seriesId ? `<label class="working-hours-field"><span>Appliquer à</span><select name="seriesScope"><option value="this">Cette occurrence</option><option value="this-and-following">Cette occurrence et les suivantes</option><option value="all-in-series">Toute la série</option></select></label>` : ""}
             </div>
+            <label class="working-hours-field"><span>${strings.clientMessageLabel}</span><textarea name="clientMessage" maxlength="2000" rows="3">${escapeHtml(booking.clientMessage || "")}</textarea></label>
             <div class="working-hours-actions"><span class="working-hours-feedback" data-edit-feedback role="status" aria-live="polite"></span><button class="btn btn-solid" type="submit">Enregistrer</button></div>
         </form>`;
     document.body.append(modal);
@@ -56,6 +61,9 @@ export function initializeBookingEdit({ booking, onSaved }) {
                 contacts: contactEditor.getContacts(),
                 start: form.start.value,
                 end: form.end.value,
+                service: form.serviceName.value.trim() ? { name: form.serviceName.value, durationMinutes: Number(form.serviceDuration.value), price: Number(form.servicePrice.value) } : null,
+                customPrice: form.customPrice.value === "" ? null : Number(form.customPrice.value),
+                clientMessage: form.clientMessage.value,
                 seriesScope: form.seriesScope?.value || "this"
             });
             const affectedCount = result.data?.affectedBookingIds?.length || 1;
@@ -78,4 +86,12 @@ function toDateTimeLocal(value) {
 
 function createRequestId() {
     return globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[character]));
+}
+
+function escapeAttribute(value) {
+    return escapeHtml(value);
 }

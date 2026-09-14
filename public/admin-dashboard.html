@@ -26,7 +26,7 @@
     </section>
     <section class="glass admin-request-panel" aria-labelledby="recovery-title">
       <div class="working-hours-header"><div><span class="eyebrow">SÉCURITÉ</span><h2 id="recovery-title">Récupération d’accès</h2><p class="admin-panel-help">Envoyez un nouveau lien sans supprimer les réservations ni les profils liés.</p></div></div>
-      <form class="admin-link-form" data-admin-recovery-form><input type="text" name="target" placeholder="UID ou adresse courriel" required><button class="btn btn-solid" type="submit">Envoyer un lien sécurisé</button></form>
+      <form class="admin-link-form" data-admin-recovery-form><input type="text" name="target" placeholder="UID ou adresse courriel" required><select name="mode" aria-label="Mode de récupération"><option value="preserve">Conserver les données liées</option><option value="wipe">Effacer les données liées</option></select><input type="text" name="confirmation" placeholder="EFFACER TOUTES LES DONNEES pour effacer" autocomplete="off"><button class="btn btn-solid" type="submit">Envoyer un lien sécurisé</button></form>
       <p class="dashboard-status" data-admin-recovery-feedback role="status"></p>
     </section>
     <section class="glass admin-request-panel" aria-labelledby="profiles-title">

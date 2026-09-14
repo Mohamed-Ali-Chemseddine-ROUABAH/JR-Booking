@@ -5,7 +5,7 @@ import { escapeHtml } from "../core/utils.js";
 
 const strings = UI_STRINGS.proDashboard.communicationHistory;
 
-export async function initializeClientCommunicationHistory({ client }) {
+export async function initializeClientCommunicationHistory({ client, timezone = "Europe/Paris" }) {
     const modal = document.createElement("div");
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
@@ -22,18 +22,18 @@ export async function initializeClientCommunicationHistory({ client }) {
             return { booking, messages: snapshot.docs.map((item) => item.data()) };
         }));
         const messages = groups.flatMap(({ booking, messages: bookingMessages }) => bookingMessages.map((message) => ({ booking, message }))).sort((left, right) => toDate(right.message.createdAt) - toDate(left.message.createdAt));
-        list.innerHTML = messages.length ? `<div class="communication-timeline">${messages.map(({ booking, message }) => renderMessage(booking, message)).join("")}</div>` : `<div class="communication-empty"><strong>${strings.emptyTitle}</strong><p>${strings.emptyBody}</p></div>`;
+        list.innerHTML = messages.length ? `<div class="communication-timeline">${messages.map(({ booking, message }) => renderMessage(booking, message, timezone)).join("")}</div>` : `<div class="communication-empty"><strong>${strings.emptyTitle}</strong><p>${strings.emptyBody}</p></div>`;
     } catch {
         list.innerHTML = `<p class="working-hours-feedback">${strings.loadError}</p>`;
     }
     return modal;
 }
 
-function renderMessage(booking, message) {
+function renderMessage(booking, message, timezone) {
     const sender = message.senderRole === "professional" ? strings.professional : strings.client;
     const tone = message.senderRole === "professional" ? "is-professional" : "is-client";
-    return `<article class="communication-entry ${tone}"><div class="communication-entry-marker" aria-hidden="true"></div><div class="communication-entry-content"><div class="communication-entry-meta"><strong>${sender}</strong><span>${formatDate(message.createdAt)}</span></div><p>${escapeHtml(message.body || "")}</p><small>${strings.booking} · ${formatDate(booking.start)}</small></div></article>`;
+    return `<article class="communication-entry ${tone}"><div class="communication-entry-marker" aria-hidden="true"></div><div class="communication-entry-content"><div class="communication-entry-meta"><strong>${sender}</strong><span>${formatDate(message.createdAt, timezone)}</span></div><p>${escapeHtml(message.body || "")}</p><small>${strings.booking} · ${formatDate(booking.start, timezone)}</small></div></article>`;
 }
 
 function toDate(value) { if (!value) return new Date(0); if (typeof value.toDate === "function") return value.toDate(); const date = new Date(value); return Number.isNaN(date.getTime()) ? new Date(0) : date; }
-function formatDate(value) { return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(toDate(value)); }
+function formatDate(value, timezone) { return new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short", timeZone: timezone }).format(toDate(value)); }

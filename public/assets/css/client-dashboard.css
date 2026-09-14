@@ -4,7 +4,7 @@
 }
 
 .client-dashboard-wrap {
-  width: min(1180px, calc(100vw - 40px));
+  width: min(1440px, calc(100vw - 32px));
   margin: 0 auto;
   padding-top: 16px;
 }
@@ -75,9 +75,29 @@
   justify-content: flex-end;
 }
 
-.navbar-icon-action { width: 42px; height: 42px; padding: 9px; }
+.icon-button {
+  min-height: 34px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px dashed var(--panel-brd-strong);
+  color: var(--ink-500);
+  background: transparent;
+  border-radius: 999px;
+}
+
+.icon-button:hover {
+  color: var(--ink-100);
+  border-style: solid;
+  border-color: var(--ink-100);
+}
+
+.icon-button.navbar-icon-action { width: 42px; height: 42px; padding: 9px; }
 .navbar-icon-action svg { display: block; width: 22px; height: 22px; }
 .navbar-logout-action { color: var(--ink-300); }
+.navbar-icon-group { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 
 .pro-account {
   min-width: 0;
@@ -92,6 +112,9 @@
   white-space: nowrap;
   font-size: .9rem;
 }
+
+.mobile-menu-trigger { display: none; padding: 9px 14px; color: var(--ink-300); background: transparent; border: 1px dashed var(--panel-brd-strong); border-radius: var(--r-sm); font-family: var(--font-display); }
+.mobile-menu-trigger:hover { color: var(--ink-100); border-color: var(--ink-100); }
 
 .settings-menu { position: relative; }
 
@@ -129,20 +152,20 @@
 }
 
 .client-dashboard-layout {
-  margin-top: 24px;
+  margin-top: 20px;
   display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(290px, .7fr);
-  grid-template-areas: "schedule bookings";
-  gap: 20px;
+  grid-template-columns: minmax(300px, .7fr) minmax(0, 1.45fr);
+  grid-template-areas: "bookings schedule";
+  gap: 18px;
   align-items: start;
 }
 
 .pro-sidebar {
   grid-area: bookings;
-  padding: 18px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   position: sticky;
   top: 20px;
 }
@@ -208,14 +231,60 @@
 .client-professional-search {
   margin-top: 24px;
   padding: 18px 22px;
-  display: grid;
-  gap: 12px;
+  transition: max-height .22s ease, padding .22s ease;
 }
 
 .client-professional-search h2 {
-  margin: 0;
+  margin: 2px 0 0;
   color: var(--ink-100);
   font: 600 1.05rem var(--font-display);
+}
+
+.client-professional-search.is-quiet {
+  max-height: 54px;
+  overflow: hidden;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.client-professional-search.is-quiet.is-expanded,
+.client-professional-search.is-quiet.is-hovered {
+  max-height: 480px;
+  overflow-y: auto;
+  padding: 18px 22px;
+}
+
+.professional-search-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.client-professional-search.is-quiet:not(.is-expanded):not(.is-hovered) .professional-search-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.client-professional-search.is-quiet:not(.is-expanded):not(.is-hovered) h2 { margin: 0; }
+
+.professional-search-count { padding: 3px 8px; color: var(--ink-500); background: rgba(244,245,247,.04); border: 1px solid var(--hair); border-radius: 999px; font-size: .75rem; white-space: nowrap; }
+
+.professional-search-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.client-professional-search.is-quiet .professional-search-body {
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+
+.client-professional-search.is-quiet.is-expanded .professional-search-body,
+.client-professional-search.is-quiet.is-hovered .professional-search-body {
+  opacity: 1;
 }
 
 .professional-search-pill {
@@ -294,6 +363,7 @@
 .professional-chip button.professional-chip-heart.is-favorited { color: #ff5470; }
 
 .client-schedule-panel { grid-area: schedule; min-width: 0; padding: 22px; }
+.client-schedule-panel { border-color: var(--panel-brd-strong); box-shadow: 0 18px 50px rgba(0,0,0,.14); }
 .client-schedule-heading { display: flex; justify-content: space-between; gap: 14px; align-items: end; margin-bottom: 14px; }
 .client-schedule-heading h1 { margin: 7px 0 0; color: var(--ink-100); font: 600 1.65rem var(--font-display); }
 .client-schedule-summary { color: var(--ink-500); font: .68rem var(--font-mono); text-transform: uppercase; }
@@ -346,4 +416,9 @@
     flex-direction: column;
     align-items: stretch;
   }
+  .pro-topbar { position: relative; }
+  .mobile-menu-trigger { display: block; align-self: flex-end; }
+  .pro-actions { display: none; width: 100%; }
+  .pro-topbar.is-mobile-open .pro-actions { display: flex; }
+  .navbar-icon-group { justify-content: flex-start; }
 }

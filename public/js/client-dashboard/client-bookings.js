@@ -3,7 +3,7 @@ import { escapeHtml } from "../core/utils.js";
 
 const strings = UI_STRINGS.clientDashboard.bookings;
 
-export function initializeClientBookings(container, { userId, bookings = [], onAccept, onCancel, onRequestChange, onUnlinkClaim, onRequestHistoryShare, onMessages, initialFilter = "pending", onFilterChange } = {}) {
+export function initializeClientBookings(container, { userId, timezone = "Europe/Paris", bookings = [], onAccept, onCancel, onRequestChange, onUnlinkClaim, onRequestHistoryShare, onMessages, initialFilter = "pending", onFilterChange } = {}) {
     container.innerHTML = `
         <div class="sidebar-head">
             <h1>${strings.title}</h1>
@@ -22,7 +22,7 @@ export function initializeClientBookings(container, { userId, bookings = [], onA
     const applyFilter = (filter) => {
         activeFilter = filter;
         container.querySelectorAll("[data-filter]").forEach((item) => item.classList.toggle("is-active", item.dataset.filter === filter));
-        renderBookings(bookingsRoot, userId, bookings, activeFilter);
+        renderBookings(bookingsRoot, userId, timezone, bookings, activeFilter);
     };
 
     container.querySelectorAll("[data-filter]").forEach((button) => {
@@ -62,7 +62,7 @@ export function initializeClientBookings(container, { userId, bookings = [], onA
     applyFilter(activeFilter);
 }
 
-function renderBookings(container, userId, bookings, activeFilter) {
+function renderBookings(container, userId, timezone, bookings, activeFilter) {
     const visibleBookings = bookings.filter((booking) => matchesFilter(booking, activeFilter));
     if (!visibleBookings.length) {
         container.innerHTML = `<section class="glass-ghost empty-feed"><h2>${strings.emptyTitle}</h2><p>${strings.emptyBody}</p></section>`;
@@ -72,8 +72,8 @@ function renderBookings(container, userId, bookings, activeFilter) {
     container.innerHTML = visibleBookings.map((booking) => {
         const start = toDate(booking.start);
         const name = escapeHtml(booking.proDisplayName || strings.bookingFallbackName);
-        const date = start ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(start) : "";
-        const time = start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+        const date = start ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", timeZone: timezone }).format(start) : "";
+        const time = start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: timezone }) : "";
         const isOwnBooking = booking.clientId === userId;
         const isProMade = isOwnBooking && booking.status === "pending" && booking.createdBy && booking.createdBy !== userId;
         const isOwnPending = isOwnBooking && booking.status === "pending" && (!booking.createdBy || booking.createdBy === userId);
@@ -97,7 +97,7 @@ function renderBookings(container, userId, bookings, activeFilter) {
             ? `<div class="sidebar-booking-actions">${shareTargets.map((contact) => `<button class="btn btn-ghost" type="button" data-share-history="${escapeHtml(contact.linkedUid)}" title="${escapeHtml(strings.shareHistory(contact.name || contact.email))}">${escapeHtml(strings.shareHistory(contact.name || contact.email))}</button>`).join("")}</div>`
             : "";
         const movementQuote = booking.movementQuote
-            ? `<small>${strings.movementDistance}: ${booking.movementQuote.distanceKm} km · ${strings.movementSurcharge}: ${booking.movementQuote.surcharge} €</small>`
+            ? `<small>${strings.movementDistance}: ${booking.movementQuote.distanceKm} km · ${strings.movementSurcharge}: ${booking.paymentContext?.surcharge ?? booking.movementQuote.surcharge} €</small>`
             : "";
         return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}"><strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${strings.statuses[booking.status] || booking.status}</small>${movementQuote}${notice}${messageAction}${bookingActions}${unlinkAction}${shareActions}</article>`;
     }).join("");

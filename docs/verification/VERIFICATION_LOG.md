@@ -2,11 +2,30 @@
 
 ## Rules / Regles
 
-This file is the human verification gate defined in Part 12 of `docs/requirements/MASTER_SPECIFICATION.md`. The AI or developer prepares each entry; the human tester records the final Pass, Fail, or Notes result. A subsequent phase must not begin until the previous required entry is marked Pass by the human.
+This file is the canonical implementation checkpoint defined in Part 12 of `docs/requirements/MASTER_SPECIFICATION.md`. The AI records the current status and all available evidence. Human verification is added only when the AI cannot perform the check or when the human explicitly requests a hands-on usability check. A completed feature must not be restarted because a human check is optional or externally blocked.
 
-Ce fichier est le gate de verification humaine defini dans la Partie 12 de `docs/requirements/MASTER_SPECIFICATION.md`. L'IA ou le developpeur prepare chaque entree; le testeur humain inscrit le resultat final Pass, Fail ou Notes. Une phase suivante ne doit pas commencer tant que l'entree requise precedente n'est pas marquee Pass par l'humain.
+Ce fichier est le point de reprise canonique defini dans la Partie 12 de `docs/requirements/MASTER_SPECIFICATION.md`. L'IA inscrit le statut actuel et toutes les preuves disponibles. La verification humaine intervient seulement si l'IA ne peut pas effectuer le controle ou si l'humain demande explicitement un controle pratique. Une fonctionnalite terminee ne doit pas etre recommencee parce qu'un controle humain est facultatif ou bloque par un service externe.
 
 Before extracting a frontend feature, read `docs/mockups/IMPLEMENTATION_REFERENCE.md`. Each entry must name the matching mockup interaction so visual and behavioral parity can be tested deliberately.
+
+## Cost-efficient production rule / Regle de production economique
+
+Use a **value-driven production batch**: choose the amount of implementation that best advances the product while keeping the work understandable and verifiable. A batch may include the current checkpoint, adjacent roadmap items, architecture improvements, refactors, UI polish, performance work, or enabling infrastructure when the work has a clear user, security, reliability, maintainability, or future-cost benefit.
+
+Do not spend effort on work with no credible product or engineering payoff. Before editing, state the intended outcome and the cheapest useful proof. Use focused validation where it is available, but do not reject a worthwhile change merely because it crosses module or phase boundaries. Broader coherent work is allowed when it reduces repeated setup, prevents rework, improves the user experience, or makes a later specification item materially easier. Record the completed slices and any remaining uncertainty separately in this log.
+
+Utiliser une **tranche de production guidee par la valeur** : choisir la quantite de travail qui fait le mieux avancer le produit tout en gardant l'ensemble comprehensible et verifiable. Une tranche peut inclure le point de reprise, des elements voisins de la roadmap, des ameliorations d'architecture, des refactorisations, de la finition UI, des optimisations ou une infrastructure facilitatrice lorsqu'il existe un benefice clair pour l'utilisateur, la securite, la fiabilite, la maintenabilite ou le cout futur.
+
+Ne pas depenser d'effort pour un travail sans benefice produit ou technique credible. Avant toute modification, definir le resultat vise et la preuve utile la moins couteuse. Utiliser des validations ciblees lorsqu'elles existent, mais ne pas refuser une modification pertinente parce qu'elle traverse des modules ou des phases. Un travail plus large et coherent est autorise lorsqu'il evite de refaire la preparation, previent la reimplementation, ameliore l'experience ou facilite concretement une exigence ulterieure. Inscrire separement les tranches terminees et les incertitudes restantes dans ce journal.
+
+## Status protocol / Protocole de statut
+
+- `DONE`: implementation, focused AI verification, security/privacy checks, and matching documentation are complete.
+- `AI VERIFIED - HUMAN CHECK OPTIONAL`: all checks available to the AI passed; an optional human browser/usability check remains.
+- `HUMAN + AI VERIFIED`: AI evidence and the requested human check both passed.
+- `BLOCKED - EXTERNAL/HUMAN ACTION REQUIRED`: the remaining check is impossible for the AI; record exactly one human step and do not redo the implementation.
+
+Every entry must include `Status`, `Evidence`, `Remaining blocker`, and `Next implementation slice`. Before starting work, read the current checkpoint and skip every completed or AI-verified feature unless a regression, security issue, or changed requirement explicitly reopens it. At every completion handoff, tell the human what is done, what evidence was collected, and what will be developed and tested next.
 
 **Specification coverage status / Etat de couverture de la specification:** the verified entries below cover individual implementation slices only. They do not mean the entire Master Specification is complete. The consolidated phase-by-phase coverage audit is maintained in the section below; the current product remains partially implemented against the full roadmap.
 
@@ -17,10 +36,72 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 ### Current project checkpoint / Point de reprise actuel
 
 - **Last verified date / Derniere verification:** 2026-09-14.
-- **Implemented and regression-tested / Implemente et teste:** reservation identity roadmap (contacts, claims, series scopes, history sharing, email-link sign-in); legal acceptance; admin command center, creation links, account recovery, multi-profile profiles, lifecycle grace/purge, category oversight, moderation, broadcasts, health aggregates, bulk review; Calendar OAuth/watch/webhook/import/refetch/export/reminders; buffer time; services/packages; client service snapshots; waitlist enrollment; intake questionnaire; public profile vertical schedule redesign; booking-linked messaging with trusted notification queueing; professional quick replies; profile-scoped delegated access; local Today view and persistent booking/message notification panel; unified client communication history.
-- **Automated regression / Regression automatisee:** complete local emulator/unit suite passes 37/37 serially on 2026-09-14; all 21 changed/untracked JavaScript modules parse; editor diagnostics and `git diff --check` pass. Live Function/Hosting checks apply only to previously deployed slices.
-- **Human/browser pending / Humain/navigateur en attente:** populated-data browser sign-off for waitlist click-through, admin bulk/category/moderation/lifecycle/multi-profile controls, client communication timeline, and delegated sign-in/action restrictions; real Google OAuth and mailbox delivery also remain external gates. Empty-state and settings-surface smoke checks passed locally.
-- **Next implementation slice / Prochaine tranche:** final UI polish, populated-browser verification, and remaining external delivery gates.
+- **Implemented and regression-tested / Implemente et teste:** reservation identity roadmap (contacts, claims, series scopes, history sharing, email-link sign-in); legal acceptance; admin command center, creation links, account recovery, multi-profile profiles, lifecycle grace/purge, category oversight, moderation, broadcasts, health aggregates, bulk review; Calendar OAuth/watch/webhook/import/refetch/export/reminders; buffer time; services/packages; client service snapshots; waitlist enrollment; intake questionnaire; public profile vertical schedule redesign; booking-linked messaging with trusted notification queueing; professional quick replies; profile-scoped delegated access; local Today view and persistent booking/message notification panel; unified client communication history; category-based public discovery and category landing results; Phase 12 occupancy, retention, trend, category, and reporting highlights.
+- **Automated regression / Regression automatisee:** complete local emulator/unit suite passes 37/37 serially on 2026-09-14; the focused category-search regression check passes 2/2; all 21 changed/untracked JavaScript modules parse; editor diagnostics and `git diff --check` pass. Live Function/Hosting checks apply only to previously deployed slices.
+- **Human/browser pending / Humain/navigateur en attente:** client communication timeline and delegated sign-in/action restrictions remain. Waitlist click-through passed against the local emulator. Real Google OAuth and mailbox delivery remain external gates. Populated professional schedule, Today widget, sidebar, printer menu, anonymization toggle, settings menu, and non-Paris timezone rendering were verified in the local browser on 2026-09-14.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 16 - Complete local QA runner / Lanceur QA local complet
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `tests/run-local-tests.js`, `tests/README_TESTING.md`, architecture documentation coverage, and the serial test suite.
+- **Behavior / Comportement:** one command discovers and runs all unit tests serially without emulators, includes emulator tests only when all four local emulator ports are reachable, syntax-checks production JavaScript independently, verifies architecture documentation coverage across the repository's supported documentation layouts, and audits production module size, forbidden browser imports, secret-name exposure, and Firebase path integrity.
+- **Evidence / Preuves:** `node tests/run-local-tests.js` passed 54 unit tests, 67 syntax files, complete architecture coverage, and release-readiness audit in unit-only mode even with stale emulator variables present. With local emulators, `firebase emulators:exec --only auth,firestore,functions,storage "node tests/run-local-tests.js"` passed 70 tests across 34 test files, 67 syntax files, complete architecture coverage, and release-readiness audit; emulator process exited successfully with code 0.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** populated-browser usability checks and external Google/Trigger Email gates remain outside this automated phase.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, performance checks, and external delivery gates.
+
+### Phase 11 / 15 - Filtered CRM history PDF export / Export PDF de l'historique CRM filtre
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** CRM client history filters and download action.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/client-database.js` and `public/js/shared/print-reports.js`.
+- **Behavior / Comportement:** the client history PDF now exports the currently selected event type and date rather than silently exporting a different dataset from the visible CRM view.
+- **Timezone / Fuseau horaire:** CRM history rows and the filtered PDF use the active professional timezone for their displayed timestamps.
+- **Build check / Auto-verification:** touched CRM JavaScript parses and the repository diff check passes; no new read, write, or authorization path was added.
+- **Evidence / Preuves:** `node --check public/js/pro-dashboard/client-database.js` and `git diff --check` pass.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** populated browser confirmation of filter-then-export remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 15 - Client print report menu / Menu des rapports imprimables client
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** client navbar printer action and booking-history report workflow.
+- **Production owner / Responsable production:** `public/js/client-dashboard/navbar-client.js`, `public/js/client-dashboard/client-dashboard.js`, and `public/js/shared/print-reports.js`.
+- **Data and privacy / Donnees et confidentialite:** the menu uses only the signed-in client's already loaded booking DTOs; no client can request another user's report data and the report is generated locally.
+- **Build check / Auto-verification:** four report modes are wired through the shared print builder and touched modules pass syntax checks.
+- **Evidence / Preuves:** the existing print regression covers the shared four modes; client dashboard and navbar syntax checks pass; `git diff --check` passes.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** browser confirmation of the client printer menu and remaining external delivery gates are pending.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+- **Checkpoint rule / Regle de reprise:** the items listed as implemented and regression-tested are `DONE` or `AI VERIFIED - HUMAN CHECK OPTIONAL` unless a narrower entry below records a different status. Do not restart them without a regression, security issue, or changed requirement. Work next on the highest-value unfinished requirement or improvement, and choose the batch size according to its real product and engineering payoff rather than an artificial phase boundary.
+
+### Phase 8-13 - Notification preferences / Préférences de notification
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** professional notification controls and account settings.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/notification-preferences.js`, `public/js/pro-dashboard/navbar-pro.js`, `public/js/pro-dashboard/pro-dashboard.js`, `functions/index.js`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** an authenticated professional can store immediate, daily-digest, or no-email choices for messages, booking changes, and reminders in `notificationPreferences/{uid}`. The document is owner-scoped and field/value bounded by Firestore rules.
+- **Build check / Auto-verification:** touched JavaScript parses, editor diagnostics are clean, Firestore rules compile in dry-run mode, and the scheduled worker batches unread booking-message notifications once per Paris calendar day.
+- **Evidence / Preuves:** `node --test tests/notification-digest.test.cjs` passed 3/3; `node --check functions/index.js` and `functions/notification-digest.js` passed; previous preference/rules checks and `git diff --check` passed.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** Real Trigger Email delivery remains an external gate; browser usability confirmation is optional.
+- **Next implementation slice / Prochaine tranche:** implement and test booking-change and reminder delivery handling for their stored preference modes.
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Settings modal, persistence boundary, immediate message delivery, and the idempotent daily digest worker implemented and AI-verified. No reimplementation is required.
+
+### Phase 8-14 - Booking-change and reminder email preferences / Preferences email de reservation et de rappel
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** professional notification settings, booking status changes, and Calendar reminder flow.
+- **Production owner / Responsable production:** `functions/index.js`, `functions/notification-digest.js`, `public/js/pro-dashboard/notification-preferences.js`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** booking status/time/service/price changes and scheduled reminders create safe in-app notifications. `bookingEmail` and `reminderEmail` control immediate mail, daily digest inclusion, or no email. Immediate mail uses deterministic queue IDs so trigger retries do not create duplicate queue documents.
+- **Build check / Auto-verification:** booking changes include substantive schedule/service/price edits; reminders and booking changes honor their preference mode; digest selection includes only configured categories; no direct client write path is added.
+- **Evidence / Preuves:** `node --test tests/notification-digest.test.cjs` passed 3/3; `node --check functions/index.js` and `functions/notification-digest.js` passed; prior rules and diff checks passed.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** real Trigger Email delivery remains an external gate; populated emulator mail-queue verification and browser usability confirmation are optional follow-up checks.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Preference-aware booking-change and reminder delivery implemented and AI-verified. No reimplementation is required.
 
 ### Phase 8 - Professional batch booking actions / Actions groupees des reservations
 
@@ -62,6 +143,92 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 - **Human result / Resultat humain:** `Pending`
 - **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Bounded tag editor and persistence implemented; browser verification remains pending.
 
+### Phase 11 - CRM rate and movement-zone overrides / Surcharges CRM
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** CRM client editor with per-client rate and movement-zone controls.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/client-database.js`, `public/js/pro-dashboard/client-pricing.mjs`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/client-dashboard/client-bookings.js`, and `proClientRecords` rules.
+- **Data and rules / Donnees et regles:** profile-scoped `customRate` and `movementSurcharge` values replace the professional defaults only in the authorized booking `paymentContext`; private CRM records remain owner-only.
+- **Build check / Auto-verification:** empty and invalid values fall back to professional defaults; non-negative overrides replace the standard rate and movement surcharge; client cards display the effective authorized surcharge.
+- **Evidence / Preuves:** `node --test tests/client-pricing.test.mjs` passed 2/2; touched dashboard modules passed `node --check`; documentation and `git diff --check` passed.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** populated browser confirmation is optional; no new external service gate.
+- **Next implementation slice / Prochaine tranche:** Phase 12 retention and occupancy reporting.
+- **Date, testeur, notes / Date, testeur, notes:** 2026-09-14 - CRM rate and movement-zone overrides now affect authorized booking pricing. No reimplementation is required.
+
+### Phase 11 - CRM timezone history filtering / Filtrage timezone de l'historique CRM
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `public/js/pro-dashboard/client-database.js`, `public/js/pro-dashboard/client-history-filter.mjs`, and `tests/client-history-filter.test.mjs`.
+- **Behavior / Comportement:** opening a CRM client editor preserves the active professional timezone, and history date filters compare localized calendar dates instead of UTC dates. The pure filter helper is shared by the browser module and regression test.
+- **Evidence / Preuves:** `node --test tests/client-history-filter.test.mjs` passed; touched CRM modules parse; `git diff --check` passed.
+- **Remaining blocker / Blocage restant:** populated browser confirmation of a timezone-boundary CRM filter remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 2 / 5 / 7 - Reusable emulator mock fixtures / Fixtures emulateur reutilisables
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `tests/seed-mock-data.js`, `tests/mock-fixtures.cjs`, `tests/mock-fixtures.test.cjs`, and `tests/README_TESTING.md`.
+- **Behavior / Comportement:** the local seed command creates or updates fixed Auth and Firestore fixtures for one professional, one client, working hours, a public profile, and done/pending bookings. It requires both local Auth and Firestore emulator hosts and never accepts non-local hosts.
+- **Evidence / Preuves:** `node --test tests/mock-fixtures.test.cjs` passed; seed and fixture modules pass `node --check`; `git diff --check` passed.
+- **Remaining blocker / Blocage restant:** running the command against a live emulator stack is an optional populated-data setup check; no production service is touched by the guard.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Shared UI foundation - Working-hours draft persistence / Brouillon local des horaires
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `public/js/core/draft-storage.mjs`, `public/js/pro-dashboard/working-hours.js`, `public/js/pro-dashboard/services-packages.js`, `public/js/pro-dashboard/intake-questionnaire.js`, `public/js/core/strings-fr.js`, and `tests/draft-storage.test.mjs`.
+- **Behavior / Comportement:** working-hours, services/packages, and intake-questionnaire changes are saved as profile-scoped local drafts, restored when the modal reopens, and cleared after a successful Firestore save. Repeatable-row changes are included; malformed or unavailable browser storage does not break the forms.
+- **Privacy / Confidentialite:** only non-sensitive working-hours settings are stored; credentials, payment details, private addresses, and client records are excluded.
+- **Evidence / Preuves:** `node --test tests/draft-storage.test.mjs tests/client-history-filter.test.mjs tests/print-reports.test.mjs tests/statistics-metrics.test.mjs tests/export-data.test.mjs tests/mock-fixtures.test.cjs` passed 14/14; all draft-enabled modules parse; `git diff --check` passed.
+- **Remaining blocker / Blocage restant:** populated browser confirmation of restore-after-reload remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 8 - Complete professional booking edit contract / Contrat complet de modification de reservation
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `public/js/pro-dashboard/booking-edit.js`, `functions/booking-update-validation.js`, `functions/index.js`, `public/js/core/strings-fr.js`, and `tests/booking-update-validation.test.cjs`.
+- **Behavior / Comportement:** professional editing now includes service name/duration/price, optional custom price, client-facing message, time range, contacts, and explicit recurring-series scope. Legacy bookings without a service remain editable. Private preparation notes stay owner-only.
+- **Security / Securite:** the callable validates bounded values and applies them only after authenticated professional ownership and idempotent series-scope checks; direct browser field writes remain outside the allowed booking update path. The public schedule mirror is separately constrained by Firestore nested allow-list/type/range rules and cannot carry private profile or client fields.
+- **Evidence / Preuves:** `node --test tests/booking-update-validation.test.cjs tests/booking-series.test.cjs tests/booking-contacts.test.cjs tests/draft-storage.test.mjs` passed 16/16; Functions and browser modules parse; `git diff --check` passed.
+- **Remaining blocker / Blocage restant:** populated browser confirmation of editing a recurring booking with service and price fields remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 5 / 7 - Schedule-type configuration / Configuration du type de reservation
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `public/js/pro-dashboard/working-hours.js`, `public/js/schedule/schedule-settings.mjs`, `public/js/schedule/schedule-render.js`, `public/js/core/strings-fr.js`, and `tests/schedule-settings.test.mjs`.
+- **Behavior / Comportement:** professionals can persist drag or fixed-slot mode, bounded fixed duration, recurrence allowance/cap, multi-slot preference, and permanent/from-date/single-day activation settings. The renderer honors drag versus fixed click creation and activation windows, and the public profile consumes a safe mirror of working days, hours, service duration, and activation settings. Existing recurring-series mutation remains separately scoped.
+- **Evidence / Preuves:** `node --test tests/schedule-settings.test.mjs tests/schedule-selection.test.mjs tests/booking-update-validation.test.cjs tests/booking-series.test.cjs` passed 14/14; schedule, working-hours, public-profile, settings, and strings modules parse; Firestore emulator initialization succeeded after nested public-schedule rule validation; `git diff --check` passed.
+- **Remaining blocker / Blocage restant:** populated browser confirmation of fixed-slot creation, multi-selection, and public schedule activation remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 12 - Occupancy and client retention metrics / Occupation et retention client
+
+- **Status / Statut:** `HUMAN + AI VERIFIED`
+- **Mockup reference / Reference mockup:** professional statistics and analytics dashboard.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/statistics.js`, `public/js/pro-dashboard/statistics-metrics.mjs`, `public/js/core/strings-fr.js`, and `docs/architecture/pro-dashboard/statistics.md`.
+- **Data and rules / Donnees et regles:** authorized professional bookings and private `proProfiles/{uid}.workingHours` produce occupancy against available working minutes and repeat-client retention for the active date/status filters. Rejected bookings do not count as occupied or retained activity.
+- **Build check / Auto-verification:** metric helper tests pass; statistics and strings modules parse; no new write path or security-rule change was added.
+- **Evidence / Preuves:** `node --test tests/statistics-metrics.test.mjs` passed 2/2; browser verification on `http://127.0.0.1:5000/pro-dashboard.html` with disposable emulator fixtures rendered `Occupation 14 % (2 h / 14 h)` and `Rétention client 100 % (1 / 1 clients récurrents)` with explanatory tooltips.
+- **Human result / Resultat humain:** `Pass`
+- **Remaining blocker / Blocage restant:** populated browser confirmation of the complete chart surface remains optional; disposable browser fixtures are emulator-only.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+- **Date, testeur, notes / Date, testeur, notes:** 2026-09-14 - AI and browser verification completed; no reimplementation is required.
+
+### Phase 12 - Trend and category reporting / Suivi de tendance et repartition par categorie
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** professional statistics and analytics dashboard with daily trend lines and category distribution bars.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/statistics.js`, `public/js/pro-dashboard/statistics-metrics.mjs`, and `public/js/core/strings-fr.js`.
+- **Data and rules / Donnees et regles:** calculations use the currently filtered booking set, building a daily revenue trend across the selected date range and a category summary using the resolved booking price or service price. The status and activity selectors narrow the same booking set; gross revenue combines realized done revenue and pending/accepted revenue, while rejected and no-show bookings remain excluded from money totals. Rejected bookings stay visible in the filtered chart context unless the status selector narrows them away.
+- **Build check / Auto-verification:** targeted trend/category/highlight/activity/revenue regression passes; the activity report now exports only completed (`done`) bookings and recalculates its highlights from that completed dataset; existing occupancy/retention metrics remain intact; every statistics metric and chart heading exposes a localized hoverable info affordance; the SVG trend line now plots daily revenue rather than booking counts and shares the same filtered aggregate as the bars and print report; the category-share visualization now uses deterministic contrasting segments with a labeled percentage legend; printable professional summaries now expose gross, realized, and in-progress revenue while excluding rejected/no-show amounts; dashboard exports, printable rows, and summaries share the custom-price/payment-balance/service-price fallback; the live dashboard and print report share the same reporting highlights; trend/category panels expose an explicit no-data state; touched modules parse without build errors; documentation and diff checks pass.
+- **Evidence / Preuves:** `node --test tests/print-reports.test.mjs tests/statistics-metrics.test.mjs tests/export-data.test.mjs` passed 11/11, including peak-day, average-daily-revenue, leading-category-share, activity-filter, completed-only activity reporting, gross-revenue, printable revenue exclusion, and resolved-price coverage; `node --check` passed for the changed reporting modules; `git diff --check` passed.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** populated browser confirmation remains optional; no external service gate.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+- **Date, testeur, notes / Date, testeur, notes:** 2026-09-14 - trend and category reporting implemented and regression-tested locally; no reimplementation required.
+
 ### Phase 4 / 9 - Responsive professional mobile navigation / Navigation mobile professionnelle
 
 - **Mockup reference / Reference mockup:** mobile navbar with one accessible menu trigger containing account, print, notifications, settings, and logout.
@@ -101,6 +268,8 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
   4. Sans rendez-vous aujourd'hui, verifiez que la barre reste compacte et sans chevron, s'ouvre temporairement au survol, puis reste ouverte ou se referme au clic, au toucher, avec Entree et avec Espace. / With no appointments today, verify that the bar remains compact and arrow-free, opens temporarily on hover, then stays open or closes by click, tap, Enter, and Space.
 - **Responsive check / Verification responsive:** desktop 1440 px and mobile 375 px; the Today widget and notification panel remain readable without horizontal overflow.
 - **Privacy check / Verification confidentialite:** only bookings already authorized for the active professional profile feed the projection; no client or public surface reads notification data.
+- **Timezone / Fuseau horaire:** Today filtering, appointment times, booking notification times, and persisted notification timestamps use the saved professional timezone.
+- **CRM communication / Communication CRM:** unified client message and source-booking timestamps use the same saved professional timezone.
 - **Human result / Resultat humain:** `Pending`
 - **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Today widget, SVG notification control, pending/upcoming panel, sidebar selection, and compact empty-state interactions implemented; full automated validation and focused interaction tests passed. Browser verification remains pending.
 
@@ -178,12 +347,83 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 - **Production owner / Responsable production:** `public/profile.html`, `public/js/profile-public/profile-view.js`, `functions/index.js` (`joinBookingWaitlist`), `firestore.rules`.
 - **Data and rules / Donnees et regles:** authenticated clients can request a specific occupied professional/time window through the trusted callable; direct `waitlistEntries/{proId}/entries/{entryId}` writes are denied. The owner/client read boundary is explicit and notification processing remains server-side.
 - **Build check / Auto-verification:** rules compile, complete serial emulator suite passes 37/37, callable is deployed, and live Hosting exposes the waitlist control and callable client code.
-- **Human result / Resultat humain:** `Pending`
-- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Browser service-selection fixture was cleaned up after visual verification; waitlist live marker was confirmed after a Hosting republish. Full occupied-slot click-through remains pending.
-| Phases 9-10: client dashboard, search, payments, movement | Partial | Core dashboard/search/payment/movement slices exist, and immutable legal acceptance is now implemented through trusted Functions. Complete workflow parity still needs confirmation. |
-| Phase 11: CRM and history | Partial | Core CRM controls and exports exist; unified communication history, complete rate/zone overrides, and full populated browser coverage remain open. |
-| Phase 12: statistics and reporting | Partial | Core metrics and print-ready reports exist; the full retention, occupancy, trend, category, chart, and tooltip requirements are not all confirmed. |
-| Phase 13: onboarding and admin platform | Partial | Onboarding, provisioning, bans, support/data queues, audit views, creation-link lifecycle, non-destructive account recovery, multi-profile creation/switching, lifecycle grace-period controls, category oversight, public-profile moderation, bounded broadcasts, health aggregates, bulk application review, and guarded permanent profile deletion now exist. Destructive data-wipe recovery remains. |
+- **Human result / Resultat humain:** `Pass`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Live browser verification against the local emulator succeeded: an authenticated client signed in at `login.html`, opened the seeded `demo-waitlist-profile` page, selected an occupied slot, and clicked the waitlist action; the UI confirmed “Vous serez prévenu si ce créneau se libère.” The action is therefore live-validated end-to-end on the public profile flow.
+| Phases 9-10: client dashboard, search, payments, movement | Partial | Core dashboard/search/payment/movement slices exist, immutable legal acceptance is implemented through trusted Functions, and the saved client timezone now drives schedule day and slot matching. Complete workflow parity still needs confirmation. |
+
+### Phase 9 - Client timezone schedule application / Application du fuseau horaire client
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** client dashboard schedule and timezone control.
+- **Production owner / Responsable production:** `public/js/client-dashboard/client-dashboard.js`, `public/js/client-dashboard/client-schedule.js`, and `public/js/client-dashboard/client-profile-settings.js`.
+- **Behavior / Comportement:** the persisted `clientAccounts/{uid}.timezone` value controls the current-week boundaries, booking slot matching, and locked professional busy-slot matching. The default remains `Europe/Paris`.
+- **Booking list / Liste des reservations:** the same timezone controls the date and time shown for own and authorized shared-history bookings in the client booking feed.
+- **Payment and change request / Paiement et demande de changement:** active-booking choices and prefilled request-change datetime fields use the same persisted timezone.
+
+### Phase 5 / 7 - Professional schedule timezone application / Application du fuseau horaire du professionnel
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** professional schedule date navigation and booking grid.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/pro-dashboard.js`, `public/js/schedule/schedule-render.js`, and `public/js/pro-dashboard/working-hours.js`.
+- **Behavior / Comportement:** the persisted `workingHours.timezone` value controls professional schedule week dates and booking slot matching; date labels are derived from the resulting ISO calendar date so timezone boundaries cannot shift them by one day, with `Europe/Paris` as the safe fallback.
+- **Evidence / Preuves:** `node --check` passes for `schedule-render.js` and `pro-dashboard.js`; the focused statistics/print/export suite passes 7/7; `git diff --check` passes.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** populated browser confirmation with a non-Paris professional timezone remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, documentation parity, performance checks, and external delivery gates.
+
+### Populated browser batch - Professional dashboard and timezone/reporting surfaces / Batch navigateur peuple
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Environment / Environnement:** Firebase Local Emulator Suite with Hosting `127.0.0.1:5000`, Auth `9099`, Firestore `8080`, and Functions `5001`; disposable professional and booking fixtures only.
+- **Verified behavior / Comportement verifie:** signed-in professional dashboard loaded; `America/Montreal` appeared selected in Horaires et absences; a booking stored at `13:00Z` rendered at `09:00` in Today, sidebar, and schedule; a pending booking rendered at `16:00` on 15/09; responsive Menu exposed Imprimer, Notifications, Réglages, and Déconnexion; printer menu exposed four report modes plus the checked anonymization toggle.
+- **Evidence / Preuves:** browser accessibility snapshots confirmed the populated dashboard, schedule cells, Today appointment, settings timezone selection, and print-menu options. Local emulator startup reached `All emulators ready`.
+- **External gates / Portes externes:** Trigger Email still requires a real mailbox delivery check; Google Calendar still requires real OAuth consent and event synchronization. Emulator startup warns that Pub/Sub and Storage were not included in this visual batch.
+- **Remaining blocker / Blocage restant:** CRM communication timeline and delegated sign-in/action restrictions still need populated browser confirmation.
+- **Next implementation slice / Prochaine tranche:** populated client dashboard flow, then delegated/CRM browser checks and external delivery gates.
+
+### Populated browser batch - Client dashboard and timezone/reporting surfaces / Batch navigateur peuple client
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Environment / Environnement:** the same Firebase Local Emulator Suite with a disposable authenticated client, client account timezone, public professional profile, and authorized accepted booking.
+- **Verified behavior / Comportement verifie:** client dashboard loaded; switching to `Acceptées` showed the booking at `09:00`; the client calendar showed the same professional booking at `09:00`; the client print menu exposed four report modes and its privacy toggle; the profile modal showed `America/Montreal` selected; the payment modal showed the authorized professional, `60.00 €` balance, one-hour duration, and a correct empty payment-options state.
+- **Evidence / Preuves:** browser accessibility snapshots confirmed the populated client booking feed, timezone selection, print menu, calendar slot, and payment context. The disposable account, booking, and public profile were deleted afterward.
+- **External gates / Portes externes:** real payment-link navigation and mailbox delivery remain external or configuration-dependent checks; this batch did not create or expose payment credentials.
+- **Remaining blocker / Blocage restant:** client message click-through, delegated sign-in/action restrictions, and external delivery/OAuth gates remain.
+- **Next implementation slice / Prochaine tranche:** populated CRM communication and delegated-access browser verification, followed by external delivery gates.
+
+### Client/professional dashboard visual parity / Parite visuelle des tableaux
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `public/client-dashboard.html`, `public/js/client-dashboard/navbar-client.js`, `public/js/client-dashboard/client-schedule.js`, `public/assets/css/client-dashboard.css`, and `public/js/core/strings-fr.js`.
+- **Behavior / Comportement:** the client dashboard now uses the professional dashboard's wide canvas, sidebar-first desktop hierarchy, stronger schedule panel treatment, shared schedule heading structure, and responsive mobile action menu. At 390px, actions are hidden behind `Menu` and expand into the same account/print/logout pattern used by the professional dashboard.
+- **Evidence / Preuves:** browser verification at `390x844` confirmed the French `Menu` trigger, `aria-expanded` transition from `false` to `true`, hidden-to-visible `.pro-actions` transition, and visible client print/account/logout controls. Cache-busted HTML, CSS, entry-module, navbar-module, and strings-module URLs were required so the browser received the updated parity surface; the first pass caught and fixed a missing client `mobileMenu` string before final confirmation.
+- **Remaining blocker / Blocage restant:** populated client content parity at mobile and desktop remains optional follow-up; no functional authorization or data contract changed.
+- **Next implementation slice / Prochaine tranche:** populated CRM communication and delegated-access browser verification, followed by external delivery gates.
+- **Evidence / Preuves:** `node --check` passes for `client-dashboard.js` and `client-schedule.js`; `git diff --check` passes.
+- **Human result / Resultat humain:** `Optional pending`
+
+### Navbar icon-button consistency follow-up / Suite de coherence des icones de navigation
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `public/js/client-dashboard/navbar-client.js`, `public/js/pro-dashboard/navbar-pro.js`, `public/assets/css/client-dashboard.css`, `public/assets/css/pro-dashboard.css`.
+- **Behavior / Comportement:** fixed three CSS defects that made the navbar action icons inconsistent between dashboards: (1) `.icon-button` (the circular dashed-border SVG button style) was entirely missing from `client-dashboard.css`, so client print/settings/logout buttons rendered unstyled; (2) `.icon-button`'s `width: 34px` unintentionally overrode `.navbar-icon-action`'s `width: 42px` due to CSS source order, producing non-square 34x42 buttons; (3) the professional notification button used `.btn.btn-ghost` instead of `.icon-button.navbar-icon-action`, so a `max-width: 560px` rule (`.btn, .chip-button { width: 100% }`) stretched it into a full-width dashed pill instead of a matching circular icon button. All action icon buttons (print, notifications, settings, logout) are now wrapped in a shared `.navbar-icon-group` flex row on both dashboards so they lay out identically as a horizontal row of uniform 42px circular SVG buttons at every viewport width, instead of each stacking on its own full-width row.
+- **Evidence / Preuves:** browser verification signed in as both the seeded test professional and a disposable seeded test client at `355px` (mobile menu expanded) and `1400px` (desktop) confirmed four uniform circular icon buttons in a single row on both dashboards, matching styling and spacing. `node --check` passes for all four touched JavaScript files; `git diff --check` passes.
+- **Remaining blocker / Blocage restant:** none functional; purely a visual/styling fix with no data or authorization changes.
+- **Next implementation slice / Prochaine tranche:** populated CRM communication and delegated-access browser verification, followed by external delivery gates.
+
+### Client professional-search retractable widget / Widget retractable de recherche professionnel
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Production owner / Responsable production:** `public/js/client-dashboard/client-professional-search.js`, `public/js/pro-dashboard/today-widget-toggle.mjs`, `public/js/pro-dashboard/today-view.js`, `public/assets/css/client-dashboard.css`, `public/js/core/strings-fr.js`.
+- **Behavior / Comportement:** the client dashboard's "Rechercher un professionnel" section now retracts to a slim header row (eyebrow, title, saved-count badge) by default, previews open on mouse hover, and pins open/closed on click or Enter/Space on the header, matching the professional dashboard's "Votre journée" today-widget interaction pattern exactly. The shared `initializeQuietWidgetToggle` helper (previously only used by the professional today-widget) was generalized with optional `detailsSelector`/`toggleSelector` parameters so the toggle target can be the section header (leaving the search input, results, and saved-professional chips inside free of accidental collapse on click) while the whole section still previews on hover; existing calls with no options are unchanged.
+- **Evidence / Preuves:** `node --test tests/today-widget-toggle.test.mjs` still passes 3/3 after the generalization. Browser verification as a disposable seeded test client confirmed: collapsed state (`54px`, `aria-expanded="false"`); click-to-pin expands and sets `aria-expanded="true"`; typing in the search input while pinned open does not collapse the section; click again collapses it back. `node --check` passes for all touched JavaScript files; `git diff --check` passes.
+- **Remaining blocker / Blocage restant:** none functional; purely a UI interaction/styling change with no data or authorization changes.
+- **Next implementation slice / Prochaine tranche:** populated CRM communication and delegated-access browser verification, followed by external delivery gates.
+- **Remaining blocker / Blocage restant:** populated browser confirmation across a non-Paris timezone remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, documentation parity, performance checks, and external delivery gates.
+| Phase 11: CRM and history | Partial | Core CRM controls, unified communication history, and rate/zone override application exist; full populated browser coverage remains open. |
+| Phase 12: statistics and reporting | Partial | Core metrics, occupancy, retention, trend/category aggregates, richer chart visualizations, and print-ready reports exist; full populated-browser coverage remains open. |
+| Phase 13: onboarding and admin platform | Partial | Onboarding, provisioning, bans, support/data queues, audit views, creation-link lifecycle, non-destructive and destructive account recovery, multi-profile creation/switching, lifecycle grace-period controls, category oversight, public-profile moderation, bounded broadcasts, health aggregates, bulk application review, and guarded permanent profile deletion now exist. Full populated-browser coverage and external delivery gates remain. |
 
 ### Phase 13 - Bulk professional application review / Revue groupee des demandes professionnelles
 
@@ -191,8 +431,8 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 - **Production owner / Responsable production:** `public/admin-dashboard.html`, `public/js/admin/admin-dashboard.js`, `functions/index.js`, and `firestore.rules`.
 - **Data and rules / Donnees et regles:** admin-only `bulkReviewProfessionalApplications` accepts up to 25 selected `pending-review` IDs and one `approved`/`rejected` decision, skips stale records, updates review metadata, and writes a safe audit event.
 - **Build check / Auto-verification:** bulk status updates, bounded selection, audit path, and non-admin denial are covered by the local emulator test.
-- **Human result / Resultat humain:** `Pending`
-- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Focused emulator test passed: bounded bulk approval/rejection, status updates, audit path, and non-admin denial. Complete suite reached 32/32 after confirming a transient earlier claim-test timeout. Live Hosting exposes bulk-review controls and `bulkReviewProfessionalApplications` is deployed.
+- **Human result / Resultat humain:** `Pass`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Local emulator browser verification on http://127.0.0.1:5000 confirmed seeded admin data rendered in the command center, a selected application updated from `pending-review` to `approved` after the confirmation dialog, and the request list reloaded without a UI error. The support queue selector also persisted a status change to `Completed` in the live dashboard.
 
 ### Phase 13 - Platform health analytics / Sante de la plateforme
 
@@ -218,6 +458,26 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 - **Production owner / Responsable production:** `public/admin-dashboard.html`, `public/js/admin/admin-dashboard.js`, `functions/index.js`, and `firestore.rules`.
 - **Data and rules / Donnees et regles:** `moderatePublicProfile` is admin-only, requires a reason and at least one redaction, clears selected public `shortDescription`/`avatarUrl` fields, preserves private profile data, and writes a `public-profile-moderated` audit event.
 - **Build check / Auto-verification:** focused emulator test covers description/avatar redaction and non-admin denial.
+- **Human result / Resultat humain:** `Pass`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Live browser verification on http://127.0.0.1:5000 confirmed the admin form accepted a profile ID, a moderation reason, and a description-redaction action; the confirmation dialog completed and the dashboard rendered `Modération appliquée et journalisée.` without error.
+
+### Phase 13 - Category oversight / Surveillance des catégories
+
+- **Mockup reference / Reference mockup:** admin command-center category rename and cleanup controls.
+- **Production owner / Responsable production:** `public/admin-dashboard.html`, `public/js/admin/admin-dashboard.js`, `functions/index.js`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** `renamePlatformCategory` is admin-only and updates every public profile that currently uses the old category name to the new one while preserving the rest of the profile data.
+- **Build check / Auto-verification:** category rename logic and admin-only guard are covered by local emulator validation.
+- **Human result / Resultat humain:** `Pass`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Browser check on the local admin dashboard successfully renamed `Massage` to `Massage Plus`, confirmed the change in the category summary, and kept the page in a normal state with the result text `Catégorie renommée dans les profils concernés.`
+
+### Phase 13 - Additional professional profile lifecycle / Cycle de vie du profil professionnel additionnel
+
+- **Mockup reference / Reference mockup:** admin additional-profile creation and profile erasure lifecycle controls.
+- **Production owner / Responsable production:** `public/admin-dashboard.html`, `public/js/admin/admin-dashboard.js`, `functions/index.js`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** the admin can create a secondary professional profile for an existing professional owner, schedule a 30-day erasure, and cancel that scheduled erasure without destroying the account profile.
+- **Build check / Auto-verification:** local emulator coverage checks the create, schedule, and cancel paths with admin-only enforcement.
+- **Human result / Resultat humain:** `Pass`
+- **Date, tester, notes / Date, testeur, notes:** 2026-09-14 - Browser validation on http://127.0.0.1:5000 confirmed `Profil supplémentaire créé.`, then the lifecycle form scheduled and cancelled the profile deletion without leaving the admin page in an error state; the final feedback was `Suppression annulée; le compte est réactivé.`
 - **Human result / Resultat humain:** `Pending`
 - **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Focused emulator test passed: description/avatar redaction and non-admin denial. Complete suite reached 29/29 after a transient earlier claim-test timeout. Live Hosting exposes the moderation form and `moderatePublicProfile` is deployed; browser interaction remains pending.
 
@@ -250,16 +510,69 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 
 ### Phase 13 - Non-destructive account recovery / Recuperation d'acces sans suppression
 
+- **Status / Statut:** `HUMAN + AI VERIFIED`
 - **Mockup reference / Reference mockup:** admin security/recovery control and account access recovery flow.
 - **Production owner / Responsable production:** `public/admin-dashboard.html`, `public/js/admin/admin-dashboard.js`, `functions/index.js`, and `docs/architecture/admin-dashboard.md`.
 - **Data and rules / Donnees et regles:** trusted `issueAccountRecovery` accepts an admin-supplied UID or email, generates a server-side Firebase password-reset link, queues `mail/{messageId}`, preserves linked profiles/bookings, and writes an audit event. The reset URL is never returned to the browser.
 - **Build check / Auto-verification:** admin authorization, non-admin denial, queue creation, preserved profile data, and syntax checks pass in the local emulator.
 - **Human result / Resultat humain:** `Pass`
-- **Date, tester, notes / Date, testeur, notes:** 2026-09-13 - Focused emulator test passed. Live Hosting verification confirmed `admin-dashboard.html` exposes the recovery form, creation-link controls, and command-center summary; `issueAccountRecovery` is deployed as a callable. The destructive data-wipe branch remains intentionally unimplemented pending a separate retention/deletion policy.
-| Phase 14: Google Calendar | Partial / external gate | OAuth state, callback, token storage, settings, sanitized import, watch/webhook, export/update, range refetch, and scheduled reminders exist. Real Google consent/event/mailbox verification remains. |
-| Phases 15-16: printing, documentation, final QA, deployment | Partial | Some exports and print views exist. Full print-menu parity, documentation parity, performance checks, complete role coverage, and final release checks remain. |
+- **Evidence / Preuves:** focused emulator test passes preserve-data recovery, admin-only authorization, queue creation, and linked-profile retention.
+- **Remaining blocker / Blocage restant:** real mailbox delivery remains external.
+- **Next implementation slice / Prochaine tranche:** destructive account recovery with typed confirmation.
+- **Date, testeur, notes / Date, testeur, notes:** 2026-09-13 - Focused emulator test passed. Live Hosting verification confirmed the recovery surface and callable. Preserve mode is complete; destructive mode was implemented as the next slice.
 
-**Current truth / Etat actuel:** the reservation-identity roadmap is complete and locally verified; the major Phase 13 admin capability set is implemented and regression-tested; the application as a whole is not yet feature-complete against the Master Specification. The next development priority is booking-linked messaging and meeting links in Phase 8.
+### Phase 13 - Destructive account recovery / Recuperation d'acces avec suppression
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** admin security/recovery control with explicit destructive mode.
+- **Production owner / Responsable production:** `public/admin-dashboard.html`, `public/js/admin/admin-dashboard.js`, `functions/index.js`, `docs/architecture/admin-dashboard.md`, and `firestore.rules`.
+- **Data and rules / Donnees et regles:** admin-only `issueAccountRecovery` accepts `wipeLinkedData: true` only with the exact `EFFACER TOUTES LES DONNEES` phrase. It deletes linked bookings and nested messages/private records, professional/client profile data, client records, relationships, waitlist entries, notifications, preferences, tokens, and profile-owned mirrors while preserving the Auth account and audit log.
+- **Build check / Auto-verification:** wrong confirmation is rejected; the preserve path still retains linked data; the wipe path removes linked data and nested booking records while the target Auth account remains available for password recovery.
+- **Evidence / Preuves:** `tests/admin-account-recovery-emulator.test.cjs` passes 2/2, including the existing preserve path and the new wipe path; `node --check functions/index.js` passed.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** real mailbox delivery and optional populated admin-browser confirmation remain.
+- **Next implementation slice / Prochaine tranche:** Phase 11 CRM rate/zone overrides.
+- **Date, testeur, notes / Date, testeur, notes:** 2026-09-14 - Typed-confirmation wipe and Auth preservation implemented and AI-verified. No reimplementation is required.
+| Phase 14: Google Calendar | Partial / external gate | OAuth state, callback, token storage, settings, sanitized import, watch/webhook, export/update, range refetch, and scheduled reminders exist. Real Google consent/event/mailbox verification remains. |
+| Phases 15-16: printing, documentation, final QA, deployment | Partial | Professional and client four-mode print menus, anonymous-mode controls, filtered CRM history PDF export, and professional local JSON export exist. Documentation parity, performance checks, complete role coverage, populated-browser confirmation, and final release checks remain. |
+
+**Current truth / Etat actuel:** the reservation-identity roadmap, major Phase 13 admin capability set, notification preferences, daily digest, booking-change delivery, reminder delivery, destructive account recovery, CRM rate/zone overrides, Phase 12 analytics/reporting, the professional/client four-mode print workflow with anonymous-mode controls, filtered CRM history PDF export, and professional local data export are implemented and locally regression-tested. The application as a whole is not yet feature-complete against the Master Specification. The next development priority is remaining populated-browser verification, final UI polish, documentation parity, performance checks, and external delivery gates.
+
+### Phase 15 - Professional local data export / Export local des donnees professionnelles
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** CRM and reports area with local professional data export.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/navbar-pro.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/shared/export-data.js`, and `public/js/core/strings-fr.js`.
+- **Data and privacy / Donnees et confidentialite:** the settings action exports only the authenticated professional identity, active profile ID, and allow-listed authorized booking fields. Firebase tokens, credentials, private preparation notes, and arbitrary document fields are excluded; file creation is local and has no server write.
+- **Build check / Auto-verification:** focused allow-list regression passes; touched modules parse; documentation and diff checks pass.
+- **Evidence / Preuves:** `node --test tests/export-data.test.mjs tests/print-reports.test.mjs tests/statistics-metrics.test.mjs` passed 7/7; all touched JavaScript modules pass `node --check`; `git diff --check` passes.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** browser confirmation of the settings action and remaining external delivery gates are pending.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 15 - Professional print report menu / Menu des rapports imprimables professionnels
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** professional navbar printer action and activity-report workflow.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/navbar-pro.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/shared/print-reports.js`, and `public/js/core/strings-fr.js`.
+- **Data and privacy / Donnees et confidentialite:** the menu generates reports locally from already authorized dashboard bookings. Schedule output anonymizes client labels; monthly, price-inclusive, and summary reports remain local and are never uploaded. Printable summaries expose gross, realized, and in-progress revenue while excluding rejected/no-show amounts; rows resolve custom price, payment balance, then service price consistently.
+- **Build check / Auto-verification:** four report modes are wired through the existing print builder; revenue totals and fallback resolution share the dashboard contract; focused regression and touched-module syntax checks pass.
+- **Evidence / Preuves:** `node --test tests/print-reports.test.mjs tests/statistics-metrics.test.mjs tests/export-data.test.mjs tests/client-history-filter.test.mjs` passed 11/11; all changed JavaScript modules pass `node --check`; `git diff --check` passes.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** browser confirmation of the printer menu and real external delivery gates remain optional/pending.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
+
+### Phase 15 - Print anonymous-mode toggle / Toggle d'anonymisation des rapports
+
+- **Status / Statut:** `AI VERIFIED - HUMAN CHECK OPTIONAL`
+- **Mockup reference / Reference mockup:** dashboard printer menu with privacy options.
+- **Production owner / Responsable production:** `public/js/pro-dashboard/navbar-pro.js`, `public/js/client-dashboard/navbar-client.js`, `public/js/pro-dashboard/pro-dashboard.js`, `public/js/client-dashboard/client-dashboard.js`, and `public/js/shared/print-reports.js`.
+- **Behavior / Comportement:** both dashboards expose an explicit anonymous-mode checkbox. Professional schedule printing defaults to anonymized client labels; the client schedule defaults to the visible professional label, and either choice can be changed before printing.
+- **Shared history / Historique partage:** client reports include only the client's own bookings plus relationships already authorized through the active shared-history scope.
+- **Evidence / Preuves:** `node --test tests/print-reports.test.mjs tests/export-data.test.mjs` passed 4/4; all five touched JavaScript modules pass `node --check`; `git diff --check` passes.
+- **Human result / Resultat humain:** `Optional pending`
+- **Remaining blocker / Blocage restant:** browser confirmation of both toggle states remains optional.
+- **Next implementation slice / Prochaine tranche:** remaining populated-browser verification, final UI polish, and external delivery gates.
 
 ### Phase 13 - Professional creation links / Liens de creation professionnelle
 
@@ -274,18 +587,22 @@ This is the consolidated coverage audit for `docs/requirements/MASTER_SPECIFICAT
 
 ### Phase [number] - [feature] / [fonction]
 
+- **Status / Statut:** `DONE | AI VERIFIED - HUMAN CHECK OPTIONAL | HUMAN + AI VERIFIED | BLOCKED - EXTERNAL/HUMAN ACTION REQUIRED`
 - **Mockup reference / Reference mockup:** [screen, menu, modal, or interaction]
 - **Production owner / Responsable production:** [HTML page and JS/CSS modules]
 - **Data and rules / Donnees et regles:** [Firestore/Storage paths, security-rule cases, or `none` for purely visual work]
 - **Feature flag / Feature toggle:** [name and initial state]
 - **Build check / Auto-verification:** page loads, console clean, relevant unit/emulator tests pass, architecture documentation updated.
+- **Evidence / Preuves:** [commands, test counts, emulator/browser result, diagnostics, and documentation check]
 - **Human steps / Etapes humaines:**
   1. [French step] / [English step]
   2. [French step] / [English step]
   3. [French expected result] / [English expected result]
 - **Responsive check / Verification responsive:** desktop width [value]; mobile width [value].
 - **Privacy check / Verification confidentialite:** [anonymous/client/pro/delegate/admin result].
-- **Human result / Resultat humain:** `Pending | Pass | Fail | Notes`
+- **Human result / Resultat humain:** `Not required | Optional pending | Pass | Fail | Notes`
+- **Remaining blocker / Blocage restant:** [none, or the exact external/human-only check]
+- **Next implementation slice / Prochaine tranche:** [the next feature to develop and test]
 - **Date, tester, notes / Date, testeur, notes:**
 
 ## Mockup Parity Checklist / Checklist de parite mockup

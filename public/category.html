@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR Booking Premium - Catégorie</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
+    <link rel="stylesheet" href="assets/css/glass-theme.css">
+    <script src="firebase-config.js?v=local-emulator-routing-20260910"></script>
+    <style>
+        .screen { min-height: 100vh; display: grid; place-items: center; padding: 80px 20px; }
+        .category-shell { width: min(760px, 92vw); display: grid; gap: 20px; }
+        .category-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .category-header h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 2.8rem); }
+        .search-results { display: grid; gap: 10px; }
+        .search-result { display: flex; justify-content: space-between; gap: 12px; padding: 14px 16px; color: var(--ink-300); }
+        .search-result strong { color: var(--ink-100); }
+        .search-result span { color: var(--ink-500); font-size: .78rem; text-align: right; }
+        @media (max-width: 430px) { .search-result { display: grid; } .search-result span { text-align: left; } }
+    </style>
+</head>
+<body>
+<section class="screen">
+  <div class="category-shell">
+    <div class="category-header">
+      <div>
+        <span class="eyebrow">CATÉGORIE</span>
+        <h1 data-category-title>Professionnels</h1>
+      </div>
+      <a class="btn btn-ghost" href="index.html">Retour</a>
+    </div>
+    <p class="search-status" data-category-status role="status" aria-live="polite"></p>
+    <div class="search-results" data-category-results aria-live="polite"></div>
+  </div>
+</section>
+<script type="module">
+    import { UI_STRINGS } from './js/core/strings-fr.js';
+    import { isFirebaseConfigured } from './js/core/firebase-init.js';
+    import { findPublicProfilesByCategory } from './js/search/search-category.js';
+
+    const params = new URLSearchParams(window.location.search);
+    const query = (params.get('q') || '').trim();
+    const title = document.querySelector('[data-category-title]');
+    const status = document.querySelector('[data-category-status]');
+    const results = document.querySelector('[data-category-results]');
+
+    title.textContent = query ? `Professionnels · ${query}` : 'Professionnels';
+
+    if (!query) {
+      status.textContent = UI_STRINGS.search.empty;
+      return;
+    }
+
+    if (!isFirebaseConfigured()) {
+      status.textContent = UI_STRINGS.search.unavailable;
+      return;
+    }
+
+    try {
+      const profiles = await findPublicProfilesByCategory(query);
+      status.textContent = profiles.length
+        ? UI_STRINGS.search.resultCount(profiles.length)
+        : UI_STRINGS.search.noResults;
+      results.replaceChildren(...profiles.map((profile) => {
+        const link = document.createElement('a');
+        link.className = 'glass search-result';
+        link.href = `profile.html?pro=${encodeURIComponent(profile.id)}`;
+        link.innerHTML = `<strong></strong><span></span>`;
+        const name = profile.displayName || profile.name || UI_STRINGS.publicProfile.noName;
+        link.querySelector('strong').textContent = name;
+        link.querySelector('span').textContent = (profile.categories || []).join(' · ') || UI_STRINGS.search.openProfile;
+        return link;
+      }));
+    } catch (error) {
+      status.textContent = UI_STRINGS.search.error;
+      console.error(error);
+    }
+</script>
+</body>
+</html>

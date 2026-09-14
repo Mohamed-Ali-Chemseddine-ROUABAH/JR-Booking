@@ -3,7 +3,7 @@ import { updateBookingDetails } from "../pro-dashboard/booking-actions.js";
 
 const strings = UI_STRINGS.clientDashboard.requestChange;
 
-export function initializeRequestChange({ booking, onSaved }) {
+export function initializeRequestChange({ booking, timezone = "Europe/Paris", onSaved }) {
     const modal = document.createElement("div");
     modal.className = "booking-creation-modal";
     modal.setAttribute("role", "dialog");
@@ -27,8 +27,8 @@ export function initializeRequestChange({ booking, onSaved }) {
     document.body.append(modal);
 
     const form = modal.querySelector("form");
-    form.start.value = toDateTimeLocal(booking.start);
-    form.end.value = toDateTimeLocal(booking.end);
+    form.start.value = toDateTimeLocal(booking.start, timezone);
+    form.end.value = toDateTimeLocal(booking.end, timezone);
     const feedback = modal.querySelector("[data-request-change-feedback]");
 
     form.addEventListener("submit", async (event) => {
@@ -61,11 +61,13 @@ export function initializeRequestChange({ booking, onSaved }) {
     });
 }
 
-function toDateTimeLocal(value) {
+function toDateTimeLocal(value, timezone) {
     const date = value?.toDate ? value.toDate() : new Date(value);
     if (Number.isNaN(date?.getTime())) {
         return "";
     }
     const pad = (part) => String(part).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date);
+    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
 }

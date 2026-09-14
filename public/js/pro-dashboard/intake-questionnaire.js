@@ -1,8 +1,10 @@
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { clearDraft, loadDraft, saveDraft } from "../core/draft-storage.mjs";
 
 const strings = UI_STRINGS.proDashboard.intake;
+const draftKey = (uid) => `jr-booking-intake-draft-${uid}`;
 
 export async function initializeIntakeQuestionnaire({ user }) {
     const modal = document.createElement("div");
@@ -15,14 +17,18 @@ export async function initializeIntakeQuestionnaire({ user }) {
     const feedback = modal.querySelector("[data-intake-feedback]");
     try {
         const snapshot = await getDoc(doc(getFirestoreDb(), "proProfiles", user.uid));
-        (snapshot.data()?.intakeQuestionnaire?.questions || []).forEach((question) => addQuestionRow(list, question));
+        const draft = loadDraft(draftKey(user.uid));
+        (draft?.questions || snapshot.data()?.intakeQuestionnaire?.questions || []).forEach((question) => addQuestionRow(list, question));
+        if (draft) feedback.textContent = strings.draftRestored;
     } catch { feedback.textContent = strings.loadError; }
-    modal.querySelector("[data-intake-add]").addEventListener("click", () => addQuestionRow(list));
-    modal.addEventListener("click", (event) => { if (event.target.matches("[data-intake-remove]")) event.target.closest("[data-intake-row]").remove(); });
+    const saveCurrentDraft = () => saveDraft(draftKey(user.uid), { questions: readQuestions(list) });
+    modal.querySelector("[data-intake-add]").addEventListener("click", () => { addQuestionRow(list); saveCurrentDraft(); });
+    modal.addEventListener("input", saveCurrentDraft);
+    modal.addEventListener("click", (event) => { if (event.target.matches("[data-intake-remove]")) { event.target.closest("[data-intake-row]").remove(); saveCurrentDraft(); } });
     modal.querySelector("form").addEventListener("submit", async (event) => {
         event.preventDefault();
-        const questions = [...list.querySelectorAll("[data-intake-row]")].map((row) => ({ text: row.querySelector("[name='questionText']").value.trim(), required: row.querySelector("[name='questionRequired']").checked })).filter((question) => question.text).slice(0, 10);
-            try { await setDoc(doc(getFirestoreDb(), "proProfiles", user.uid), { owners: [user.uid], intakeQuestionnaire: { questions } }, { merge: true }); await setDoc(doc(getFirestoreDb(), "publicProfiles", user.uid), { owners: [user.uid], intakeQuestionnaire: { questions }, updatedAt: new Date() }, { merge: true }); feedback.textContent = strings.saved; } catch { feedback.textContent = strings.saveError; }
+        const questions = readQuestions(list);
+            try { await setDoc(doc(getFirestoreDb(), "proProfiles", user.uid), { owners: [user.uid], intakeQuestionnaire: { questions } }, { merge: true }); await setDoc(doc(getFirestoreDb(), "publicProfiles", user.uid), { owners: [user.uid], intakeQuestionnaire: { questions }, updatedAt: new Date() }, { merge: true }); clearDraft(draftKey(user.uid)); feedback.textContent = strings.saved; } catch { feedback.textContent = strings.saveError; }
     });
     modal.querySelector("[data-intake-close]").addEventListener("click", () => modal.remove());
 }
@@ -35,4 +41,8 @@ function addQuestionRow(container, question = {}) {
     row.querySelector("[name='questionText']").value = question.text || "";
     row.querySelector("[name='questionRequired']").checked = question.required !== false;
     container.append(row);
+}
+
+function readQuestions(list) {
+    return [...list.querySelectorAll("[data-intake-row]")].map((row) => ({ text: row.querySelector("[name='questionText']").value.trim(), required: row.querySelector("[name='questionRequired']").checked })).filter((question) => question.text).slice(0, 10);
 }

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JR Booking Premium - Administration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/css/base.css?v=scrollbar-20260909">
+    <link rel="stylesheet" href="assets/css/glass-theme.css">
+    <link rel="stylesheet" href="assets/css/pro-dashboard.css?v=spacing-polish-20260913b">
+    <script src="firebase-config.js?v=local-emulator-routing-20260910"></script>
+</head>
+<body>
+<main class="auth-screen">
+  <div class="wrap">
+    <div class="auth-layout">
+      <section class="auth-copy">
+        <span class="eyebrow">ADMIN</span>
+        <h1>Accès réservé</h1>
+        <p>Cette page exige une session Firebase authentifiée avec le rôle administrateur.</p>
+      </section>
+      <section class="glass auth-panel" aria-live="polite">
+        <div class="auth-brand">
+          <div class="auth-brand-mark" aria-hidden="true">JR</div>
+          <span>JR Booking Premium</span>
+        </div>
+        <p class="auth-status" data-admin-route-status>Vérification de l’accès...</p>
+      </section>
+    </div>
+  </div>
+</main>
+<script type="module">
+  import { getAdminLoginRedirectTarget } from './js/admin/admin-login-route.mjs';
+  import { requireAuth } from './js/core/auth-guard.js';
+
+  const redirectTarget = getAdminLoginRedirectTarget({
+    currentPath: window.location.pathname,
+    baseUrl: window.location.origin || 'http://127.0.0.1:5000'
+  });
+
+  if (redirectTarget) {
+    window.location.replace(redirectTarget);
+  }
+
+  const status = document.querySelector('[data-admin-route-status]');
+  requireAuth({
+    allowedRoles: ['admin'],
+    redirectTo: 'login.html',
+    onAuthorized: () => {
+      status.textContent = 'Accès autorisé. Redirection vers le panneau d’administration...';
+      window.location.assign('admin-dashboard.html');
+    }
+  });
+</script>
+</body>
+</html>

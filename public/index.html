@@ -102,12 +102,35 @@
   import { isFirebaseConfigured } from './js/core/firebase-init.js';
   import { debounce } from './js/core/utils.js';
   import { findPublicProfiles } from './js/search/search-professional.js';
+  import { findPublicProfilesByCategory } from './js/search/search-category.js';
   import { showNotification } from './js/shared/notifications.js';
 
   const searchInput = document.querySelector('#search-input');
   const searchStatus = document.querySelector('#search-status');
   const searchResults = document.querySelector('#search-results');
   const professionalRequestButton = document.querySelector('#professional-request-button');
+
+  async function navigateToCategoryOrProfile(term) {
+    const cleaned = term.trim();
+    if (!cleaned || !isFirebaseConfigured()) return false;
+
+    try {
+      const exactProfiles = await findPublicProfiles(cleaned);
+      if (exactProfiles.length === 1) {
+        window.location.assign(`profile.html?pro=${encodeURIComponent(exactProfiles[0].id)}`);
+        return true;
+      }
+      const categoryMatches = await findPublicProfilesByCategory(cleaned);
+      if (categoryMatches.length) {
+        window.location.assign(`category.html?q=${encodeURIComponent(cleaned)}`);
+        return true;
+      }
+    } catch (error) {
+      console.error(error);
+    }
+
+    return false;
+  }
 
   document.querySelector('#ui-eyebrow').textContent = UI_STRINGS.landing.eyebrow;
   document.querySelector('#ui-title').textContent = UI_STRINGS.landing.title;
@@ -152,6 +175,23 @@
   }
 
   searchInput.addEventListener('input', debounce(updateSearchStatus));
+  searchInput.addEventListener('keydown', async (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const term = searchInput.value.trim();
+    if (!term) return;
+    const handled = await navigateToCategoryOrProfile(term);
+    if (!handled) {
+      const profiles = await findPublicProfiles(term);
+      if (profiles.length === 1) {
+        window.location.assign(`profile.html?pro=${encodeURIComponent(profiles[0].id)}`);
+      } else if (profiles.length > 1) {
+        window.location.assign(`category.html?q=${encodeURIComponent(term)}`);
+      } else {
+        window.location.assign(`category.html?q=${encodeURIComponent(term)}`);
+      }
+    }
+  });
   professionalRequestButton.addEventListener('click', () => window.location.assign('request-professional.html'));
   searchStatus.textContent = UI_STRINGS.search.empty;
 </script>

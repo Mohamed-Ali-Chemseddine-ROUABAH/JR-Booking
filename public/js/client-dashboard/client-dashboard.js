@@ -2,18 +2,19 @@ import { requireAuth, signOutCurrentUser } from "../core/auth-guard.js";
 import { arrayRemove, arrayUnion, collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
-import { UI_STRINGS } from "../core/strings-fr.js";
+import { UI_STRINGS } from "../core/strings-fr.js?v=search-retract-20260914";
 import { showNotification } from "../shared/notifications.js";
-import { initializeClientNavbar } from "./navbar-client.js?v=history-share-20260912";
+import { initializeClientNavbar } from "./navbar-client.js?v=navbar-parity-20260914";
 import { initializeClientBookings } from "./client-bookings.js?v=history-share-20260912";
 import { initializeClientProfileSettings } from "./client-profile-settings.js";
 import { initializeRequestChange } from "./client-request-change.js";
 import { updateClientBookingStatus } from "../pro-dashboard/booking-actions.js";
 import { initializeClientSchedule } from "./client-schedule.js";
 import { initializeClientPaymentContext } from "./client-payment-context.js";
-import { initializeProfessionalSearch } from "./client-professional-search.js";
+import { initializeProfessionalSearch } from "./client-professional-search.js?v=search-retract-20260914";
 import { initializeHistoryShare } from "./client-history-share.js";
 import { initializeBookingMessages } from "../shared/booking-messages.js";
+import { buildProfessionalScheduleReport, openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
 
 const strings = UI_STRINGS.clientDashboard;
 const status = document.querySelector("[data-dashboard-status]");
@@ -28,6 +29,7 @@ requireAuth({
         let activeFilter = "pending";
         let currentBookings = await loadBookings(user.uid);
         let savedProfessionals = await loadSavedProfessionals(user.uid);
+        let clientTimezone = await loadClientTimezone(user.uid);
         let relationships = await loadRelationships(user.uid);
         let sharedBookings = await loadSharedBookings(user.uid, relationships);
         let lockedProfessional = null;
@@ -37,8 +39,15 @@ requireAuth({
             user,
             onLogout: handleLogout,
             onEditProfile: () => initializeClientProfileSettings({ user }),
-            onPayment: () => initializeClientPaymentContext({ bookings: currentBookings }),
-            onHistoryShare: () => openHistoryShare()
+            onPayment: () => initializeClientPaymentContext({ bookings: currentBookings, timezone: clientTimezone }),
+            onHistoryShare: () => openHistoryShare(),
+            onPrint: ({ mode, anonymizeClients }) => openPrintDocument(buildProfessionalScheduleReport({
+                professionalName: user.email,
+                bookings: [...currentBookings, ...sharedBookings].map((booking) => ({ ...booking, clientDisplayName: booking.proDisplayName || "Professionnel" })),
+                mode,
+                anonymizeClients,
+                strings: UI_STRINGS.proDashboard.navbar.printReport
+            }))
         });
         renderSchedule();
         renderBookings(activeFilter);
@@ -47,6 +56,7 @@ requireAuth({
 
         async function refresh() {
             currentBookings = await loadBookings(user.uid);
+            clientTimezone = await loadClientTimezone(user.uid);
             relationships = await loadRelationships(user.uid);
             sharedBookings = await loadSharedBookings(user.uid, relationships);
             renderSchedule();
@@ -64,18 +74,19 @@ requireAuth({
         }
 
         function renderSchedule() {
-            initializeClientSchedule(document.querySelector("[data-client-schedule-root]"), { bookings: currentBookings, lockedProfessional });
+            initializeClientSchedule(document.querySelector("[data-client-schedule-root]"), { bookings: currentBookings, lockedProfessional, timezone: clientTimezone });
         }
 
         function renderBookings(filter) {
             initializeClientBookings(document.querySelector("[data-client-bookings-root]"), {
                 userId: user.uid,
+                timezone: clientTimezone,
                 bookings: [...currentBookings, ...sharedBookings],
                 initialFilter: filter,
                 onFilterChange: (nextFilter) => { activeFilter = nextFilter; },
                 onAccept: (booking) => handleAccept(booking),
                 onCancel: (booking) => handleCancel(booking),
-                onRequestChange: (booking) => initializeRequestChange({ booking, onSaved: refresh }),
+                onRequestChange: (booking) => initializeRequestChange({ booking, timezone: clientTimezone, onSaved: refresh }),
                 onUnlinkClaim: (booking, contact) => handleUnlinkClaim(booking, contact),
                 onRequestHistoryShare: (booking, linkedUid) => handleRequestHistoryShare(booking, linkedUid),
                 onMessages: (booking, userRole) => initializeBookingMessages({ booking, userId: user.uid, userRole })
@@ -284,6 +295,15 @@ async function loadSavedProfessionals(userId) {
         return snapshot.data()?.savedProfessionals || [];
     } catch {
         return [];
+    }
+}
+
+async function loadClientTimezone(userId) {
+    try {
+        const snapshot = await getDoc(doc(getFirestoreDb(), "clientAccounts", userId));
+        return snapshot.data()?.timezone || "Europe/Paris";
+    } catch {
+        return "Europe/Paris";
     }
 }
 

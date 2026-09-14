@@ -3,6 +3,7 @@ const { FieldValue } = require("firebase-admin/firestore");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { isDigestWindow, getDigestDate, buildDigestMail } = require("./notification-digest.js");
 const { defineSecret, defineString } = require("firebase-functions/params");
 const crypto = require("node:crypto");
 const Busboy = require("busboy");
@@ -18,6 +19,7 @@ const {
     normalizeClaimEmail,
     validateClaimToken
 } = require("./booking-claims.js");
+const { normalizeBookingUpdateFields } = require("./booking-update-validation.js");
 
 const googleClientSecret = defineSecret("GOOGLE_CLIENT_SECRET");
 const googleClientId = defineString("GOOGLE_CLIENT_ID");
@@ -65,9 +67,9 @@ exports.createBookingNotification = onDocumentWritten("bookings/{bookingId}", as
     const after = event.data.after.exists ? event.data.after.data() : null;
     if (!after) return;
     const bookingId = event.params.bookingId;
-    const changes = event.data.before.exists ? event.data.after.data().status !== before.status : true;
+    const changes = !before || ["status", "start", "end", "service", "customPrice"].some((field) => JSON.stringify(after[field]) !== JSON.stringify(before[field]));
     if (!changes) return;
-    const type = !before ? "booking-created" : `booking-${after.status || "updated"}`;
+    const type = !before ? "booking-created" : after.status !== before.status ? `booking-${after.status || "updated"}` : "booking-updated";
     const professionalRecipients = await resolveProfessionalRecipientUids(after.proId, "manageBookings");
     const recipients = [...new Set([...professionalRecipients, after.clientId].filter(Boolean))];
     await Promise.all(recipients.map((uid) => admin.firestore().collection("notifications").doc(uid).collection("items").doc(`${bookingId}-${type}`).set({
@@ -80,6 +82,17 @@ exports.createBookingNotification = onDocumentWritten("bookings/{bookingId}", as
         createdAt: new Date(),
         readAt: null
     }, { merge: true })));
+    await Promise.all(recipients.map((uid) => queueConfiguredNotificationEmail({
+        recipientUid: uid,
+        preferenceField: "bookingEmail",
+        notificationId: `${bookingId}-${type}`,
+        booking: after,
+        fallbackEmail: uid === after.clientId ? getPrimaryBookingContactEmail(after) : "",
+        templateId: "booking-change",
+        subject: "Mise à jour de votre réservation",
+        text: `La réservation ${bookingId} a été mise à jour (${after.status || "modifiée"}).`,
+        category: "booking-change"
+    })));
 });
 
 exports.createMessageNotification = onDocumentWritten("bookings/{bookingId}/messages/{messageId}", async (event) => {
@@ -128,9 +141,12 @@ exports.calendarReminderWorker = onSchedule({ schedule: "every 15 minutes", time
         const start = new Date(booking.start);
         const minutesUntilStart = (start.getTime() - now.getTime()) / 60000;
         if (minutesUntilStart < reminderMinutes - 7.5 || minutesUntilStart > reminderMinutes + 7.5) continue;
-        const contact = booking.contacts?.find((item) => item.role === "primary") || booking.guestContact;
-        const email = contact?.email || booking.clientEmail;
+        const contactEmail = getPrimaryBookingContactEmail(booking) || booking.clientEmail || "";
+        const recipientUid = booking.clientId || "";
+        const email = await resolveRecipientEmail(recipientUid, contactEmail);
         if (!email) continue;
+        const preferenceSnapshot = recipientUid ? await admin.firestore().collection("notificationPreferences").doc(recipientUid).get() : null;
+        const reminderMode = preferenceSnapshot?.data()?.reminderEmail || "immediate";
         const bookingRef = bookingDocument.ref;
         const claimed = await admin.firestore().runTransaction(async (transaction) => {
             const latest = await transaction.get(bookingRef);
@@ -139,13 +155,80 @@ exports.calendarReminderWorker = onSchedule({ schedule: "every 15 minutes", time
             return true;
         });
         if (!claimed) continue;
+        const notificationRef = admin.firestore().collection("notifications").doc(recipientUid || `guest-${bookingDocument.id}`).collection("items").doc(`reminder-${bookingDocument.id}`);
+        await notificationRef.set({
+            type: "booking-reminder",
+            bookingId: bookingDocument.id,
+            proId: booking.proId || null,
+            title: "Rappel de réservation",
+            body: `Votre réservation commence le ${start.toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}.`,
+            createdAt: now,
+            readAt: null
+        }, { merge: true });
+        if (reminderMode === "immediate") {
+            await queueMail({
+                mailId: `reminder-${bookingDocument.id}`,
+                to: email,
+                templateId: "calendar-booking-reminder",
+                subject: "Rappel de votre réservation",
+                text: `Votre réservation commence le ${start.toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}.`,
+                sourceId: bookingDocument.id,
+                category: "booking-reminder"
+            });
+        }
+    }
+});
+
+exports.dailyMessageDigestWorker = onSchedule({ schedule: "every 15 minutes", timeZone: "Europe/Paris" }, async () => {
+    const now = new Date();
+    if (!isDigestWindow(now)) return;
+    const digestDate = getDigestDate(now);
+    const digestPreferenceFields = ["messageEmail", "bookingEmail", "reminderEmail"];
+    const preferenceSnapshots = await Promise.all(digestPreferenceFields.map((field) => admin.firestore().collection("notificationPreferences").where(field, "==", "digest").limit(500).get()));
+    const digestPreferences = new Map();
+    preferenceSnapshots.forEach((snapshot, index) => snapshot.docs.forEach((document) => {
+        const current = digestPreferences.get(document.id) || new Set();
+        current.add(digestPreferenceFields[index]);
+        digestPreferences.set(document.id, current);
+    }));
+    const bookingTypes = ["booking-created", "booking-pending", "booking-accepted", "booking-rejected", "booking-done", "booking-no-show", "booking-cancelled", "booking-updated"];
+    for (const [recipientUid, preferences] of digestPreferences) {
+        const digestTypes = [];
+        if (preferences.has("messageEmail")) digestTypes.push("booking-message");
+        if (preferences.has("bookingEmail")) digestTypes.push(...bookingTypes);
+        if (preferences.has("reminderEmail")) digestTypes.push("booking-reminder");
+        const notificationSnapshot = await admin.firestore().collection("notifications").doc(recipientUid).collection("items")
+            .where("type", "in", [...new Set(digestTypes)])
+            .limit(50)
+            .get();
+        const pending = notificationSnapshot.docs.filter((notification) => {
+            const data = notification.data();
+            return !data.readAt && data.digestQueuedFor !== digestDate;
+        });
+        if (!pending.length) continue;
+
+        const user = await admin.auth().getUser(recipientUid).catch(() => null);
+        if (!user?.email) continue;
+        const claimed = [];
+        for (const notification of pending) {
+            const wasClaimed = await admin.firestore().runTransaction(async (transaction) => {
+                const latest = await transaction.get(notification.ref);
+                if (!latest.exists || latest.data()?.readAt || latest.data()?.digestQueuedFor === digestDate) return false;
+                transaction.update(notification.ref, { digestQueuedFor: digestDate, digestQueuedAt: now });
+                return true;
+            });
+            if (wasClaimed) claimed.push(notification.data());
+        }
+        if (!claimed.length) continue;
+
+        const digest = buildDigestMail(claimed, digestDate);
         await queueMail({
-            to: email,
-            templateId: "calendar-booking-reminder",
-            subject: "Rappel de votre réservation",
-            text: `Votre réservation commence le ${start.toLocaleString("fr-FR", { timeZone: "Europe/Paris" })}.`,
-            sourceId: bookingDocument.id,
-            category: "booking-reminder"
+            to: user.email,
+            templateId: "booking-message-digest",
+            subject: digest.subject,
+            text: digest.text,
+            sourceId: `${recipientUid}/${digestDate}`,
+            category: "booking-message-digest"
         });
     }
 });
@@ -342,7 +425,13 @@ exports.issueAccountRecovery = onCall(async (request) => {
     const targetUid = String(request.data?.targetUid || "").trim();
     const targetEmail = String(request.data?.targetEmail || "").trim().toLowerCase();
     if (!targetUid && !targetEmail) throw new HttpsError("invalid-argument", "Target UID or email is required.");
+    const wipeLinkedData = request.data?.wipeLinkedData === true;
+    const confirmation = String(request.data?.confirmation || "").trim();
+    if (wipeLinkedData && confirmation !== "EFFACER TOUTES LES DONNEES") {
+        throw new HttpsError("failed-precondition", "Exact wipe confirmation is required.");
+    }
     const target = targetUid ? await admin.auth().getUser(targetUid) : await admin.auth().getUserByEmail(targetEmail);
+    if (wipeLinkedData) await wipeLinkedAccountData(target.uid);
     const resetUrl = await admin.auth().generatePasswordResetLink(target.email, { url: "https://jr-booking-premium.web.app/login.html?password-set=1" });
     await queueMail({
         to: target.email,
@@ -358,10 +447,43 @@ exports.issueAccountRecovery = onCall(async (request) => {
         actorUid: request.auth.uid,
         actorRole: "admin",
         outcome: "success",
-        metadata: { targetUid: target.uid, preservedData: true }
+        metadata: { targetUid: target.uid, preservedData: !wipeLinkedData, wipedLinkedData: wipeLinkedData }
     });
-    return { targetUid: target.uid, email: target.email, preservedData: true, status: "email_queued" };
+    return { targetUid: target.uid, email: target.email, preservedData: !wipeLinkedData, wipedLinkedData: wipeLinkedData, status: "email_queued" };
 });
+
+async function wipeLinkedAccountData(targetUid) {
+    const firestore = admin.firestore();
+    const profileSnapshot = await firestore.collection("proProfiles").where("owners", "array-contains", targetUid).get();
+    const profileIds = [...new Set([targetUid, ...profileSnapshot.docs.map((document) => document.id)])];
+    const bookingSnapshots = await Promise.all([
+        firestore.collection("bookings").where("clientId", "==", targetUid).get(),
+        ...profileIds.map((profileId) => firestore.collection("bookings").where("proId", "==", profileId).get())
+    ]);
+    const bookingIds = [...new Set(bookingSnapshots.flatMap((snapshot) => snapshot.docs.map((document) => document.id)))];
+    await Promise.all(bookingIds.map((bookingId) => firestore.recursiveDelete(firestore.collection("bookings").doc(bookingId))));
+
+    const relationshipSnapshots = await Promise.all([
+        firestore.collection("clientRelationships").where("requesterUid", "==", targetUid).get(),
+        firestore.collection("clientRelationships").where("recipientUid", "==", targetUid).get(),
+        firestore.collection("proClientRecords").where("clientId", "==", targetUid).get()
+    ]);
+    await Promise.all(relationshipSnapshots.flatMap((snapshot) => snapshot.docs.map((document) => document.ref.delete())));
+    await Promise.all([
+        firestore.collection("clientAccounts").doc(targetUid).delete(),
+        firestore.collection("notificationPreferences").doc(targetUid).delete(),
+        firestore.collection("gcalTokens").doc(targetUid).delete(),
+        firestore.recursiveDelete(firestore.collection("notifications").doc(targetUid))
+    ]);
+    await Promise.all(profileIds.map((profileId) => Promise.all([
+        firestore.recursiveDelete(firestore.collection("busySlots").doc(profileId)),
+        firestore.collection("publicProfiles").doc(profileId).delete(),
+        firestore.collection("proProfiles").doc(profileId).delete()
+    ])));
+
+    const waitlistSnapshot = await firestore.collectionGroup("entries").where("clientId", "==", targetUid).get();
+    await Promise.all(waitlistSnapshot.docs.map((document) => document.ref.delete()));
+}
 
 exports.createAdditionalProfessionalProfile = onCall(async (request) => {
     if (!request.auth?.token?.admin) throw new HttpsError("permission-denied", "Administrator claim required.");
@@ -768,7 +890,8 @@ exports.sendBookingMessage = onCall(async (request) => {
     const recipientUid = isProfessional ? booking.clientId : booking.proId;
     const recipientEmail = await resolveBookingMessageRecipient(booking, isProfessional);
     const preferenceSnapshot = recipientUid ? await firestore.collection("notificationPreferences").doc(recipientUid).get() : null;
-    const emailAllowed = preferenceSnapshot?.data()?.messageEmail !== "none";
+    const messageEmailMode = preferenceSnapshot?.data()?.messageEmail || "immediate";
+    const emailAllowed = messageEmailMode === "immediate";
     if (!notifyEmail || !recipientEmail || !emailAllowed) {
         await messageRef.update({ notificationStatus: "not-requested" });
         return { bookingId, messageId: messageRef.id, notificationStatus: "not-requested" };
@@ -957,6 +1080,12 @@ exports.updateProfessionalBooking = onCall(async (request) => {
     const contacts = getValidatedContacts(request.data?.contacts);
     const seriesScope = String(request.data?.seriesScope || "this");
     if (!SERIES_SCOPES.has(seriesScope)) throw new HttpsError("invalid-argument", "Invalid booking series scope.");
+    let updateFields;
+    try {
+        updateFields = normalizeBookingUpdateFields(request.data || {});
+    } catch (error) {
+        throw new HttpsError("invalid-argument", error.message);
+    }
     const firestore = admin.firestore();
     const bookingRef = firestore.collection("bookings").doc(bookingId);
     const operationRef = firestore.collection("logs").doc(hashToken(`booking-series:${actorUid}:${requestId}`).slice(0, 40));
@@ -999,7 +1128,8 @@ exports.updateProfessionalBooking = onCall(async (request) => {
                 contacts: storedContacts,
                 guestContact: { name: primary.name, email: primary.email },
                 start: occurrenceRange.start,
-                end: occurrenceRange.end
+                end: occurrenceRange.end,
+                ...updateFields
             });
 
             const nextByKey = new Map(storedContacts.map((contact) => [`${contact.email}\u0000${contact.role}`, contact]));
@@ -1490,8 +1620,24 @@ function bookingContactAuditEvent({ type, actorUid, bookingId, contact, requestI
     };
 }
 
-async function queueMail({ to, templateId, subject, text, sourceId, category }) {
-    const mailRef = admin.firestore().collection("mail").doc();
+async function queueConfiguredNotificationEmail({ recipientUid, preferenceField, notificationId, booking, fallbackEmail, mailId, templateId, subject, text, category }) {
+    const preferenceSnapshot = await admin.firestore().collection("notificationPreferences").doc(recipientUid).get();
+    if ((preferenceSnapshot.data()?.[preferenceField] || "immediate") !== "immediate") return;
+    const email = await resolveRecipientEmail(recipientUid, fallbackEmail);
+    if (!email) return;
+    await queueMail({
+        mailId: mailId || `notification-${recipientUid}-${notificationId}`,
+        to: email,
+        templateId,
+        subject,
+        text,
+        sourceId: booking?.id || notificationId,
+        category
+    });
+}
+
+async function queueMail({ mailId, to, templateId, subject, text, sourceId, category }) {
+    const mailRef = mailId ? admin.firestore().collection("mail").doc(mailId) : admin.firestore().collection("mail").doc();
     await mailRef.set({
         to,
         message: { subject, text },
@@ -1628,4 +1774,21 @@ async function resolveProfessionalRecipientUids(proId, delegatePermission) {
         .filter(([, delegate]) => delegate?.status === "active" && delegate.permissions?.includes(delegatePermission))
         .map(([uid]) => uid);
     return [...new Set([...owners, ...delegates])];
+}
+
+async function resolveRecipientEmail(uid, fallbackEmail = "") {
+    if (uid) {
+        try {
+            const user = await admin.auth().getUser(uid);
+            if (user.email) return user.email;
+        } catch {
+            // Guest bookings may not have an Auth account yet.
+        }
+    }
+    return fallbackEmail;
+}
+
+function getPrimaryBookingContactEmail(booking) {
+    const contact = booking.contacts?.find((item) => item.role === "primary") || booking.guestContact;
+    return contact?.email || booking.clientEmail || "";
 }

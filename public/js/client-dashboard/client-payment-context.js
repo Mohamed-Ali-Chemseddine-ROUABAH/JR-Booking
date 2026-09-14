@@ -4,7 +4,7 @@ import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
 
 const strings = UI_STRINGS.clientDashboard.paymentContext;
 
-export function initializeClientPaymentContext({ bookings = [] } = {}) {
+export function initializeClientPaymentContext({ bookings = [], timezone = "Europe/Paris" } = {}) {
     const activeBookings = bookings.filter((booking) => ["pending", "accepted"].includes(booking.status) && booking.paymentContext);
     const modal = document.createElement("div");
     modal.className = "working-hours-modal";
@@ -25,7 +25,7 @@ export function initializeClientPaymentContext({ bookings = [] } = {}) {
     if (!activeBookings.length) {
         content.innerHTML = `<p class="working-hours-feedback">${strings.noActiveBooking}</p>`;
     } else if (activeBookings.length > 1) {
-        content.innerHTML = `<p class="working-hours-feedback">${strings.chooseBooking}</p><div class="client-payment-choices">${activeBookings.map((booking, index) => `<button class="btn btn-ghost" type="button" data-payment-choice="${index}">${escapeHtml(booking.proDisplayName || "Professionnel")} · ${formatBookingDate(booking.start)}</button>`).join("")}</div><div data-payment-detail></div>`;
+        content.innerHTML = `<p class="working-hours-feedback">${strings.chooseBooking}</p><div class="client-payment-choices">${activeBookings.map((booking, index) => `<button class="btn btn-ghost" type="button" data-payment-choice="${index}">${escapeHtml(booking.proDisplayName || "Professionnel")} · ${formatBookingDate(booking.start, timezone)}</button>`).join("")}</div><div data-payment-detail></div>`;
         modal.querySelectorAll("[data-payment-choice]").forEach((button) => button.addEventListener("click", () => renderPaymentDetail(modal.querySelector("[data-payment-detail]"), activeBookings[Number(button.dataset.paymentChoice)])));
     } else {
         renderPaymentDetail(content, activeBookings[0]);
@@ -48,9 +48,9 @@ function renderPaymentDetail(container, booking) {
     `;
 }
 
-function formatBookingDate(value) {
+function formatBookingDate(value, timezone) {
     const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(date);
+    return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", timeZone: timezone }).format(date);
 }
 
 function safeUrl(value) {

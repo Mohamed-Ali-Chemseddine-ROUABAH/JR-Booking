@@ -36,6 +36,28 @@ The helper creates the Auth account in the local emulator. When no production we
 
 When you open auth pages on `http://127.0.0.1` or `http://localhost`, the browser automatically uses the local Firebase emulator config if no production web config has been injected.
 
+## Reusable mock fixtures
+
+With Auth and Firestore emulators running, seed a deterministic professional, client, working-hours profile, public profile, and done/pending bookings:
+
+```powershell
+$env:FIREBASE_AUTH_EMULATOR_HOST = "127.0.0.1:9099"; $env:FIRESTORE_EMULATOR_HOST = "127.0.0.1:8080"; $env:FIREBASE_PROJECT_ID = "jr-booking-premium"; node tests\seed-mock-data.js
+```
+
+The command refuses non-local or missing emulator hosts and merges fixed fixture IDs so it can be safely rerun. The local fixture password is `MockFixture-Aa1!`.
+
+## Complete local QA runner
+
+Run the final QA phase in unit-only mode when emulators are not running:
+
+```powershell
+node tests\run-local-tests.js
+```
+
+The runner discovers all `.test.cjs`, `.test.mjs`, and `.test.js` files, runs them serially, syntax-checks production JavaScript, and verifies architecture documentation coverage. It includes emulator suites only when all four local emulator service ports are actually reachable, preventing stale shell variables from selecting unavailable emulators.
+
+The same run performs release-readiness checks: the largest production module must remain below 250 KiB, browser code cannot import tests or server dependencies, forbidden secret names cannot appear in browser source or `.env.example`, and Firebase Hosting/Functions paths must match the repository layout.
+
 ## Booking contact tests
 
 Run the pure validation tests without emulators:
@@ -108,6 +130,18 @@ Run the dependency-free Today widget interaction tests:
 
 ```powershell
 node --test tests\today-widget-toggle.test.mjs
+```
+
+Run the dependency-free notification digest and delivery-policy tests:
+
+```powershell
+node --test tests\notification-digest.test.cjs
+```
+
+Run the dependency-free statistics occupancy and retention tests:
+
+```powershell
+node --test tests\statistics-metrics.test.mjs
 ```
 
 With Auth, Firestore, and Functions emulators running, verify delegated projections, independent booking/message permissions, private preparation-note isolation, atomic batch updates, multi-profile removal, and profile-aware notification recipients:

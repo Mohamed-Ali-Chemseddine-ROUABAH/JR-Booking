@@ -8,6 +8,14 @@ Toute la documentation interne vit sous `docs/`. Les chemins de ce fichier sont 
 
 All roadmap work follows the token-efficient execution rule in `requirements/MASTER_SPECIFICATION.md`: use targeted reads and focused searches, avoid screenshots or browser inspection unless explicitly requested, validate with the narrowest useful command, and provide a direct local browser URL for visual checks.
 
+## Completion and Handoff Rule / Regle de fin et de transmission
+
+Every completed feature must be marked in `verification/VERIFICATION_LOG.md` with one explicit status: `DONE` (the AI verified the implementation and no human action is required), `AI VERIFIED - HUMAN CHECK OPTIONAL`, `HUMAN + AI VERIFIED`, or `BLOCKED - EXTERNAL/HUMAN ACTION REQUIRED`. A feature must never remain described only as "implemented" or "pending".
+
+The AI performs all available verification itself: focused tests, emulator/rules checks, syntax and diagnostics checks, documentation checks, and local browser checks when the environment permits them. Human participation is requested only for a check the AI cannot perform, such as a real mailbox, Google consent, a legal decision, or a required external-console action. When human participation is required, the AI gives exactly one small step, waits for the result, records it, and gives the next step.
+
+At every completion handoff, the AI must tell the human what is now done, cite the evidence, identify anything blocked, and name the next feature that will be developed and tested. Before starting work, the AI reads the current checkpoint and does not redo any feature marked `DONE`, `AI VERIFIED - HUMAN CHECK OPTIONAL`, or `HUMAN + AI VERIFIED` unless a failing regression or an explicit new requirement reopens it.
+
 ## Start Here / Commencer ici
 
 1. [Requirements and roadmap](requirements/MASTER_SPECIFICATION.md) / Exigences et roadmap.

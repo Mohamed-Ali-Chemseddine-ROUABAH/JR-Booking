@@ -149,13 +149,17 @@ async function createAdditionalProfile(event) {
 
 async function issueAccountRecovery(event) {
     event.preventDefault();
-    if (!window.confirm(strings.accountRecovery.confirmation)) return;
-    const target = new FormData(recoveryForm).get("target").trim();
+    const data = new FormData(recoveryForm);
+    const wipeLinkedData = data.get("mode") === "wipe";
+    if (!window.confirm(wipeLinkedData ? strings.accountRecovery.wipeConfirmation : strings.accountRecovery.confirmation)) return;
+    const target = data.get("target").trim();
     recoveryFeedback.textContent = strings.commandCenter.loading;
     try {
-        const data = target.includes("@") ? { targetEmail: target } : { targetUid: target };
-        await httpsCallable(getFirebaseFunctions(), "issueAccountRecovery")(data);
-        recoveryFeedback.textContent = strings.accountRecovery.queued;
+        const payload = target.includes("@") ? { targetEmail: target } : { targetUid: target };
+        payload.wipeLinkedData = wipeLinkedData;
+        payload.confirmation = data.get("confirmation").trim();
+        await httpsCallable(getFirebaseFunctions(), "issueAccountRecovery")(payload);
+        recoveryFeedback.textContent = wipeLinkedData ? strings.accountRecovery.wipeQueued : strings.accountRecovery.queued;
         recoveryForm.reset();
     } catch { recoveryFeedback.textContent = strings.accountRecovery.error; }
 }
