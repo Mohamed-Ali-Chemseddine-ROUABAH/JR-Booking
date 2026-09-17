@@ -35,4 +35,7 @@ docs/internship-offer-geomatics.md
 
 # Internal documentation
 *.md
+!README.md
+!.github/
+!.github/**/*.md
 
