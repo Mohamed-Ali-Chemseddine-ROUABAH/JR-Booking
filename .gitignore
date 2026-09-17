@@ -30,3 +30,9 @@ firebase-export/
 .DS_Store
 Thumbs.db
 
+# Personal/reference-only documents (not part of the project work)
+docs/internship-offer-geomatics.md
+
+# Internal documentation
+*.md
+
