@@ -42,6 +42,7 @@ test("delegated access is profile-scoped and permission-limited", { timeout: 450
         const added = await callFunction("addProfessionalDelegate", ownerAuth.idToken, { profileId, email: delegate.email, permissions: ["manageBookings", "manageMessages"] });
         assert.equal(added.status, "active");
         const delegateAuth = await signIn(delegate.email, password);
+        assert.equal((await readProfile(profileId, delegateAuth.idToken)).status, 200);
         assert.equal((await readBooking(bookingId, delegateAuth.idToken)).status, 403);
         const delegated = await callFunction("listDelegatedBookings", delegateAuth.idToken, { profileId });
         assert.deepEqual(delegated.permissions.sort(), ["manageBookings", "manageMessages"]);
@@ -54,6 +55,7 @@ test("delegated access is profile-scoped and permission-limited", { timeout: 450
         assert.equal((await patchBooking(bookingId, delegateAuth.idToken, { status: "accepted" }, ["status"])).status, 200);
         assert.equal((await patchBooking(bookingId, delegateAuth.idToken, { prepNotes: "Private" }, ["prepNotes"])).status, 403);
         assert.equal((await readMessage(bookingId, "message-1", delegateAuth.idToken)).status, 200);
+        assert.equal((await readClientRecord(profileId, client.uid, delegateAuth.idToken)).status, 403);
         assert.equal((await readPrivateNote(bookingId, delegateAuth.idToken)).status, 403);
         assert.equal((await readPrivateNote(bookingId, (await signIn(client.email, password)).idToken)).status, 403);
         assert.equal((await callFunction("getBookingPrepNotes", ownerAuth.idToken, { bookingId })).prepNotes, "Owner only");
@@ -113,6 +115,10 @@ async function callFunction(name, idToken, data) {
     return payload.result;
 }
 
+async function readProfile(profileId, idToken) {
+    return fetch(`http://${firestoreHost}/v1/projects/${projectId}/databases/(default)/documents/proProfiles/${profileId}`, { headers: { Authorization: `Bearer ${idToken}` } });
+}
+
 async function readBooking(bookingId, idToken) {
     return fetch(`http://${firestoreHost}/v1/projects/${projectId}/databases/(default)/documents/bookings/${bookingId}`, { headers: { Authorization: `Bearer ${idToken}` } });
 }
@@ -123,6 +129,10 @@ async function readMessage(bookingId, messageId, idToken) {
 
 async function readPrivateNote(bookingId, idToken) {
     return fetch(`http://${firestoreHost}/v1/projects/${projectId}/databases/(default)/documents/bookings/${bookingId}/private/professional`, { headers: { Authorization: `Bearer ${idToken}` } });
+}
+
+async function readClientRecord(profileId, clientId, idToken) {
+    return fetch(`http://${firestoreHost}/v1/projects/${projectId}/databases/(default)/documents/proClientRecords/${profileId}_${clientId}`, { headers: { Authorization: `Bearer ${idToken}` } });
 }
 
 async function patchBooking(bookingId, idToken, values, updateMask) {

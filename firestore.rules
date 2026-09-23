@@ -222,7 +222,10 @@ service cloud.firestore {
     }
 
     match /proProfiles/{proId} {
-      allow read: if ownsProfile(proId) || isAdmin();
+      allow read: if ownsProfile(proId)
+        || isAdmin()
+        || hasDelegatePermission(proId, "manageBookings")
+        || hasDelegatePermission(proId, "manageMessages");
       allow create: if willOwnProfile(proId);
       allow update: if ownsProfile(proId) || isAdmin();
       allow delete: if isAdmin();
