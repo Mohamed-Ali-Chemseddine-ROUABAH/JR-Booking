@@ -2,7 +2,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.proDashboard.navbar;
 
-export function initializeProNavbar(container, { user, profiles = [], activeProfileId, canManageSettings = true, onNotifications, onProfileChange, onLogout, onPrint, onWorkingHours, onPaymentInfo, onMovementInfo, onServices, onIntake, onQuickReplies, onDelegatedAccess, onDirectLinks, onPersonalInfo, onExportData, onClientDatabase, onStatistics, onNotificationPreferences }) {
+export function initializeProNavbar(container, { user, profiles = [], activeProfileId, canManageSettings = true, onNotifications, onProfileChange, onLogout, onPrint, onSupportRequests, onWorkingHours, onPaymentInfo, onMovementInfo, onServices, onIntake, onQuickReplies, onDelegatedAccess, onDirectLinks, onPersonalInfo, onExportData, onClientDatabase, onStatistics, onNotificationPreferences }) {
     const profileSelector = profiles.length > 1 ? `<label class="pro-profile-selector"><span>${strings.profileLabel}</span><select data-profile-switcher>${profiles.map((profile) => `<option value="${escapeHtml(profile.id)}" ${profile.id === activeProfileId ? "selected" : ""}>${escapeHtml(profile.displayName || profile.name || profile.id)}</option>`).join("")}</select></label>` : "";
     container.innerHTML = `
         <div class="pro-brand">
@@ -53,6 +53,14 @@ export function initializeProNavbar(container, { user, profiles = [], activeProf
         }
     });
     container.querySelector("[data-profile-switcher]")?.addEventListener("change", (event) => onProfileChange?.(event.target.value));
+    const supportButton = document.createElement("button");
+    supportButton.className = "icon-button navbar-icon-action";
+    supportButton.type = "button";
+    supportButton.setAttribute("aria-label", UI_STRINGS.supportRequests.button);
+    supportButton.title = UI_STRINGS.supportRequests.button;
+    supportButton.innerHTML = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H12l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z\" fill=\"none\" stroke=\"currentColor\" stroke-linejoin=\"round\" stroke-width=\"1.6\"/></svg>";
+    supportButton.addEventListener("click", onSupportRequests);
+    container.querySelector(".navbar-icon-group").prepend(supportButton);
     const printButton = container.querySelector("[data-print]");
     const printMenu = document.createElement("div");
     printMenu.className = "settings-menu print-menu";

@@ -121,7 +121,8 @@ function renderSlot(hour, day, workingHours, bookings, calendarEvents, timezone)
     if (booking) {
         const status = ["pending", "accepted", "done", "no-show"].includes(booking.status) ? booking.status : "pending";
         const clientLabel = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || strings.bookingLabel);
-        return `<div class="schedule-cell schedule-slot schedule-slot-booking schedule-slot-${status}" role="gridcell" data-booking-id="${escapeHtml(booking.id)}"><strong>${clientLabel}</strong><small>${strings.bookingStatuses[status]}</small></div>`;
+        const isStart = isBookingStart(booking, day.isoDate, hour, timezone);
+        return `<div class="schedule-cell schedule-slot schedule-slot-booking schedule-slot-${status}${isStart ? "" : " schedule-slot-booking-continuation"}" role="gridcell" data-booking-id="${escapeHtml(booking.id)}" aria-label="${escapeHtml(isStart ? clientLabel : strings.bookingStatuses[status])}">${isStart ? `<strong>${clientLabel}</strong><small>${strings.bookingStatuses[status]}</small>` : ""}</div>`;
     }
     if (calendarEvent) {
         const eventClass = calendarEvent.presentationMode === "solid" ? "schedule-slot-calendar-solid" : "schedule-slot-calendar-ghost";
@@ -172,10 +173,26 @@ function formatDateRange(days) {
 
 function findBooking(bookings, isoDate, hour, timezone) {
     return bookings.find((booking) => {
+        if (booking.status === "rejected") return false;
         const start = toDate(booking.start);
-        const parts = start ? getZonedParts(start, timezone) : null;
-        return parts && parts.date === isoDate && parts.hour === Number(hour.slice(0, 2)) && booking.status !== "rejected";
+        const end = toDate(booking.end) || start;
+        const startParts = start ? getZonedParts(start, timezone) : null;
+        const endParts = end ? getZonedParts(end, timezone) : null;
+        if (!startParts || !endParts) return false;
+        const slotKey = toSlotKey(isoDate, hour);
+        return slotKey >= toSlotKey(startParts.date, `${String(startParts.hour).padStart(2, "0")}:00`)
+            && slotKey < toSlotKey(endParts.date, `${String(endParts.hour).padStart(2, "0")}:00`);
     });
+}
+
+function isBookingStart(booking, isoDate, hour, timezone) {
+    const start = toDate(booking.start);
+    const parts = start ? getZonedParts(start, timezone) : null;
+    return parts?.date === isoDate && parts.hour === Number(hour.slice(0, 2));
+}
+
+function toSlotKey(isoDate, hour) {
+    return `${isoDate}T${hour}`;
 }
 
 function toDate(value) {

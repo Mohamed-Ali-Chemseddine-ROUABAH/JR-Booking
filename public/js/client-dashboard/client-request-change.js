@@ -1,5 +1,6 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { updateBookingDetails } from "../pro-dashboard/booking-actions.js";
+import { isLocalDateTimeRangeValid, isoToZonedLocal, zonedLocalToIso } from "../core/datetime-utils.mjs";
 
 const strings = UI_STRINGS.clientDashboard.requestChange;
 
@@ -35,14 +36,14 @@ export function initializeRequestChange({ booking, timezone = "Europe/Paris", on
         event.preventDefault();
         const start = form.start.value;
         const end = form.end.value;
-        if (new Date(end) <= new Date(start)) {
+        if (!isLocalDateTimeRangeValid(start, end)) {
             feedback.textContent = strings.invalidRange;
             return;
         }
 
         try {
             // Keeps status pending so the professional reviews the newly proposed time before it is synced.
-            await updateBookingDetails(booking.id, { start, end, status: "pending" });
+            await updateBookingDetails(booking.id, { start: zonedLocalToIso(start, timezone), end: zonedLocalToIso(end, timezone), status: "pending" });
             feedback.textContent = strings.saved;
             window.setTimeout(() => {
                 modal.remove();
@@ -62,12 +63,5 @@ export function initializeRequestChange({ booking, timezone = "Europe/Paris", on
 }
 
 function toDateTimeLocal(value, timezone) {
-    const date = value?.toDate ? value.toDate() : new Date(value);
-    if (Number.isNaN(date?.getTime())) {
-        return "";
-    }
-    const pad = (part) => String(part).padStart(2, "0");
-    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(date);
-    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-    return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
+    return isoToZonedLocal(value, timezone);
 }

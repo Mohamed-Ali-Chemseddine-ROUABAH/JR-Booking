@@ -2,10 +2,11 @@ import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { getFirebaseFunctions } from "../core/firebase-init.js";
 import { initializeBookingContactEditor } from "./booking-contacts.js";
+import { isLocalDateTimeRangeValid, isoToZonedLocal, zonedLocalToIso } from "../core/datetime-utils.mjs";
 
 const strings = UI_STRINGS.proDashboard.sidebar;
 
-export function initializeBookingEdit({ booking, onSaved }) {
+export function initializeBookingEdit({ booking, timezone = "Europe/Paris", onSaved }) {
     const modal = document.createElement("div");
     modal.className = "booking-creation-modal";
     modal.setAttribute("role", "dialog");
@@ -45,12 +46,12 @@ export function initializeBookingEdit({ booking, onSaved }) {
             }
         }
     });
-    form.start.value = toDateTimeLocal(booking.start);
-    form.end.value = toDateTimeLocal(booking.end);
+    form.start.value = toDateTimeLocal(booking.start, timezone);
+    form.end.value = toDateTimeLocal(booking.end, timezone);
 
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        if (new Date(form.end.value) <= new Date(form.start.value)) {
+        if (!isLocalDateTimeRangeValid(form.start.value, form.end.value)) {
             feedback.textContent = UI_STRINGS.proDashboard.bookingCreation.invalidRange;
             return;
         }
@@ -59,8 +60,8 @@ export function initializeBookingEdit({ booking, onSaved }) {
                 requestId: createRequestId(),
                 bookingId: booking.id,
                 contacts: contactEditor.getContacts(),
-                start: form.start.value,
-                end: form.end.value,
+                start: zonedLocalToIso(form.start.value, timezone),
+                end: zonedLocalToIso(form.end.value, timezone),
                 service: form.serviceName.value.trim() ? { name: form.serviceName.value, durationMinutes: Number(form.serviceDuration.value), price: Number(form.servicePrice.value) } : null,
                 customPrice: form.customPrice.value === "" ? null : Number(form.customPrice.value),
                 clientMessage: form.clientMessage.value,
@@ -76,12 +77,8 @@ export function initializeBookingEdit({ booking, onSaved }) {
     modal.querySelector("[data-edit-close]").addEventListener("click", () => modal.remove());
 }
 
-function toDateTimeLocal(value) {
-    if (!value) return "";
-    const date = typeof value.toDate === "function" ? value.toDate() : new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    const pad = (part) => String(part).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+function toDateTimeLocal(value, timezone) {
+    return isoToZonedLocal(value, timezone);
 }
 
 function createRequestId() {

@@ -4,10 +4,13 @@ import { watchAuthState } from "../core/auth-guard.js";
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { normalizeScheduleSettings } from "../schedule/schedule-settings.mjs";
+import { isLocalDateTimeRangeValid, zonedLocalToIso } from "../core/datetime-utils.mjs";
 
 const strings = UI_STRINGS.publicProfile;
 const profileId = new URLSearchParams(window.location.search).get("pro");
 const requestedService = new URLSearchParams(window.location.search).get("service");
+const requestedDate = new URLSearchParams(window.location.search).get("requestedDate");
+const requestedStart = new URLSearchParams(window.location.search).get("requestedStart");
 const status = document.querySelector("[data-profile-status]");
 const content = document.querySelector("[data-profile-content]");
 const form = document.querySelector("[data-profile-form]");
@@ -83,8 +86,12 @@ function renderProfile() {
     content.hidden = false;
     status.textContent = "";
     const dateInput = form.elements.date;
-    dateInput.min = toIsoDate(new Date());
-    dateInput.value = toIsoDate(new Date(Date.now() + 86400000));
+    dateInput.min = getZonedParts(new Date(), profile.scheduleAvailability?.timezone || profile.timezone || "Europe/Paris").date;
+    dateInput.value = requestedDate || toIsoDate(new Date(Date.now() + 86400000));
+    if (requestedStart && /^\d{2}:\d{2}$/.test(requestedStart)) {
+        form.elements.start.value = requestedStart;
+        form.elements.end.value = addMinutes(requestedStart, 60);
+    }
 }
 
 function renderIntakeQuestions() {
@@ -129,51 +136,64 @@ function renderSchedule() {
     const schedule = document.querySelector("[data-profile-schedule]");
     const availability = profile.scheduleAvailability || {};
     const scheduleSettings = normalizeScheduleSettings(availability.scheduleSettings);
+    const timezone = availability.timezone || profile.timezone || "Europe/Paris";
     const startHour = Number(String(availability.startTime || "09:00").slice(0, 2));
     const endHour = Number(String(availability.endTime || "17:00").slice(0, 2));
     const workingDays = Array.isArray(availability.workingDays) && availability.workingDays.length ? availability.workingDays : [1, 2, 3, 4, 5];
-    const days = Array.from({ length: 7 }, (_, index) => {
-        const date = new Date();
-        date.setHours(0, 0, 0, 0);
-        date.setDate(date.getDate() + index);
-        return date;
-    });
-    const header = document.createElement("div");
-    header.className = "profile-schedule-header";
-    header.append(document.createElement("span"));
-    days.forEach((date) => {
-        const heading = document.createElement("strong");
-        heading.textContent = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit" }).format(date);
-        header.append(heading);
-    });
-    const grid = document.createElement("div");
-    grid.className = "profile-schedule-grid";
-    for (let hour = startHour; hour < endHour; hour += 1) {
-        const start = `${String(hour).padStart(2, "0")}:00`;
-        const end = `${String(hour + 1).padStart(2, "0")}:00`;
-        const time = document.createElement("span");
-        time.className = "profile-time-label";
-        time.textContent = start;
-        grid.append(time);
+    let daysToShow = 7;
+    let dayOffset = 0;
+    schedule.innerHTML = `<div class="profile-schedule-toolbar"><div class="profile-schedule-nav"><button class="icon-button schedule-nav-button" type="button" data-profile-navigation="previous" aria-label="${strings.previous}" title="${strings.previous}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button><button class="chip-button" type="button" data-profile-navigation="today">${strings.today}</button><button class="icon-button schedule-nav-button" type="button" data-profile-navigation="next" aria-label="${strings.next}" title="${strings.next}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5 7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button></div><div class="profile-schedule-views" role="group" aria-label="${strings.scheduleTitle}"><button class="chip-button" type="button" data-profile-days="1">${strings.viewOne}</button><button class="chip-button" type="button" data-profile-days="3">${strings.viewThree}</button><button class="chip-button is-active" type="button" data-profile-days="7">${strings.viewSeven}</button></div></div><div data-profile-schedule-grid></div>`;
+    const renderGrid = () => {
+        const days = getPublicDays(timezone, dayOffset, daysToShow);
+        const header = document.createElement("div");
+        header.className = "profile-schedule-header";
+        header.style.setProperty("--profile-day-count", String(daysToShow));
+        header.append(document.createElement("span"));
         days.forEach((date) => {
-            const slot = document.createElement("button");
-            slot.type = "button";
-            slot.className = "profile-slot";
-            const active = workingDays.includes(date.getDay() || 7) && isPublicDateActive(toIsoDate(date), scheduleSettings);
-            slot.textContent = !active ? strings.unavailableSlot : isBusy(toIsoDate(date), start, end) ? strings.occupiedSlot : strings.emptySlot;
-            slot.dataset.date = toIsoDate(date);
-            slot.dataset.start = start;
-            slot.dataset.end = end;
-            if (!active) slot.disabled = true;
-            if (isBusy(slot.dataset.date, start, end)) {
-                slot.classList.add("is-busy");
-                slot.title = strings.occupied;
-            }
-            slot.addEventListener("click", () => selectSlot(slot));
-            grid.append(slot);
+            const heading = document.createElement("strong");
+            heading.textContent = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(date.value);
+            header.append(heading);
         });
-    }
-    schedule.replaceChildren(header, grid);
+        const grid = document.createElement("div");
+        grid.className = "profile-schedule-grid";
+        grid.style.setProperty("--profile-day-count", String(daysToShow));
+        for (let hour = startHour; hour < endHour; hour += 1) {
+            const start = `${String(hour).padStart(2, "0")}:00`;
+            const end = `${String(hour + 1).padStart(2, "0")}:00`;
+            const time = document.createElement("span");
+            time.className = "profile-time-label";
+            time.textContent = start;
+            grid.append(time);
+            days.forEach((day) => {
+                const slot = document.createElement("button");
+                slot.type = "button";
+                slot.className = "profile-slot";
+                const active = workingDays.includes(day.weekday) && isPublicDateActive(day.isoDate, scheduleSettings);
+                slot.textContent = !active ? strings.unavailableSlot : isBusy(day.isoDate, start, end, timezone) ? strings.occupiedSlot : strings.emptySlot;
+                slot.dataset.date = day.isoDate;
+                slot.dataset.start = start;
+                slot.dataset.end = end;
+                if (!active) slot.disabled = true;
+                if (isBusy(slot.dataset.date, start, end, timezone)) {
+                    slot.classList.add("is-busy");
+                    slot.title = strings.occupied;
+                }
+                slot.addEventListener("click", () => selectSlot(slot));
+                grid.append(slot);
+            });
+        }
+        schedule.querySelector("[data-profile-schedule-grid]").replaceChildren(header, grid);
+    };
+    schedule.querySelectorAll("[data-profile-days]").forEach((button) => button.addEventListener("click", () => {
+        daysToShow = Number(button.dataset.profileDays);
+        dayOffset = 0;
+        schedule.querySelectorAll("[data-profile-days]").forEach((item) => item.classList.toggle("is-active", item === button));
+        renderGrid();
+    }));
+    schedule.querySelector("[data-profile-navigation='previous']").addEventListener("click", () => { dayOffset -= daysToShow; renderGrid(); });
+    schedule.querySelector("[data-profile-navigation='today']").addEventListener("click", () => { dayOffset = 0; renderGrid(); });
+    schedule.querySelector("[data-profile-navigation='next']").addEventListener("click", () => { dayOffset += daysToShow; renderGrid(); });
+    renderGrid();
 }
 
 function selectSlot(slot) {
@@ -198,11 +218,26 @@ function addMinutes(time, minutes) {
     return `${String(Math.floor(total / 60) % 24).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
-function isBusy(date, start, end) {
+function isBusy(date, start, end, timezone) {
     return busySlots.some((slot) => {
         const busyStart = toDate(slot.start);
         const busyEnd = toDate(slot.end);
-        return busyStart && busyEnd && toIsoDate(busyStart) === date && start < timeValue(busyEnd) && end > timeValue(busyStart);
+        const startParts = busyStart ? getZonedParts(busyStart, timezone) : null;
+        const endParts = busyEnd ? getZonedParts(busyEnd, timezone) : null;
+        return startParts && endParts
+            && `${date}T${end}` > `${startParts.date}T${String(startParts.hour).padStart(2, "0")}:${String(startParts.minute).padStart(2, "0")}`
+            && `${date}T${start}` < `${endParts.date}T${String(endParts.hour).padStart(2, "0")}:${String(endParts.minute).padStart(2, "0")}`;
+    });
+}
+
+function getPublicDays(timezone, offset, count) {
+    const current = getZonedParts(new Date(), timezone);
+    const base = new Date(`${current.date}T12:00:00Z`);
+    return Array.from({ length: count }, (_, index) => {
+        const value = new Date(base);
+        value.setUTCDate(base.getUTCDate() + offset + index);
+        const isoDate = value.toISOString().slice(0, 10);
+        return { value, isoDate, weekday: value.getUTCDay() || 7 };
     });
 }
 
@@ -212,10 +247,11 @@ form.addEventListener("submit", async (event) => {
     const selectedService = profile.services?.[Number(formData.get("serviceId"))];
     const intakeAnswers = Object.fromEntries([...form.elements].filter((element) => element.name.startsWith("intake_")).map((element) => [element.name, element.value.trim()]));
     const date = formData.get("date");
-    const start = `${date}T${formData.get("start")}`;
-    const end = `${date}T${formData.get("end")}`;
+    const localStart = `${date}T${formData.get("start")}`;
+    const localEnd = `${date}T${formData.get("end")}`;
+    const timezone = profile.scheduleAvailability?.timezone || profile.timezone || "Europe/Paris";
     const feedback = document.querySelector("[data-profile-feedback]");
-    if (new Date(end) <= new Date(start)) {
+    if (!isLocalDateTimeRangeValid(localStart, localEnd)) {
         feedback.textContent = strings.invalidRange;
         return;
     }
@@ -224,7 +260,7 @@ form.addEventListener("submit", async (event) => {
         form.hidden = true;
         return;
     }
-    if (isBusy(date, formData.get("start"), formData.get("end"))) {
+    if (isBusy(date, formData.get("start"), formData.get("end"), timezone)) {
         feedback.textContent = strings.occupied;
         return;
     }
@@ -234,8 +270,8 @@ form.addEventListener("submit", async (event) => {
             proId: profileId,
             clientId: currentUser.uid,
             clientAddress: clientSnapshot.data()?.address || "",
-            start,
-            end,
+            start: zonedLocalToIso(localStart, timezone),
+            end: zonedLocalToIso(localEnd, timezone),
             status: "pending",
             createdBy: currentUser.uid,
             createdAt: serverTimestamp(),
@@ -253,7 +289,8 @@ form.querySelector("[data-profile-waitlist]").addEventListener("click", async ()
     if (!currentUser) { authPrompt.hidden = false; form.hidden = true; return; }
     const feedback = document.querySelector("[data-profile-feedback]");
     try {
-        await httpsCallable(getFirebaseFunctions(), "joinBookingWaitlist")({ proId: profileId, start: `${form.elements.date.value}T${form.elements.start.value}`, end: `${form.elements.date.value}T${form.elements.end.value}` });
+        const timezone = profile.scheduleAvailability?.timezone || profile.timezone || "Europe/Paris";
+        await httpsCallable(getFirebaseFunctions(), "joinBookingWaitlist")({ proId: profileId, start: zonedLocalToIso(`${form.elements.date.value}T${form.elements.start.value}`, timezone), end: zonedLocalToIso(`${form.elements.date.value}T${form.elements.end.value}`, timezone) });
         feedback.textContent = strings.waitlistSaved;
     } catch { feedback.textContent = strings.waitlistError; }
 });
@@ -271,4 +308,10 @@ function toIsoDate(date) {
 
 function timeValue(date) {
     return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function getZonedParts(value, timezone) {
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(value);
+    const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+    return { date: `${values.year}-${values.month}-${values.day}`, hour: Number(values.hour), minute: Number(values.minute) };
 }

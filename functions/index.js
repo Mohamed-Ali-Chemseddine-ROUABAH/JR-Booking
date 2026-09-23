@@ -20,6 +20,8 @@ const {
     validateClaimToken
 } = require("./booking-claims.js");
 const { normalizeBookingUpdateFields } = require("./booking-update-validation.js");
+const { buildRequesterReplyNotification, hasNewAdminReply } = require("./support-request-notifications.js");
+const { buildBanReviewNotification, hasBanReviewChange } = require("./ban-request-notifications.js");
 
 const googleClientSecret = defineSecret("GOOGLE_CLIENT_SECRET");
 const googleClientId = defineString("GOOGLE_CLIENT_ID");
@@ -114,6 +116,37 @@ exports.createMessageNotification = onDocumentWritten("bookings/{bookingId}/mess
         createdAt: new Date(),
         readAt: null
     })));
+});
+
+exports.createSupportReplyNotification = onDocumentWritten("supportTickets/{ticketId}", async (event) => {
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!hasNewAdminReply(before, after)) return;
+    await admin.firestore().collection("notifications").doc(after.createdBy).collection("items").doc(`support-reply-${event.params.ticketId}`).set({
+        ...buildRequesterReplyNotification({ kind: "support", requestId: event.params.ticketId, reply: after.adminReply }),
+        createdAt: new Date(),
+    }, { merge: true });
+});
+
+exports.createDataRequestReplyNotification = onDocumentWritten("dataRequests/{requestId}", async (event) => {
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!hasNewAdminReply(before, after)) return;
+    await admin.firestore().collection("notifications").doc(after.createdBy).collection("items").doc(`data-request-reply-${event.params.requestId}`).set({
+        ...buildRequesterReplyNotification({ kind: "data-request", requestId: event.params.requestId, reply: after.adminReply }),
+        createdAt: new Date(),
+    }, { merge: true });
+});
+
+exports.createBanReviewNotification = onDocumentWritten("proClientRecords/{recordId}", async (event) => {
+    const before = event.data.before.exists ? event.data.before.data() : null;
+    const after = event.data.after.exists ? event.data.after.data() : null;
+    if (!hasBanReviewChange(before, after)) return;
+    const status = after.platformBanRequest.status;
+    await admin.firestore().collection("notifications").doc(after.platformBanRequest.requestedBy).collection("items").doc(`ban-review-${event.params.recordId}`).set({
+        ...buildBanReviewNotification({ recordId: event.params.recordId, status }),
+        createdAt: new Date()
+    }, { merge: true });
 });
 
 exports.notifyWaitlistOnBookingRelease = onDocumentWritten("bookings/{bookingId}", async (event) => {

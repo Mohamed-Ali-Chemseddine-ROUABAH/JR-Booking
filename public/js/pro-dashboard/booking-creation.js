@@ -2,10 +2,11 @@ import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getFirebaseFunctions } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { initializeBookingContactEditor } from "./booking-contacts.js";
+import { isLocalDateTimeRangeValid, zonedLocalToIso } from "../core/datetime-utils.mjs";
 
 const strings = UI_STRINGS.proDashboard.bookingCreation;
 
-export function initializeBookingCreation({ user, details, onSaved }) {
+export function initializeBookingCreation({ user, details, timezone = "Europe/Paris", onSaved }) {
     const modal = document.createElement("div");
     modal.className = "booking-creation-modal";
     modal.setAttribute("role", "dialog");
@@ -38,7 +39,7 @@ export function initializeBookingCreation({ user, details, onSaved }) {
         const formData = new FormData(form);
         const start = formData.get("start");
         const end = formData.get("end");
-        if (new Date(end) <= new Date(start)) {
+        if (!isLocalDateTimeRangeValid(start, end)) {
             feedback.textContent = strings.invalidRange;
             return;
         }
@@ -48,8 +49,8 @@ export function initializeBookingCreation({ user, details, onSaved }) {
                 requestId,
                 proId: user.uid,
                 contacts: contactEditor.getContacts(),
-                start,
-                end
+                start: zonedLocalToIso(start, timezone),
+                end: zonedLocalToIso(end, timezone)
             });
             feedback.textContent = strings.saved;
             window.setTimeout(() => {

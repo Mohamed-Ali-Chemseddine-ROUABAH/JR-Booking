@@ -11,6 +11,9 @@ import { initializeRequestChange } from "./client-request-change.js";
 import { updateClientBookingStatus } from "../pro-dashboard/booking-actions.js";
 import { initializeClientSchedule } from "./client-schedule.js";
 import { initializeClientPaymentContext } from "./client-payment-context.js";
+import { initializeSupportRequests } from "../shared/support-requests.js";
+import { initializeNotificationPreferences } from "../pro-dashboard/notification-preferences.js";
+import { initializeNotificationCenter } from "../pro-dashboard/today-view.js";
 import { initializeProfessionalSearch } from "./client-professional-search.js?v=search-retract-20260914";
 import { initializeHistoryShare } from "./client-history-share.js";
 import { initializeBookingMessages } from "../shared/booking-messages.js";
@@ -41,6 +44,9 @@ requireAuth({
             onEditProfile: () => initializeClientProfileSettings({ user }),
             onPayment: () => initializeClientPaymentContext({ bookings: currentBookings, timezone: clientTimezone }),
             onHistoryShare: () => openHistoryShare(),
+            onNotificationPreferences: () => initializeNotificationPreferences({ user }),
+            onNotifications: () => initializeNotificationCenter(document.body, { bookings: [...currentBookings, ...sharedBookings], timezone: clientTimezone, userId: user.uid, onSelectBooking: (bookingId) => document.querySelector(`[data-booking-card="${bookingId}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" }) }),
+            onSupportRequests: () => initializeSupportRequests({ user }),
             onPrint: ({ mode, anonymizeClients }) => openPrintDocument(buildProfessionalScheduleReport({
                 professionalName: user.email,
                 bookings: [...currentBookings, ...sharedBookings].map((booking) => ({ ...booking, clientDisplayName: booking.proDisplayName || "Professionnel" })),
@@ -74,7 +80,15 @@ requireAuth({
         }
 
         function renderSchedule() {
-            initializeClientSchedule(document.querySelector("[data-client-schedule-root]"), { bookings: currentBookings, lockedProfessional, timezone: clientTimezone });
+            initializeClientSchedule(document.querySelector("[data-client-schedule-root]"), {
+                bookings: currentBookings,
+                lockedProfessional,
+                timezone: clientTimezone,
+                onLockedSlotSelect: ({ proId, date, start }) => {
+                    const params = new URLSearchParams({ pro: proId, requestedDate: date, requestedStart: start });
+                    window.location.assign(`profile.html?${params.toString()}`);
+                }
+            });
         }
 
         function renderBookings(filter) {

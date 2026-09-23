@@ -11,6 +11,7 @@ const audit = document.querySelector("[data-admin-audit]");
 const claimConflicts = document.querySelector("[data-admin-conflicts]");
 const tickets = document.querySelector("[data-admin-tickets]");
 const dataRequests = document.querySelector("[data-admin-data-requests]");
+const banRequests = document.querySelector("[data-admin-ban-requests]");
 const summary = document.querySelector("[data-admin-summary]");
 const links = document.querySelector("[data-admin-links]");
 const linkForm = document.querySelector("[data-admin-link-form]");
@@ -58,6 +59,7 @@ requireAuth({ allowedRoles: ["admin"], onAuthorized: async ({ user }) => {
     await loadAuditLogs();
     await loadClaimConflicts();
     await loadQueues();
+    await loadBanRequests();
     await loadCategories();
     await loadHealth();
 } });
@@ -276,14 +278,16 @@ async function loadQueue(collectionName, container) {
         const snapshot = await getDocs(query(collection(getFirestoreDb(), collectionName), limit(30)));
         const items = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
         container.innerHTML = items.length ? items.map((item) => renderQueueItem(collectionName, item)).join("") : `<p class="working-hours-feedback">${strings.queueEmpty}</p>`;
-        container.querySelectorAll("[data-queue-status]").forEach((button) => button.addEventListener("click", () => updateQueueStatus(collectionName, button.dataset.queueId, button.dataset.queueStatus)));
+        container.querySelectorAll("[data-queue-status]").forEach((button) => button.addEventListener("change", () => updateQueueStatus(collectionName, button.dataset.queueId, button.value)));
+        container.querySelectorAll("[data-queue-reply]").forEach((button) => button.addEventListener("click", () => updateQueueReply(collectionName, button.dataset.queueId, container.querySelector(`[data-queue-reply-input="${button.dataset.queueId}"]`)?.value || "")));
     } catch {
         container.innerHTML = `<p class="working-hours-feedback">${strings.queueError}</p>`;
     }
 }
 
 function renderQueueItem(collectionName, item) {
-    return `<article class="admin-queue-row"><strong>${escapeHtml(item.subject || item.type || strings.untitled)}</strong><small>${escapeHtml(item.createdBy || "")} · ${escapeHtml(item.status || "pending")}</small><select data-queue-status data-queue-id="${escapeHtml(item.id)}"><option value="pending" ${item.status === "pending" ? "selected" : ""}>Pending</option><option value="in-progress" ${item.status === "in-progress" ? "selected" : ""}>In progress</option><option value="completed" ${item.status === "completed" ? "selected" : ""}>Completed</option></select></article>`;
+    const reply = `<textarea data-queue-reply-input="${escapeHtml(item.id)}" maxlength="2000" placeholder="Réponse au demandeur">${escapeHtml(item.adminReply || "")}</textarea><button class="btn btn-ghost" type="button" data-queue-reply data-queue-id="${escapeHtml(item.id)}">Répondre</button>`;
+    return `<article class="admin-queue-row"><strong>${escapeHtml(item.subject || item.type || strings.untitled)}</strong><small>${escapeHtml(item.createdBy || "")} · ${escapeHtml(item.status || "pending")}</small><select data-queue-status data-queue-id="${escapeHtml(item.id)}"><option value="pending" ${item.status === "pending" ? "selected" : ""}>Pending</option><option value="in-progress" ${item.status === "in-progress" ? "selected" : ""}>In progress</option><option value="completed" ${item.status === "completed" ? "selected" : ""}>Completed</option></select>${reply}</article>`;
 }
 
 async function updateQueueStatus(collectionName, id, nextStatus) {
@@ -393,4 +397,40 @@ async function purgeProfile() {
         lifecycleFeedback.textContent = strings.lifecycle.purged;
         lifecycleForm.reset();
     } catch { lifecycleFeedback.textContent = strings.lifecycle.purgeError; }
+}
+
+async function updateQueueReply(collectionName, id, reply) {
+    if (!reply.trim()) return;
+    try {
+        await updateDoc(doc(getFirestoreDb(), collectionName, id), { adminReply: reply.trim().slice(0, 2000), status: "in-progress", updatedAt: new Date().toISOString() });
+        await loadQueues();
+    } catch {
+        status.textContent = strings.queueUpdateError;
+    }
+}
+
+async function loadBanRequests() {
+    try {
+        const snapshot = await getDocs(query(collection(getFirestoreDb(), "proClientRecords"), where("platformBanRequest.status", "==", "pending"), limit(30)));
+        banRequests.innerHTML = snapshot.docs.length ? snapshot.docs.map((item) => {
+            const data = item.data();
+            return `<article class="admin-queue-row"><strong>Client ${escapeHtml(data.clientId || item.id)}</strong><small>Professionnel ${escapeHtml(data.proId || "")} · demande en attente</small><button class="btn btn-ghost" type="button" data-ban-status="approved" data-ban-id="${escapeHtml(item.id)}" data-ban-client="${escapeHtml(data.clientId || "")}">Approuver</button><button class="btn btn-solid" type="button" data-ban-status="rejected" data-ban-id="${escapeHtml(item.id)}" data-ban-client="${escapeHtml(data.clientId || "")}">Refuser</button></article>`;
+        }).join("") : `<p class="working-hours-feedback">${strings.queueEmpty}</p>`;
+        banRequests.querySelectorAll("[data-ban-status]").forEach((button) => button.addEventListener("click", () => updateBanRequest(button.dataset.banId, button.dataset.banStatus, button.dataset.banClient)));
+    } catch {
+        banRequests.innerHTML = `<p class="working-hours-feedback">${strings.queueError}</p>`;
+    }
+}
+
+async function updateBanRequest(id, nextStatus, clientId) {
+    try {
+        if (nextStatus === "approved") {
+            if (!clientId || !window.confirm("Bannir ce compte client de la plateforme ?")) return;
+            await httpsCallable(getFirebaseFunctions(), "setAccountBanStatus")({ targetUid: clientId, banned: true });
+        }
+        await updateDoc(doc(getFirestoreDb(), "proClientRecords", id), { "platformBanRequest.status": nextStatus, "platformBanRequest.reviewedAt": new Date().toISOString(), "platformBanRequest.reviewedBy": authorizedAdmin.uid });
+        await loadBanRequests();
+    } catch {
+        status.textContent = strings.queueUpdateError;
+    }
 }

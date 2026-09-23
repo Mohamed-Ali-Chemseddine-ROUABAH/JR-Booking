@@ -1,4 +1,23 @@
 export const UI_STRINGS = {
+    supportRequests: {
+        button: "Aide et demandes",
+        title: "Aide et demandes",
+        close: "Fermer",
+        typeLabel: "Type de demande",
+        support: "Contacter le support",
+        data: "Demander mes données",
+        subjectLabel: "Objet",
+        subjectPlaceholder: "Décrivez brièvement votre demande",
+        detailsLabel: "Détails",
+        detailsPlaceholder: "Expliquez votre demande",
+        submit: "Envoyer la demande",
+        saved: "Votre demande a été envoyée.",
+        error: "La demande n'a pas pu être envoyée.",
+        required: "Renseignez l'objet et les détails de la demande.",
+        historyTitle: "Mes demandes",
+        historyEmpty: "Aucune demande envoyée.",
+        historyError: "L'historique des demandes n'a pas pu être chargé."
+    },
     admin: {
         brandSmall: "Administration",
         adminAccount: "Compte administrateur",
@@ -808,6 +827,10 @@ export const UI_STRINGS = {
         schedule: {
             title: "Mon planning",
             summary: "Semaine actuelle",
+            available: "Réserver",
+            previous: "Semaine précédente",
+            today: "Cette semaine",
+            next: "Semaine suivante",
             empty: "Aucun rendez-vous cette semaine.",
             pending: "En attente",
             accepted: "Acceptée",
@@ -818,6 +841,7 @@ export const UI_STRINGS = {
         },
         navbar: {
             print: "Imprimer",
+            notifications: "Notifications",
             mobileMenu: "Menu",
             printMenuLabel: "Options d'impression",
             anonymousPrintToggle: "Masquer le nom du professionnel",
@@ -833,7 +857,8 @@ export const UI_STRINGS = {
             editProfile: "Modifier mon profil",
             payments: "Paiements",
             paymentsUnavailable: "Aucun paiement actif pour le moment.",
-            historyShare: "Partage d'historique"
+            historyShare: "Partage d'historique",
+            notificationPreferences: "Préférences de notification"
         },
         paymentContext: {
             title: "Paiement de la réservation",
@@ -969,6 +994,12 @@ export const UI_STRINGS = {
         links: "Liens",
         scheduleTitle: "Disponibilités",
         scheduleHelp: "Choisissez un créneau encore libre.",
+        previous: "Période précédente",
+        today: "Aujourd'hui",
+        next: "Période suivante",
+        viewOne: "1 jour",
+        viewThree: "3 jours",
+        viewSeven: "7 jours",
         dateLabel: "Date",
         startLabel: "Début",
         endLabel: "Fin",

@@ -797,13 +797,13 @@
 }
 
 .schedule-slot-drag-preview {
-  background: rgba(120,170,255,.16);
+  background: var(--panel);
   outline: 1px dashed var(--ink-100);
   outline-offset: -1px;
 }
 
 .schedule-slot-fixed-selected {
-  background: rgba(120,170,255,.22);
+  background: var(--panel);
   outline: 1px solid var(--ink-100);
   outline-offset: -1px;
 }
@@ -915,6 +915,7 @@
 .schedule-slot-booking small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .schedule-slot-booking small { color: var(--ink-500); }
+.schedule-slot-booking-continuation { min-height: 22px; padding: 3px 7px; border-top: 0; opacity: .82; }
 
 .schedule-slot-accepted { border-style: solid; }
 .schedule-slot-pending { border-style: dashed; }

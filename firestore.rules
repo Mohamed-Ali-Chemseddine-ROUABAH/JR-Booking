@@ -321,14 +321,28 @@ service cloud.firestore {
     }
 
     match /supportTickets/{ticketId} {
-      allow read, update: if isAdmin() || isOwner(resource.data.createdBy);
-      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow read: if isAdmin() || isOwner(resource.data.createdBy);
+      allow update: if isAdmin() || (isOwner(resource.data.createdBy)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["subject", "details", "updatedAt"]));
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.keys().hasOnly(["createdBy", "subject", "details", "status", "createdAt", "updatedAt"])
+        && request.resource.data.subject is string && request.resource.data.subject.size() > 0 && request.resource.data.subject.size() <= 120
+        && request.resource.data.details is string && request.resource.data.details.size() > 0 && request.resource.data.details.size() <= 2000
+        && request.resource.data.status == "pending";
       allow delete: if isAdmin();
     }
 
     match /dataRequests/{requestId} {
-      allow read, update: if isAdmin() || isOwner(resource.data.createdBy);
-      allow create: if signedIn() && request.resource.data.createdBy == request.auth.uid;
+      allow read: if isAdmin() || isOwner(resource.data.createdBy);
+      allow update: if isAdmin() || (isOwner(resource.data.createdBy)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["subject", "details", "updatedAt"]));
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.keys().hasOnly(["createdBy", "subject", "details", "status", "createdAt", "updatedAt"])
+        && request.resource.data.subject is string && request.resource.data.subject.size() > 0 && request.resource.data.subject.size() <= 120
+        && request.resource.data.details is string && request.resource.data.details.size() > 0 && request.resource.data.details.size() <= 2000
+        && request.resource.data.status == "pending";
       allow delete: if isAdmin();
     }
 

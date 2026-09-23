@@ -18,6 +18,7 @@ import { initializeDirectLinks } from "./direct-links.js";
 import { initializeClientDatabase } from "./client-database.js?v=crm-erasure-20260909";
 import { initializeStatistics } from "./statistics.js?v=stats-20260909";
 import { initializeNotificationPreferences } from "./notification-preferences.js";
+import { initializeSupportRequests } from "../shared/support-requests.js";
 import { initializeBookingCreation } from "./booking-creation.js";
 import { updateBookingStatus, updateBookingDetails } from "./booking-actions.js";
 import { initializeBookingEdit } from "./booking-edit.js";
@@ -66,6 +67,7 @@ requireAuth({
             activeProfileId,
             canManageSettings: !isDelegate,
             onNotifications: () => initializeNotificationCenter(document.body, { bookings: dashboardBookings, timezone: workingHours?.timezone || "Europe/Paris", userId: user.uid, onSelectBooking: (bookingId) => sidebar?.selectBooking(bookingId) }),
+            onSupportRequests: () => initializeSupportRequests({ user }),
             onProfileChange: (profileId) => {
                 sessionStorage.setItem("jr-active-professional-profile", profileId);
                 window.location.reload();
@@ -104,7 +106,7 @@ requireAuth({
                 onFilterChange: (filter) => { activeFilter = filter; },
                 onMessages: canManageMessages ? (booking) => initializeBookingMessages({ booking, userId: user.uid, profileId: activeProfileId, userRole: "professional" }) : undefined,
                 onPrepNotes: isDelegate ? undefined : (booking) => initializeBookingPrepNotes({ booking, onSaved: refreshDashboard }),
-                onEditBooking: canManageBookings ? (booking) => initializeBookingEdit({ booking, onSaved: refreshDashboard }) : undefined
+                onEditBooking: canManageBookings ? (booking) => initializeBookingEdit({ booking, timezone: workingHours?.timezone || "Europe/Paris", onSaved: refreshDashboard }) : undefined
             });
             initializeSchedule(document.querySelector("[data-schedule-root]"), {
                 daysToShow: workingHours.viewDays,
@@ -121,7 +123,7 @@ requireAuth({
                         x,
                         y,
                         onStatusChange: canManageBookings ? handleBookingStatus : undefined,
-                        onEdit: canManageBookings ? (selectedBooking) => initializeBookingEdit({ booking: selectedBooking, onSaved: refreshDashboard }) : undefined,
+                        onEdit: canManageBookings ? (selectedBooking) => initializeBookingEdit({ booking: selectedBooking, timezone: workingHours?.timezone || "Europe/Paris", onSaved: refreshDashboard }) : undefined,
                         onPrepNotes: isDelegate ? undefined : (selectedBooking) => initializeBookingPrepNotes({ booking: selectedBooking, onSaved: refreshDashboard })
                     });
                 },
@@ -130,7 +132,7 @@ requireAuth({
                 onSyncCalendar: canManageBookings ? syncBookingToCalendar : undefined,
                 onMeetingLinks: canManageBookings ? manageMeetingLinks : undefined,
                 onPrepNotes: isDelegate ? undefined : (booking) => initializeBookingPrepNotes({ booking, onSaved: refreshDashboard }),
-                onCreateBooking: isDelegate ? undefined : (details) => initializeBookingCreation({ user: profileUser, details, onSaved: refreshDashboard })
+                onCreateBooking: isDelegate ? undefined : (details) => initializeBookingCreation({ user: profileUser, details, timezone: workingHours?.timezone || "Europe/Paris", onSaved: refreshDashboard })
             });
         };
         const refreshDashboard = async () => {

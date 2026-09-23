@@ -2,7 +2,7 @@ import { UI_STRINGS } from "../core/strings-fr.js?v=search-retract-20260914";
 
 const strings = UI_STRINGS.clientDashboard.navbar;
 
-export function initializeClientNavbar(container, { user, onLogout, onEditProfile, onPayment, onHistoryShare, onPrint }) {
+export function initializeClientNavbar(container, { user, onLogout, onEditProfile, onPayment, onHistoryShare, onNotificationPreferences, onNotifications, onSupportRequests, onPrint }) {
     container.innerHTML = `
         <div class="pro-brand">
             <div class="pro-brand-mark" aria-hidden="true">JR</div>
@@ -25,6 +25,7 @@ export function initializeClientNavbar(container, { user, onLogout, onEditProfil
                         <button type="button" role="menuitem" data-menu-edit-profile>${strings.editProfile}</button>
                         <button type="button" role="menuitem" data-menu-payments title="${strings.paymentsUnavailable}">${strings.payments}</button>
                         <button type="button" role="menuitem" data-menu-history-share>${strings.historyShare}</button>
+                        <button type="button" role="menuitem" data-menu-notification-preferences>${strings.notificationPreferences}</button>
                     </div>
                 </div>
                 <button class="icon-button navbar-icon-action navbar-logout-action" type="button" data-logout aria-label="${strings.logout}" title="${strings.logout}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5M14 16l4-4-4-4m4 4H8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></svg></button>
@@ -52,6 +53,22 @@ export function initializeClientNavbar(container, { user, onLogout, onEditProfil
         }
     });
 
+    const supportButton = document.createElement("button");
+    supportButton.className = "icon-button navbar-icon-action";
+    supportButton.type = "button";
+    supportButton.setAttribute("aria-label", UI_STRINGS.supportRequests.button);
+    supportButton.title = UI_STRINGS.supportRequests.button;
+    supportButton.innerHTML = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H12l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5z\" fill=\"none\" stroke=\"currentColor\" stroke-linejoin=\"round\" stroke-width=\"1.6\"/></svg>";
+    supportButton.addEventListener("click", onSupportRequests);
+    container.querySelector(".navbar-icon-group").prepend(supportButton);
+    const notificationsButton = document.createElement("button");
+    notificationsButton.className = "icon-button navbar-icon-action notification-trigger";
+    notificationsButton.type = "button";
+    notificationsButton.setAttribute("aria-label", strings.notifications);
+    notificationsButton.title = strings.notifications;
+    notificationsButton.innerHTML = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8.5 12h5\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"1.7\"/></svg>";
+    notificationsButton.addEventListener("click", onNotifications);
+    container.querySelector(".navbar-icon-group").prepend(notificationsButton);
     const printButton = container.querySelector("[data-print]");
     const printMenu = document.createElement("div");
     printMenu.className = "settings-menu print-menu";
@@ -99,5 +116,10 @@ export function initializeClientNavbar(container, { user, onLogout, onEditProfil
         settingsMenu.classList.remove("is-open");
         settingsTrigger.setAttribute("aria-expanded", "false");
         onHistoryShare?.();
+    });
+    container.querySelector("[data-menu-notification-preferences]").addEventListener("click", () => {
+        settingsMenu.classList.remove("is-open");
+        settingsTrigger.setAttribute("aria-expanded", "false");
+        onNotificationPreferences?.();
     });
 }

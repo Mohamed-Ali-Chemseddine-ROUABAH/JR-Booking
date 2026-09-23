@@ -14,15 +14,19 @@
 .profile-section-heading { display: flex; justify-content: space-between; gap: 18px; align-items: end; margin-bottom: 20px; }
 .profile-section-heading h2, .profile-request-form h3 { margin: 8px 0 0; color: var(--ink-100); font: 600 1.45rem var(--font-display); }
 .profile-section-heading p { max-width: 24ch; margin: 0; font-size: .8rem; text-align: right; }
-.profile-schedule { overflow-x: auto; padding-bottom: 4px; }
-.profile-schedule-header, .profile-schedule-grid { display: grid; grid-template-columns: 58px repeat(7, minmax(84px, 1fr)); min-width: 650px; gap: 6px; }
+.profile-schedule { overflow-x: hidden; padding-bottom: 4px; }
+.profile-schedule-toolbar { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 10px; }
+.profile-schedule-nav, .profile-schedule-views { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.profile-schedule-nav .schedule-nav-button { width: 34px; height: 34px; padding: 6px; }
+.profile-schedule-nav .schedule-nav-button svg { display: block; width: 20px; height: 20px; }
+.profile-schedule-header, .profile-schedule-grid { display: grid; grid-template-columns: minmax(42px, .65fr) repeat(var(--profile-day-count, 7), minmax(0, 1fr)); gap: 6px; }
 .profile-schedule-header { margin-bottom: 7px; }
-.profile-schedule-header strong { padding: 10px 4px; color: var(--ink-300); border-bottom: 1px solid var(--panel-brd-strong); font-size: .72rem; text-align: center; text-transform: capitalize; }
+.profile-schedule-header strong { min-width: 0; padding: 10px 4px; color: var(--ink-300); border-bottom: 1px solid var(--panel-brd-strong); font: .72rem var(--font-mono); text-align: center; text-transform: uppercase; overflow: hidden; }
 .profile-schedule-grid { grid-auto-rows: minmax(46px, auto); }
 .profile-time-label { display: flex; align-items: flex-start; justify-content: flex-end; padding: 10px 7px 0 0; color: var(--ink-500); font: .68rem var(--font-mono); }
-.profile-slot { min-height: 46px; padding: 6px 4px; border: 1px solid rgba(132,166,151,.32); border-radius: var(--r-sm); color: var(--ink-300); background: rgba(132,166,151,.09); font-size: .68rem; transition: background .18s ease, border-color .18s ease; }
-.profile-slot:hover:not(.is-busy) { color: var(--ink-100); border-color: rgba(132,166,151,.7); background: rgba(132,166,151,.18); }
-.profile-slot.is-busy { color: var(--ink-700); border-color: var(--panel-brd); background: rgba(244,245,247,.055); text-decoration: line-through; cursor: wait; }
+.profile-slot { min-width: 0; min-height: 46px; padding: 6px 4px; border: 1px solid var(--panel-brd); border-radius: var(--r-sm); color: var(--ink-300); background: rgba(244,245,247,.018); font-size: .68rem; transition: background .18s ease, border-color .18s ease; overflow: hidden; }
+.profile-slot:hover:not(.is-busy) { color: var(--ink-100); border-color: var(--panel-brd-strong); background: var(--panel); }
+.profile-slot.is-busy { color: var(--ink-700); border-color: var(--ghost-brd); background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(244,245,247,.025) 8px 9px); text-decoration: line-through; cursor: default; }
 .profile-request-form { display: grid; gap: 12px; margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--panel-brd); }
 .profile-intake { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--panel-brd); border-radius: var(--r-sm); background: rgba(244,245,247,.025); }
 .profile-intake h4 { margin: 0; color: var(--ink-100); font: 600 1rem var(--font-display); }
@@ -38,5 +42,5 @@
 .search-result { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; color: var(--ink-300); }
 .search-result strong { color: var(--ink-100); }
 .search-result span { color: var(--ink-500); font-size: .78rem; text-align: right; }
-@media (max-width: 760px) { .profile-layout { grid-template-columns: 1fr; } .profile-section-heading { display: block; } .profile-section-heading p { margin-top: 10px; text-align: left; } }
-@media (max-width: 430px) { .profile-schedule-header, .profile-schedule-grid { grid-template-columns: 48px repeat(7, minmax(74px, 1fr)); min-width: 570px; } .search-result { display: grid; } .search-result span { text-align: left; } }
+@media (max-width: 760px) { .profile-layout { grid-template-columns: 1fr; } .profile-section-heading { display: block; } .profile-section-heading p { margin-top: 10px; text-align: left; } .profile-schedule-toolbar { align-items: stretch; flex-direction: column; } }
+@media (max-width: 430px) { .profile-schedule-header, .profile-schedule-grid { grid-template-columns: 36px repeat(var(--profile-day-count, 7), minmax(0, 1fr)); gap: 2px; } .profile-schedule-header strong { padding: 8px 2px; font-size: .58rem; } .profile-slot { min-height: 42px; padding: 5px 2px; font-size: .6rem; } .search-result { display: grid; } .search-result span { text-align: left; } }

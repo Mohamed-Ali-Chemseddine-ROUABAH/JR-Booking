@@ -211,7 +211,8 @@
   margin: 4px 0 0;
   padding: 6px 10px;
   color: var(--ink-100);
-  background: rgba(138,180,255,.14);
+  background: var(--panel);
+  border: 1px solid var(--panel-brd);
   border-radius: var(--r-sm);
   font-size: .72rem;
 }
@@ -298,10 +299,8 @@
 }
 
 .professional-search-pill svg { width: 16px; opacity: .55; flex-shrink: 0; }
-
-.professional-search-pill input {
-  border: none;
-  background: transparent;
+  background: var(--panel);
+  border-color: var(--panel-brd-strong);
   outline: none;
   width: 100%;
   color: var(--ink-100);
@@ -344,8 +343,8 @@
 
 .professional-chip.is-locked {
   color: var(--ink-100);
-  background: rgba(255,180,138,.16);
-  border-color: rgba(255,180,138,.5);
+  background: var(--panel);
+  border-color: var(--panel-brd-strong);
 }
 
 .professional-chip svg { flex-shrink: 0; }
@@ -366,6 +365,9 @@
 .client-schedule-panel { border-color: var(--panel-brd-strong); box-shadow: 0 18px 50px rgba(0,0,0,.14); }
 .client-schedule-heading { display: flex; justify-content: space-between; gap: 14px; align-items: end; margin-bottom: 14px; }
 .client-schedule-heading h1 { margin: 7px 0 0; color: var(--ink-100); font: 600 1.65rem var(--font-display); }
+.client-schedule-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.client-schedule-tools .schedule-nav-button { width: 34px; height: 34px; padding: 6px; }
+.client-schedule-tools .schedule-nav-button svg { display: block; width: 20px; height: 20px; }
 .client-schedule-summary { color: var(--ink-500); font: .68rem var(--font-mono); text-transform: uppercase; }
 .client-schedule-scroll {
   overflow-x: auto;
@@ -377,14 +379,19 @@
 .client-schedule-scroll::-webkit-scrollbar-track { background: transparent; }
 .client-schedule-scroll::-webkit-scrollbar-thumb { background: var(--panel-brd-strong); border-radius: 999px; }
 .client-schedule-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-700); }
-.client-schedule-grid { min-width: 680px; display: grid; grid-template-columns: 54px repeat(7, minmax(82px, 1fr)); border-top: 1px solid var(--panel-brd); border-left: 1px solid var(--panel-brd); }
-.client-schedule-cell { min-height: 42px; padding: 6px; border-right: 1px solid var(--panel-brd); border-bottom: 1px solid var(--panel-brd); }
+.client-schedule-grid { display: grid; grid-template-columns: minmax(42px, .65fr) repeat(7, minmax(0, 1fr)); border: 1px solid var(--panel-brd); border-radius: var(--r-md); overflow: hidden; }
+.client-schedule-cell { min-width: 0; min-height: 58px; padding: 10px 7px; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); color: var(--ink-500); background: rgba(244,245,247,.018); font-size: .75rem; text-align: center; overflow: hidden; }
 .client-schedule-day { min-height: 50px; color: var(--ink-300); font-size: .72rem; }
 .client-schedule-day span, .client-schedule-day small { display: block; }
+.client-schedule-day, .client-schedule-time { display: grid; place-content: center; background: rgba(244,245,247,.045); font-family: var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
 .client-schedule-day small, .client-schedule-time { color: var(--ink-700); font-size: .68rem; }
 .client-schedule-time { text-align: right; }
-.client-schedule-slot.is-booked { background: rgba(138,180,255,.14); }
-.client-schedule-slot.is-locked-busy { background: rgba(255,180,138,.16); }
+.client-schedule-slot { display: grid; place-content: center; }
+.client-schedule-slot.is-booked { background: var(--panel); border: 1px solid var(--panel-brd-strong); }
+.client-schedule-slot.is-booking-continuation { min-height: 22px; padding: 3px; border-top: 0; opacity: .82; }
+.client-schedule-slot.is-locked-busy { color: var(--ink-700); background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(244,245,247,.025) 8px 9px); border: 1px dashed var(--ghost-brd); }
+.client-schedule-slot.is-locked-available { color: var(--ink-300); cursor: pointer; background: var(--ghost); border: 1px solid var(--panel-brd); font: inherit; }
+.client-schedule-slot.is-locked-available:hover { color: var(--ink-100); background: var(--panel); border-color: var(--panel-brd-strong); }
 .client-schedule-slot strong, .client-schedule-slot small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .client-schedule-slot strong { color: var(--ink-100); font-size: .7rem; }
 .client-schedule-slot small { color: var(--ink-500); font-size: .62rem; }
@@ -410,6 +417,10 @@
   .client-dashboard-layout { grid-template-columns: 1fr; grid-template-areas: "schedule" "bookings"; gap: 14px; }
   .pro-sidebar { position: static; }
   .client-schedule-panel { padding: 16px; }
+  .client-schedule-heading { align-items: stretch; flex-direction: column; }
+  .client-schedule-tools { justify-content: flex-start; }
+  .client-schedule-grid { grid-template-columns: 42px repeat(7, minmax(0, 1fr)); }
+  .client-schedule-cell { padding: 8px 3px; font-size: .68rem; }
   .client-professional-search { padding: 14px 16px; }
   .pro-topbar,
   .pro-actions {

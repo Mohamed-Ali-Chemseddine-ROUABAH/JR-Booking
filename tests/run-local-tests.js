@@ -25,7 +25,15 @@ main().catch((error) => {
 });
 
 async function main() {
-    const hasLocalEmulators = await areEmulatorsReachable();
+    const forceEmulatorSuite = process.argv.includes("--with-emulators");
+    if (forceEmulatorSuite) {
+        process.env.FIREBASE_AUTH_EMULATOR_HOST ||= "127.0.0.1:9099";
+        process.env.FIRESTORE_EMULATOR_HOST ||= "127.0.0.1:8080";
+        process.env.FUNCTIONS_EMULATOR_HOST ||= "127.0.0.1:5001";
+        process.env.FIREBASE_STORAGE_EMULATOR_HOST ||= "127.0.0.1:9199";
+        process.env.FIREBASE_PROJECT_ID ||= "jr-booking-premium";
+    }
+    const hasLocalEmulators = forceEmulatorSuite || await areEmulatorsReachable();
     console.log(`Local emulator suite: ${hasLocalEmulators ? "detected" : "not detected"}`);
     console.log(`Unit tests: ${unitTests.length}; emulator tests: ${emulatorTests.length}; syntax files: ${syntaxFiles.length}`);
 
