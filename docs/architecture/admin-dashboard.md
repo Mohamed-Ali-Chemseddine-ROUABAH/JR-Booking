@@ -23,7 +23,7 @@ The page uses `requireAuth({ allowedRoles: ["admin"] })`. Firestore rules allow 
 
 ## Scope boundary
 
-The review screen itself does not assign claims, send password links, or create profile documents directly. Those privileged effects are delegated to the server-side provisioning step below. The admin UI must not expose an approval action for `awaiting-email-verification`, `rejected`, `expired`, or already completed applications.
+The review screen itself does not assign claims, send password links, or create profile documents directly. Those privileged effects are delegated to server-side functions. Applications in `awaiting-email-verification` expose only an admin resend-verification action; selection, approval, and rejection controls appear only for `pending-review`. Reissue rotates the single-use token hash and its 48-hour expiry, queues a new verification email, and is rate-limited to one resend per minute and five resends per application. The admin UI must not expose approval for unverified, rejected, expired, or already completed applications.
 
 The provisioning step is implemented server-side by the `provisionProfessionalAccount` callable Function. After an admin marks a verified request approved, the callable rechecks the admin claim, creates or links the Auth user, assigns `{ professional: true, role: "professional" }`, creates the private `proProfiles/{uid}` record, creates the initial `publicProfiles/{uid}` mirror, sends a one-time password-setup email, and marks the request `approved-awaiting-password`. The browser never assigns claims or creates these privileged profile documents.
 

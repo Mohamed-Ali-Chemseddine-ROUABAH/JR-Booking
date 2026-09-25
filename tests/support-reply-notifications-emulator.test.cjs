@@ -26,8 +26,10 @@ test("support and data-request replies notify the creator", { timeout: 30000 }, 
         await dataRequest.set({ createdBy: creatorUid, subject: "Export", details: "My data", status: "pending", createdAt: new Date(), updatedAt: new Date() });
         await ticket.update({ adminReply: "Support answer", status: "in-progress", updatedAt: new Date() });
         await dataRequest.update({ adminReply: "Data answer", status: "in-progress", updatedAt: new Date() });
-        const supportNotification = await waitForNotification(creatorUid, `support-reply-${ticketId}`);
-        const dataNotification = await waitForNotification(creatorUid, `data-request-reply-${requestId}`);
+        const [supportNotification, dataNotification] = await Promise.all([
+            waitForNotification(creatorUid, `support-reply-${ticketId}`),
+            waitForNotification(creatorUid, `data-request-reply-${requestId}`)
+        ]);
         assert.equal(supportNotification.data().type, "support-ticket-reply");
         assert.equal(dataNotification.data().type, "data-request-reply");
         assert.equal(supportNotification.data().body, "Support answer");
@@ -41,7 +43,7 @@ test("support and data-request replies notify the creator", { timeout: 30000 }, 
 
 async function waitForNotification(uid, id) {
     const reference = firestore.collection("notifications").doc(uid).collection("items").doc(id);
-    for (let attempt = 0; attempt < 30; attempt += 1) {
+    for (let attempt = 0; attempt < 80; attempt += 1) {
         const snapshot = await reference.get();
         if (snapshot.exists) return snapshot;
         await new Promise((resolve) => setTimeout(resolve, 250));

@@ -2,7 +2,7 @@ import { collection, getDocs, query, updateDoc, doc, where, orderBy, limit } fro
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js?v=admin-provisioning-20260909";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getAuthErrorMessage, requireAuth, signOutCurrentUser } from "../core/auth-guard.js";
-import { UI_STRINGS } from "../core/strings-fr.js";
+import { UI_STRINGS } from "../core/strings-fr.js?v=professional-verification-resend-20260926";
 
 const strings = UI_STRINGS.admin;
 const status = document.querySelector("[data-admin-status]");
@@ -327,6 +327,7 @@ async function loadRequests(user = authorizedAdmin) {
         const items = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
         requests.innerHTML = items.length ? items.sort((left, right) => String(left.status).localeCompare(String(right.status))).map(renderRequest).join("") : `<p class="working-hours-feedback">${strings.empty}</p>`;
         requests.querySelectorAll("[data-request-action]").forEach((button) => button.addEventListener("click", () => updateRequest(button.dataset.requestId, button.dataset.requestAction, user)));
+        requests.querySelectorAll("[data-resend-verification]").forEach((button) => button.addEventListener("click", () => resendVerification(button.dataset.requestId, user, button)));
         status.textContent = "";
     } catch (error) {
         status.textContent = getAuthErrorMessage(error);
@@ -338,8 +339,9 @@ function renderRequest(request) {
     const file = request.verificationFile;
     const selection = request.status === "pending-review" ? `<label class="admin-request-select"><input type="checkbox" data-request-select value="${escapeHtml(request.id)}"><span class="visually-hidden">Sélectionner cette demande</span></label>` : "";
     const reviewActions = request.status === "pending-review" ? `<button class="btn btn-solid" type="button" data-request-action="approved" data-request-id="${escapeHtml(request.id)}">${strings.approve}</button><button class="btn btn-ghost" type="button" data-request-action="rejected" data-request-id="${escapeHtml(request.id)}">${strings.reject}</button>` : "";
+    const verificationAction = request.status === "awaiting-email-verification" && request.emailVerificationStatus === "pending" ? `<button class="btn btn-ghost" type="button" data-resend-verification data-request-id="${escapeHtml(request.id)}">${strings.resendVerification}</button>` : "";
     const banAction = request.status === "provisioned" ? `<button class="btn btn-ghost" type="button" data-ban-action="${request.accountStatus === "banned" ? "active" : "banned"}" data-request-id="${escapeHtml(request.id)}">${request.accountStatus === "banned" ? strings.reinstate : strings.ban}</button>` : "";
-    return `<article class="admin-request-row">${selection}<div class="admin-request-copy"><strong>${escapeHtml(request.displayName || strings.unnamed)}</strong><small>${escapeHtml(request.email || "")} · ${escapeHtml(request.description || "")}</small><span class="admin-request-status">${escapeHtml(request.status || "")}${request.accountStatus ? ` · ${escapeHtml(request.accountStatus)}` : ""}</span><a href="${safeUrl(file?.url)}" target="_blank" rel="noreferrer">${escapeHtml(file?.name || strings.noFile)}</a></div><div class="working-hours-actions">${reviewActions}${banAction}</div></article>`;
+    return `<article class="admin-request-row">${selection}<div class="admin-request-copy"><strong>${escapeHtml(request.displayName || strings.unnamed)}</strong><small>${escapeHtml(request.email || "")} · ${escapeHtml(request.description || "")}</small><span class="admin-request-status">${escapeHtml(request.status || "")}${request.accountStatus ? ` · ${escapeHtml(request.accountStatus)}` : ""}</span><a href="${safeUrl(file?.url)}" target="_blank" rel="noreferrer">${escapeHtml(file?.name || strings.noFile)}</a></div><div class="working-hours-actions">${verificationAction}${reviewActions}${banAction}</div></article>`;
 }
 
 async function updateRequest(requestId, nextStatus, user) {
@@ -432,5 +434,19 @@ async function updateBanRequest(id, nextStatus, clientId) {
         await loadBanRequests();
     } catch {
         status.textContent = strings.queueUpdateError;
+    }
+}
+
+async function resendVerification(requestId, user, button) {
+    if (!window.confirm(strings.resendVerificationConfirm)) return;
+    button.disabled = true;
+    status.textContent = strings.resendVerificationSending;
+    try {
+        await httpsCallable(getFirebaseFunctions(), "resendProfessionalApplicationVerification")({ requestId });
+        await loadRequests(user);
+        status.textContent = strings.resendVerificationQueued;
+    } catch (error) {
+        status.textContent = error?.code === "functions/resource-exhausted" ? strings.resendVerificationCooldown : strings.resendVerificationError;
+        button.disabled = false;
     }
 }

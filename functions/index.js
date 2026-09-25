@@ -347,6 +347,8 @@ exports.submitProfessionalApplication = onRequest(async (request, response) => {
             status: "awaiting-email-verification",
             verificationTokenHash,
             verificationExpiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+            verificationEmailLastSentAt: new Date(),
+            verificationResendCount: 0,
             createdAt: new Date(),
             updatedAt: new Date()
         });
@@ -365,6 +367,74 @@ exports.submitProfessionalApplication = onRequest(async (request, response) => {
         console.error("Professional application failed", { stage, error: error.message });
         return response.status(500).json({ error: "application_unavailable" });
     }
+});
+
+exports.resendProfessionalApplicationVerification = onCall(async (request) => {
+    if (!request.auth?.token?.admin) throw new HttpsError("permission-denied", "Administrator claim required.");
+    const requestId = String(request.data?.requestId || "").trim();
+    if (!requestId) throw new HttpsError("invalid-argument", "Request ID is required.");
+
+    const firestore = admin.firestore();
+    const requestRef = firestore.collection("professionalRequests").doc(requestId);
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verificationTokenHash = hashToken(verificationToken);
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const verificationUrl = `https://jr-booking-premium.web.app/verify-professional.html?token=${verificationToken}`;
+    const mailRef = firestore.collection("mail").doc();
+    const auditRef = firestore.collection("logs").doc();
+    let resendCount;
+
+    await firestore.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(requestRef);
+        if (!snapshot.exists) throw new HttpsError("not-found", "Professional application not found.");
+        const application = snapshot.data();
+        if (application.status !== "awaiting-email-verification" || application.emailVerificationStatus !== "pending") {
+            throw new HttpsError("failed-precondition", "Application is not awaiting email verification.");
+        }
+        if (!/^\S+@\S+\.\S+$/.test(String(application.email || ""))) {
+            throw new HttpsError("failed-precondition", "Application email is invalid.");
+        }
+
+        const lastSentValue = application.verificationEmailLastSentAt || application.createdAt;
+        const lastSentAt = lastSentValue?.toDate ? lastSentValue.toDate().getTime() : new Date(lastSentValue || 0).getTime();
+        if (Number.isFinite(lastSentAt) && now.getTime() - lastSentAt < 60 * 1000) {
+            throw new HttpsError("resource-exhausted", "Please wait before requesting another verification email.");
+        }
+        const previousResends = Math.max(0, Number(application.verificationResendCount) || 0);
+        if (previousResends >= 5) throw new HttpsError("resource-exhausted", "Verification email resend limit reached.");
+        resendCount = previousResends + 1;
+
+        transaction.update(requestRef, {
+            verificationTokenHash,
+            verificationExpiresAt: expiresAt,
+            verificationEmailLastSentAt: now,
+            verificationResendCount: resendCount,
+            updatedAt: now
+        });
+        transaction.set(mailRef, {
+            to: application.email,
+            message: {
+                subject: "Confirmez votre demande professionnelle",
+                text: `Confirmez votre adresse email : ${verificationUrl}`
+            },
+            templateId: "professional-application-verification",
+            sourceId: requestId,
+            category: "professional-application",
+            createdAt: now
+        });
+        transaction.set(auditRef, {
+            type: "professional-application-verification-reissued",
+            applicationId: requestId,
+            at: now,
+            actorUid: request.auth.uid,
+            actorRole: "admin",
+            outcome: "success",
+            metadata: { resendCount, emailQueued: true }
+        });
+    });
+
+    return { requestId, status: "email_queued", resendCount };
 });
 
 exports.verifyProfessionalApplication = onRequest(async (request, response) => {

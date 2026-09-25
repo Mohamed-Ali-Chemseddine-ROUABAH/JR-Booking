@@ -1,7 +1,7 @@
 # Cloud Functions architecture
 
 - **Production file:** `functions/index.js`
-- **Purpose:** Audit logging, immediate and daily-digest notifications, support/data-request reply notifications, preference-aware booking-change and reminder delivery, Google Calendar integration, privileged account lifecycle, and trusted booking/contact/identity/delegation mutations.
+- **Purpose:** Audit logging, immediate and daily-digest notifications, support/data-request reply notifications, preference-aware booking-change and reminder delivery, Google Calendar integration, privileged account lifecycle, trusted booking/contact/identity/delegation mutations, and admin-controlled professional-application verification reissue.
 - **Imports:** `firebase-admin`, `firebase-functions/v2/firestore`, and `firebase-functions/v2/https`.
 - **DOM owner:** None.
 - **Firestore/Storage:** Writes audit entries into `logs`; OAuth state is stored briefly in `calendarOAuthStates`; refresh tokens are stored only in `gcalTokens/{uid}`; provisioning and lifecycle functions update authorized profile records. Booking/contact/claim handlers own trusted identity mutations. Notification triggers resolve professional profile IDs to owner/delegate Auth UIDs. Delegation callables maintain bounded multi-profile claims and `listDelegatedBookings` returns a field allow-listed operational projection. `getBookingPrepNotes` and `updateBookingPrepNotes` own the private professional note document. `batchUpdateBookingStatus` validates up to 50 bookings before one atomic transaction.
@@ -10,6 +10,7 @@
 - **Mockup references:** Calendar OAuth is prototype-only until Phase 14.
 - **Verification:** Phase 3 syntax and emulator/deploy pipeline checks; `tests/notification-digest.test.cjs` covers the Paris-time digest window, calendar date, mixed-category digest formatting, and bounded mail content. Booking contact/claim suites cover identity boundaries. `tests/delegated-access-emulator.test.cjs` verifies sanitized projections, independent permissions, private-note denial, multi-profile removal, atomic batch behavior, and owner/delegate notification routing.
 - `updateProfessionalBooking` also validates and transactionally applies the service snapshot, custom price, and client-facing message together with the existing contact, time-range, and recurring-series edits. Private preparation notes remain a separate owner-only operation.
+- `resendProfessionalApplicationVerification` requires an admin claim and an `awaiting-email-verification` application. It rotates the server-only token hash, extends its expiry by 48 hours, queues the verification message and writes a safe audit event atomically; resend frequency and total count are bounded.
 
 ## Final QA
 
