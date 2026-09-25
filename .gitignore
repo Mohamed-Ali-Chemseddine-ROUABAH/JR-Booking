@@ -43,6 +43,3 @@ Thumbs.db
 !.github/
 !.github/**/*.md
 
-# Personal/reference-only documents (not part of the project work)
-docs/internship-offer-geomatics.md
-
