@@ -1,5 +1,6 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { escapeHtml } from "../core/utils.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.clientDashboard.historyShare;
 
@@ -12,13 +13,14 @@ export function initializeHistoryShare({ userId, relationships = [], onApprove, 
         <section class="glass working-hours-dialog client-history-share-dialog" aria-labelledby="client-history-share-title">
             <div class="working-hours-header">
                 <h2 id="client-history-share-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-history-share-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-history-share-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <p class="working-hours-feedback">${strings.intro}</p>
             <div data-history-share-content></div>
         </section>
     `;
     document.body.append(modal);
+    attachModalBehavior(modal);
     render(modal.querySelector("[data-history-share-content]"), userId, relationships, onApprove, onRevoke);
 
     modal.querySelector("[data-history-share-close]").addEventListener("click", () => modal.remove());

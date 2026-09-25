@@ -28,14 +28,21 @@ firebase-export/
 
 # OS files
 .DS_Store
-Thumbs.db
 
-# Personal/reference-only documents (not part of the project work)
-docs/internship-offer-geomatics.md
+# Local human verification notes (contains real project/console links, not for git)
+HUMAN_VERIFICATION_STEPS.txt
+Thumbs.db
 
 # Internal documentation
 *.md
 !README.md
+!docs/
+!docs/**/
+!docs/*.md
+!docs/**/*.md
 !.github/
 !.github/**/*.md
+
+# Personal/reference-only documents (not part of the project work)
+docs/internship-offer-geomatics.md
 

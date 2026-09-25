@@ -1,6 +1,7 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { escapeHtml } from "../core/utils.js";
 import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.clientDashboard.paymentContext;
 
@@ -14,12 +15,13 @@ export function initializeClientPaymentContext({ bookings = [], timezone = "Euro
         <section class="glass working-hours-dialog client-payment-dialog" aria-labelledby="client-payment-title">
             <div class="working-hours-header">
                 <h2 id="client-payment-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-payment-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-payment-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <div class="client-payment-content" data-payment-content></div>
         </section>
     `;
     document.body.append(modal);
+    attachModalBehavior(modal);
     const content = modal.querySelector("[data-payment-content]");
 
     if (!activeBookings.length) {

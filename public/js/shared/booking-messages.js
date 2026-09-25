@@ -3,6 +3,7 @@ import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { escapeHtml } from "../core/utils.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { attachModalBehavior } from "./modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.shared.bookingMessages;
 
@@ -13,7 +14,7 @@ export async function initializeBookingMessages({ booking, userId, profileId = u
     modal.setAttribute("aria-modal", "true");
     modal.innerHTML = `
         <section class="glass booking-creation-dialog" aria-labelledby="booking-messages-title">
-            <div class="working-hours-header"><h2 id="booking-messages-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-messages-close>${strings.close}</button></div>
+            <div class="working-hours-header"><h2 id="booking-messages-title">${strings.title}</h2><button class="icon-button modal-close" type="button" data-messages-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div>
             <div class="booking-message-list" data-message-list aria-live="polite"><p>${strings.loading}</p></div>
             <form class="working-hours-fields" data-message-form>
                 ${userRole === "professional" ? `<label class="working-hours-field"><span>${strings.quickReply}</span><select data-quick-reply><option value="">${strings.quickReplyEmpty}</option></select></label>` : ""}
@@ -23,6 +24,7 @@ export async function initializeBookingMessages({ booking, userId, profileId = u
             </form>
         </section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
 
     const list = modal.querySelector("[data-message-list]");
     const feedback = modal.querySelector("[data-message-feedback]");

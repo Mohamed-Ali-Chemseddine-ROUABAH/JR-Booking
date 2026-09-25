@@ -1,15 +1,28 @@
-import { UI_STRINGS } from "../core/strings-fr.js";
+import { UI_STRINGS } from "../core/strings-fr.js?v=mockup-parity-b-20260924";
 import { applyBatchStatus } from "./batch-actions.js";
 
 const strings = UI_STRINGS.proDashboard.sidebar;
 const bookingStatuses = UI_STRINGS.proDashboard.schedule.bookingStatuses;
+
+const ICONS = {
+    edit: `<path d="m4 16-1 4 4-1L18 8l-3-3L4 16z"/>`,
+    messages: `<path d="M4 5h16v11H8l-4 3z"/><path d="M8 9h8"/>`,
+    note: `<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>`,
+    accept: `<polyline points="20 6 9 17 4 12"/>`,
+    reject: `<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>`,
+    noShow: `<circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/>`
+};
+
+function bookingActionButton(label, dataAttribute, iconPath) {
+    return `<button class="booking-action-button" type="button" ${dataAttribute} title="${label}" aria-label="${label}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPath}</svg></button>`;
+}
 
 export function initializeSidebarFeed(container, { onToggleSidebar, onStatusChange, onBatchStatus, onEditBooking, onMessages, onPrepNotes, onFilterChange, initialFilter = "pending", bookings = [] }) {
     container.innerHTML = `
         <div class="sidebar-head">
             <h1>${strings.title}</h1>
             <div class="sidebar-controls">
-                <button class="icon-button" type="button" aria-label="${strings.collapse}" title="${strings.collapse}" data-sidebar-toggle>‹</button>
+                <button class="icon-button" type="button" aria-label="${strings.collapse}" title="${strings.collapse}" data-sidebar-toggle><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button>
             </div>
         </div>
         <div class="feed-filters" role="group" aria-label="${strings.title}">
@@ -59,18 +72,32 @@ function renderBookings(container, bookings, onStatusChange, onBatchStatus, onEd
         const name = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || strings.bookingFallbackName);
         const date = start ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(start) : "";
         const time = start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
-        const editAction = onEditBooking ? `<button class="btn btn-ghost" type="button" data-edit-booking>${strings.editBooking}</button>` : "";
-        const messageAction = onMessages ? `<button class="btn btn-ghost" type="button" data-message-booking>${UI_STRINGS.shared.bookingMessages.title}</button>` : "";
-        const prepNotesAction = onPrepNotes ? `<button class="btn btn-ghost" type="button" data-prep-notes>${strings.prepNotes}</button>` : "";
+        const editAction = onEditBooking ? bookingActionButton(strings.editBooking, "data-edit-booking", ICONS.edit) : "";
+        const messageAction = onMessages ? bookingActionButton(UI_STRINGS.shared.bookingMessages.title, "data-message-booking", ICONS.messages) : "";
+        const prepNotesAction = onPrepNotes ? bookingActionButton(strings.prepNotes, "data-prep-notes", ICONS.note) : "";
         const statusActions = Boolean(onStatusChange);
         const actions = booking.status === "pending"
-            ? `<div class="sidebar-booking-actions">${editAction}${messageAction}${prepNotesAction}${statusActions ? `<button class="btn btn-solid" type="button" data-status-action="accepted">${strings.acceptBooking}</button><button class="btn btn-ghost" type="button" data-status-action="rejected">${strings.rejectBooking}</button>` : ""}</div>`
+            ? `<div class="sidebar-booking-actions">${editAction}${messageAction}${prepNotesAction}${statusActions ? `${bookingActionButton(strings.acceptBooking, `data-status-action="accepted"`, ICONS.accept)}${bookingActionButton(strings.rejectBooking, `data-status-action="rejected"`, ICONS.reject)}` : ""}</div>`
             : booking.status === "accepted"
-                ? `<div class="sidebar-booking-actions">${editAction}${messageAction}${prepNotesAction}${statusActions ? `<button class="btn btn-solid" type="button" data-status-action="done">${strings.completeBooking}</button><button class="btn btn-ghost" type="button" data-status-action="no-show">${strings.noShowBooking}</button>` : ""}</div>`
+                ? `<div class="sidebar-booking-actions">${editAction}${messageAction}${prepNotesAction}${statusActions ? `${bookingActionButton(strings.completeBooking, `data-status-action="done"`, ICONS.accept)}${bookingActionButton(strings.noShowBooking, `data-status-action="no-show"`, ICONS.noShow)}` : ""}</div>`
                 : `<div class="sidebar-booking-actions">${editAction}${messageAction}${prepNotesAction}</div>`;
         const select = activeFilter === "pending" && onBatchStatus ? `<label class="booking-select"><input type="checkbox" data-select-booking="${booking.id}"><span class="visually-hidden">${strings.selectBooking}</span></label>` : "";
-        return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}">${select}<strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${bookingStatuses[booking.status] || strings.bookingFallbackName}</small>${actions}</article>`;
+        const statusKey = ["pending", "accepted", "done", "no-show", "rejected"].includes(booking.status) ? booking.status : "pending";
+        return `<article class="glass-ghost sidebar-booking-card status-${statusKey}" data-booking-card="${booking.id}">${select}<div class="booking-card-top"><div><strong class="booking-card-name">${name}</strong><span class="booking-card-time">${date} · ${time}</span></div><span class="booking-status-tag status-${statusKey}">${bookingStatuses[booking.status] || strings.bookingFallbackName}</span></div>${actions}${renderCardDetails(booking)}</article>`;
     }).join("")}`;
+
+    const overlaps = findOverlaps(visibleBookings);
+    if (overlaps.length) {
+        container.insertAdjacentHTML("afterbegin", `<div class="overlap-note">${overlaps.map((_, index) => `<div class="overlap-chip">${index + 1}</div>`).join("")}<p>${escapeHtml(strings.overlapNote.replace("{times}", overlaps.join(", ")))}</p></div>`);
+    }
+
+    container.querySelectorAll("[data-booking-card]").forEach((card) => {
+        if (!card.querySelector(".booking-card-expand")) return;
+        card.addEventListener("click", (event) => {
+            if (event.target.closest("button, label, input, a")) return;
+            card.classList.toggle("is-open");
+        });
+    });
 
     const updateBatch = () => {
         const selected = [...container.querySelectorAll("[data-select-booking]:checked")];
@@ -117,6 +144,32 @@ function renderBookings(container, bookings, onStatusChange, onBatchStatus, onEd
             onPrepNotes?.(booking);
         });
     });
+}
+
+function renderCardDetails(booking) {
+    const rows = [
+        [strings.detailEmail, booking.guestContact?.email || booking.clientEmail],
+        [strings.detailPhone, booking.guestContact?.phone],
+        [strings.detailService, booking.service?.name],
+        [strings.detailPrice, (booking.customPrice ?? booking.service?.price) ? `${booking.customPrice ?? booking.service?.price} \u20ac` : ""],
+        [strings.detailSeries, booking.seriesId ? strings.detailSeriesValue : ""]
+    ].filter(([, value]) => value);
+    if (!rows.length) return "";
+    return `<div class="booking-card-expand">${rows.map(([label, value]) => `<div class="booking-card-row">${escapeHtml(label)}<b>${escapeHtml(value)}</b></div>`).join("")}</div>`;
+}
+
+/** Start times shared by more than one visible request, for the mockup's overlap banner. */
+function findOverlaps(bookings) {
+    const byStart = new Map();
+    bookings.forEach((booking) => {
+        const start = toDate(booking.start);
+        if (!start) return;
+        const key = start.toISOString();
+        byStart.set(key, (byStart.get(key) || 0) + 1);
+    });
+    return [...byStart.entries()]
+        .filter(([, count]) => count > 1)
+        .map(([key]) => new Date(key).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
 }
 
 function toDate(value) {

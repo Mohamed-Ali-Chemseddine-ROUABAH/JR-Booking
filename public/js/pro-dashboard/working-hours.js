@@ -3,6 +3,7 @@ import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { clearDraft, loadDraft, saveDraft } from "../core/draft-storage.mjs";
 import { buildPublicScheduleSettings, normalizeScheduleSettings } from "../schedule/schedule-settings.mjs";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.workingHours;
 const defaultSettings = {
@@ -80,7 +81,7 @@ function createModal() {
         <form class="glass working-hours-dialog" aria-labelledby="working-hours-title">
             <div class="working-hours-header">
                 <h2 id="working-hours-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-working-hours-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-working-hours-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <section class="working-hours-section">
                 <h3>${strings.daysLabel}</h3>
@@ -132,6 +133,7 @@ function createModal() {
         </form>
     `;
     document.body.append(modal);
+    attachModalBehavior(modal);
     return modal;
 }
 

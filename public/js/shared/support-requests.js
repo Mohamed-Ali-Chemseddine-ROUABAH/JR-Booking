@@ -2,6 +2,7 @@ import { addDoc, collection, getDocs, query, serverTimestamp, where } from "http
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { normalizeRequestFields } from "./support-request-policy.mjs";
+import { attachModalBehavior } from "./modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.supportRequests;
 
@@ -21,7 +22,7 @@ export function initializeSupportRequests({ user }) {
         <section class="glass working-hours-dialog" aria-labelledby="support-requests-title">
             <div class="working-hours-header">
                 <h2 id="support-requests-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-support-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-support-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <form data-support-form>
                 <label class="working-hours-field"><span>${strings.typeLabel}</span><select name="requestType"><option value="support">${strings.support}</option><option value="data">${strings.data}</option></select></label>
@@ -32,6 +33,7 @@ export function initializeSupportRequests({ user }) {
             </form>
         </section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
 
     const form = modal.querySelector("[data-support-form]");
     const feedback = modal.querySelector("[data-support-feedback]");

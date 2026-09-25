@@ -2,6 +2,7 @@ import { collection, getDocs, orderBy, query } from "https://www.gstatic.com/fir
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { escapeHtml } from "../core/utils.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.communicationHistory;
 
@@ -10,8 +11,9 @@ export async function initializeClientCommunicationHistory({ client, timezone = 
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<section class="glass working-hours-dialog communication-history-dialog" aria-labelledby="communication-history-title"><div class="working-hours-header"><div><span class="eyebrow">${strings.eyebrow}</span><h2 id="communication-history-title">${escapeHtml(client.name)}</h2></div><button class="btn btn-ghost" type="button" data-communication-history-close>${strings.close}</button></div><div class="communication-history-summary"><strong>${client.bookings} ${strings.bookings}</strong><span>${escapeHtml(client.email || strings.noEmail)}</span></div><div data-communication-history-list><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
+    modal.innerHTML = `<section class="glass working-hours-dialog communication-history-dialog" aria-labelledby="communication-history-title"><div class="working-hours-header"><div><span class="eyebrow">${strings.eyebrow}</span><h2 id="communication-history-title">${escapeHtml(client.name)}</h2></div><button class="icon-button modal-close" type="button" data-communication-history-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><div class="communication-history-summary"><strong>${client.bookings} ${strings.bookings}</strong><span>${escapeHtml(client.email || strings.noEmail)}</span></div><div data-communication-history-list><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     const list = modal.querySelector("[data-communication-history-list]");
     modal.querySelector("[data-communication-history-close]").addEventListener("click", () => modal.remove());
     modal.addEventListener("click", (event) => { if (event.target === modal) modal.remove(); });

@@ -2,6 +2,7 @@ import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { clearDraft, loadDraft, saveDraft } from "../core/draft-storage.mjs";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.services;
 const draftKey = (uid) => `jr-booking-services-draft-${uid}`;
@@ -11,8 +12,9 @@ export async function initializeServicesPackages({ user }) {
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<form class="glass working-hours-dialog" aria-labelledby="services-title"><div class="working-hours-header"><h2 id="services-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-services-close>${strings.close}</button></div><p class="admin-panel-help">${strings.help}</p><div class="working-hours-repeatable-list" data-services-list></div><button class="btn btn-ghost working-hours-add" type="button" data-services-add>${strings.add}</button><div class="working-hours-actions"><span class="working-hours-feedback" data-services-feedback role="status"></span><button class="btn btn-solid" type="submit">${strings.save}</button></div></form>`;
+    modal.innerHTML = `<form class="glass working-hours-dialog" aria-labelledby="services-title"><div class="working-hours-header"><h2 id="services-title">${strings.title}</h2><button class="icon-button modal-close" type="button" data-services-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><p class="admin-panel-help">${strings.help}</p><div class="working-hours-repeatable-list" data-services-list></div><button class="btn btn-ghost working-hours-add" type="button" data-services-add>${strings.add}</button><div class="working-hours-actions"><span class="working-hours-feedback" data-services-feedback role="status"></span><button class="btn btn-solid" type="submit">${strings.save}</button></div></form>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     const form = modal.querySelector("form");
     const list = modal.querySelector("[data-services-list]");
     const feedback = modal.querySelector("[data-services-feedback]");

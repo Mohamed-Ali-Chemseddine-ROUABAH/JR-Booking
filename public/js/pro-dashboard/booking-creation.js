@@ -3,6 +3,7 @@ import { getFirebaseFunctions } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { initializeBookingContactEditor } from "./booking-contacts.js";
 import { isLocalDateTimeRangeValid, zonedLocalToIso } from "../core/datetime-utils.mjs";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.bookingCreation;
 
@@ -15,7 +16,7 @@ export function initializeBookingCreation({ user, details, timezone = "Europe/Pa
         <form class="glass booking-creation-dialog" aria-labelledby="booking-creation-title">
             <div class="working-hours-header">
                 <h2 id="booking-creation-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-booking-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-booking-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <div data-booking-contacts></div>
             <div class="working-hours-fields">
@@ -29,6 +30,7 @@ export function initializeBookingCreation({ user, details, timezone = "Europe/Pa
         </form>
     `;
     document.body.append(modal);
+    attachModalBehavior(modal);
 
     const form = modal.querySelector("form");
     const feedback = modal.querySelector("[data-booking-feedback]");

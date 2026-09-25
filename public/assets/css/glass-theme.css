@@ -36,6 +36,19 @@ body {
 }
 
 /* ---------- glass primitives ---------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .glass {
   position: relative;
   background: var(--panel);
@@ -115,3 +128,406 @@ body {
   color: var(--ink-100);
   border-color: var(--ink-100);
 }
+
+.btn-sm {
+  padding: 7px 13px;
+  font-size: .75rem;
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ---------- Icon buttons (mockup .btn-icon) ---------- */
+.btn-icon,
+.icon-button {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--panel);
+  border: 1px solid var(--panel-brd);
+  color: var(--ink-500);
+  transition: .2s;
+}
+
+.btn-icon svg,
+.icon-button svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+
+.btn-icon:hover,
+.icon-button:hover {
+  color: var(--ink-100);
+  border-color: var(--panel-brd-strong);
+}
+
+.btn-icon:disabled,
+.icon-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.btn-icon-sm,
+.booking-action-button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--panel-brd);
+  color: var(--ink-500);
+  transition: .2s;
+}
+
+.btn-icon-sm svg,
+.booking-action-button svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+.btn-icon-sm:hover,
+.booking-action-button:hover {
+  color: var(--ink-100);
+  border-color: var(--panel-brd-strong);
+}
+
+/* ---------- Chips (mockup .btn-ghost pill) ---------- */
+.chip-button {
+  min-height: 34px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: .78rem;
+  color: var(--ink-300);
+  background: transparent;
+  border: 1px dashed var(--panel-brd-strong);
+  border-radius: 999px;
+  transition: .2s;
+}
+
+.chip-button:hover,
+.chip-button.is-active {
+  color: var(--ink-100);
+  border-style: solid;
+  border-color: var(--ink-100);
+}
+
+.chip-button.is-active {
+  background: rgba(244,245,247,.08);
+}
+
+/* ---------- Segmented controls (mockup .segmented / .view-switch) ---------- */
+.feed-filters,
+.schedule-view-switch,
+.profile-schedule-views {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: rgba(0,0,0,.25);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+}
+
+.feed-filters .chip-button,
+.schedule-view-switch .chip-button,
+.profile-schedule-views .chip-button {
+  min-height: auto;
+  padding: 6px 9px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-500);
+  font-family: var(--font-mono);
+  font-size: .61rem;
+  border-radius: 999px;
+  transition: .2s;
+}
+
+.feed-filters .chip-button:hover,
+.schedule-view-switch .chip-button:hover,
+.profile-schedule-views .chip-button:hover {
+  color: var(--ink-100);
+  background: transparent;
+  border: 0;
+}
+
+.feed-filters .chip-button.is-active,
+.schedule-view-switch .chip-button.is-active,
+.profile-schedule-views .chip-button.is-active {
+  background: var(--panel-brd-strong);
+  color: var(--ink-100);
+  border: 0;
+}
+
+/* ---------- Static pills ---------- */
+.tag-pill {
+  font-family: var(--font-mono);
+  font-size: .63rem;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-brd-strong);
+  color: var(--ink-300);
+}
+
+/* ---------- Dropdown menus (mockup .dropdown-glass / .ddi) ---------- */
+.dropdown-glass {
+  padding: 8px;
+  background: rgba(17,19,23,.78);
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r-md);
+  backdrop-filter: blur(var(--blur)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(140%);
+  box-shadow: 0 24px 70px rgba(0,0,0,.65);
+}
+
+.ddi {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-300);
+  font-size: .83rem;
+  text-align: left;
+  transition: .2s;
+}
+
+.ddi:hover:not(:disabled) {
+  background: rgba(244,245,247,.07);
+  color: var(--ink-100);
+}
+
+.ddi:disabled { color: var(--ink-700); cursor: not-allowed; }
+.ddi svg { width: 15px; min-width: 15px; flex: none; opacity: .72; color: var(--ink-500); }
+.ddi:hover:not(:disabled) svg { color: var(--ink-100); opacity: 1; }
+.ddi .tag-mini { margin-left: auto; font-family: var(--font-mono); font-size: .6rem; color: var(--ink-700); }
+
+.dropdown-group-label {
+  padding: 12px 12px 5px;
+  margin-top: 5px;
+  border-top: 1px solid var(--hair);
+  font-family: var(--font-mono);
+  font-size: .56rem;
+  letter-spacing: .12em;
+  color: var(--ink-700);
+  text-transform: uppercase;
+}
+
+/* ---------- Legend swatches (mockup .legend-mini) ---------- */
+.legend-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--font-mono);
+  font-size: .6rem;
+  color: var(--ink-700);
+}
+
+.legend-mini span { display: inline-flex; align-items: center; gap: 5px; }
+
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  flex: none;
+}
+
+.legend-swatch.acc { background: var(--panel); border: 1px solid var(--panel-brd-strong); }
+.legend-swatch.pen { background: var(--ghost); border: 1px dashed var(--ghost-brd); }
+.legend-swatch.rej { background: repeating-linear-gradient(135deg, rgba(244,245,247,.16) 0 2px, transparent 2px 6px); border: 1px solid var(--ink-700); }
+.legend-swatch.ext { border: 1px dotted var(--ink-500); }
+.legend-swatch.brk { background: radial-gradient(circle, rgba(244,245,247,.3) 1px, transparent 1.4px); background-size: 4px 4px; border: 1px solid var(--hair); }
+
+/* ---------- Navbar account pill (mockup .nav-user) ---------- */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 14px 6px 6px;
+  border: 1px solid var(--panel-brd);
+  border-radius: 999px;
+  background: var(--panel);
+}
+
+.nav-user-avatar {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ink-100);
+  color: var(--void);
+  font-family: var(--font-display);
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+.nav-user-text { display: grid; min-width: 0; }
+
+.badge-dot {
+  position: absolute;
+  top: 6px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-100);
+  border: 1.5px solid var(--canvas);
+}
+
+.notification-trigger { position: relative; }
+
+/* ---------- Schedule footnote (mockup .week-note) ---------- */
+.week-note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--hair);
+  border-radius: var(--r-sm);
+  color: var(--ink-500);
+  font-size: .72rem;
+}
+
+.week-note svg { width: 15px; height: 15px; flex: none; }
+
+/* ---------- Overlap indicator (mockup .overlap-note) ---------- */
+.overlap-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px;
+  border-radius: var(--r-sm);
+  background: rgba(0,0,0,.2);
+  border: 1px solid var(--hair);
+}
+
+.overlap-chip {
+  width: 21px;
+  height: 21px;
+  flex: none;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--panel-brd-strong);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  color: var(--ink-100);
+}
+
+.overlap-note p { margin: 0; font-size: .68rem; color: var(--ink-700); }
+
+/* ---------- Modal shell (mockup .modal-backdrop) ---------- */
+.modal-backdrop,
+.working-hours-modal,
+.booking-creation-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(7,8,10,.78);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.modal-backdrop > .glass {
+  width: min(720px, 100%);
+  max-height: min(760px, 92vh);
+  overflow: auto;
+  padding: 22px;
+}
+
+/* ---------- Modal dialog shell (mockup .modal-card / .modal-head) ---------- */
+.working-hours-dialog,
+.booking-creation-dialog {
+  width: min(720px, 100%);
+  max-height: min(760px, 92vh);
+  overflow: auto;
+  padding: 22px;
+  background: rgba(15,17,20,.94);
+}
+
+.working-hours-header,
+.working-hours-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.working-hours-header { margin-bottom: 18px; }
+.working-hours-actions { margin-top: 18px; }
+.working-hours-header h2 { font-family: var(--font-display); font-size: 1.15rem; }
+.working-hours-section h3 { font-family: var(--font-display); font-size: .88rem; }
+
+.working-hours-header h2,
+.working-hours-section h3 { margin: 0; color: var(--ink-100); }
+
+.working-hours-section {
+  display: grid;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--hair);
+}
+
+.working-hours-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.working-hours-field {
+  display: grid;
+  gap: 6px;
+}
+
+.working-hours-field label,
+.working-hours-field > span {
+  color: var(--ink-500);
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.working-hours-field input,
+.working-hours-field select,
+.working-hours-field textarea {
+  min-width: 0;
+  padding: 10px 12px;
+  color: var(--ink-100);
+  background: rgba(0,0,0,.28);
+  border: 1px solid var(--panel-brd);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: .82rem;
+}
+
+.working-hours-field select option { background: var(--canvas); }

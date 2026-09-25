@@ -75,27 +75,6 @@
   justify-content: flex-end;
 }
 
-.icon-button {
-  min-height: 34px;
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px dashed var(--panel-brd-strong);
-  color: var(--ink-500);
-  background: transparent;
-  border-radius: 999px;
-}
-
-.icon-button:hover {
-  color: var(--ink-100);
-  border-style: solid;
-  border-color: var(--ink-100);
-}
-
-.icon-button.navbar-icon-action { width: 42px; height: 42px; padding: 9px; }
-.navbar-icon-action svg { display: block; width: 22px; height: 22px; }
 .navbar-logout-action { color: var(--ink-300); }
 .navbar-icon-group { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 
@@ -132,18 +111,23 @@
 .settings-menu.is-open .settings-menu-items { display: grid; }
 
 .settings-menu-items button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   padding: 10px 12px;
   border: 0;
   border-radius: var(--r-sm);
   color: var(--ink-300);
   background: transparent;
+  font-size: .83rem;
   text-align: left;
+  transition: .2s;
 }
 
 .settings-menu-items button:hover:not(:disabled) {
   color: var(--ink-100);
-  background: rgba(244,245,247,.06);
+  background: rgba(244,245,247,.07);
 }
 
 .settings-menu-items button:disabled {
@@ -170,42 +154,58 @@
   top: 20px;
 }
 
-.chip-button {
-  padding: 8px 14px;
-  color: var(--ink-300);
-  background: var(--ghost);
-  border: 1px solid var(--panel-brd);
-  border-radius: 999px;
-  font-size: .78rem;
-}
-
-.chip-button:hover,
-.chip-button.is-active {
-  color: var(--ink-100);
-  background: var(--panel);
-  border-color: var(--panel-brd-strong);
-}
-
-.feed-filters {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+.feed-filters { flex-wrap: wrap; }
 
 .sidebar-bookings { display: grid; gap: 10px; }
 
 .sidebar-booking-card {
   display: grid;
   gap: 4px;
-  padding: 16px;
-  border: 1px solid var(--panel-brd);
-  border-radius: var(--r-sm);
-  background: rgba(244,245,247,.018);
+  padding: 13px;
+  border-radius: var(--r-md);
+  background: var(--ghost);
+  border: 1px dashed var(--ghost-brd);
 }
 
-.sidebar-booking-card strong { color: var(--ink-100); }
-.sidebar-booking-card span,
-.sidebar-booking-card small { color: var(--ink-500); font-size: .75rem; }
+.sidebar-booking-card.status-accepted,
+.sidebar-booking-card.status-done {
+  background: var(--panel);
+  border: 1px solid var(--panel-brd-strong);
+}
+
+.sidebar-booking-card.status-no-show {
+  background: repeating-linear-gradient(135deg, rgba(244,245,247,.05) 0 2px, transparent 2px 9px);
+  border: 1px dashed var(--ink-500);
+}
+
+.sidebar-booking-card.status-rejected {
+  background: repeating-linear-gradient(135deg, rgba(244,245,247,.035) 0 2px, transparent 2px 9px);
+  border: 1px solid var(--ink-700);
+  opacity: .7;
+}
+
+.sidebar-booking-card.status-rejected .booking-card-name { text-decoration: line-through; color: var(--ink-500); }
+
+.booking-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.booking-card-name { display: block; color: var(--ink-100); font-size: .86rem; font-weight: 500; }
+.booking-card-time { display: block; margin-top: 3px; color: var(--ink-500); font-family: var(--font-mono); font-size: .67rem; }
+
+.booking-status-tag {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: .57rem;
+  letter-spacing: .07em;
+  padding: 3px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.booking-status-tag.status-accepted,
+.booking-status-tag.status-done { background: var(--ink-100); color: var(--void); }
+.booking-status-tag.status-no-show { border: 1px dashed var(--ink-500); color: var(--ink-500); }
+.booking-status-tag.status-pending { border: 1px dashed var(--ink-500); color: var(--ink-300); }
+.booking-status-tag.status-rejected { border: 1px solid var(--ink-700); color: var(--ink-700); }
 
 .client-booking-notice {
   margin: 4px 0 0;
@@ -299,8 +299,15 @@
 }
 
 .professional-search-pill svg { width: 16px; opacity: .55; flex-shrink: 0; }
+
+.professional-search-pill:focus-within {
   background: var(--panel);
   border-color: var(--panel-brd-strong);
+}
+
+.professional-search-pill input {
+  border: 0;
+  background: transparent;
   outline: none;
   width: 100%;
   color: var(--ink-100);
@@ -362,12 +369,11 @@
 .professional-chip button.professional-chip-heart.is-favorited { color: #ff5470; }
 
 .client-schedule-panel { grid-area: schedule; min-width: 0; padding: 22px; }
+.client-schedule-panel .legend-mini { margin-bottom: 12px; }
 .client-schedule-panel { border-color: var(--panel-brd-strong); box-shadow: 0 18px 50px rgba(0,0,0,.14); }
 .client-schedule-heading { display: flex; justify-content: space-between; gap: 14px; align-items: end; margin-bottom: 14px; }
 .client-schedule-heading h1 { margin: 7px 0 0; color: var(--ink-100); font: 600 1.65rem var(--font-display); }
 .client-schedule-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.client-schedule-tools .schedule-nav-button { width: 34px; height: 34px; padding: 6px; }
-.client-schedule-tools .schedule-nav-button svg { display: block; width: 20px; height: 20px; }
 .client-schedule-summary { color: var(--ink-500); font: .68rem var(--font-mono); text-transform: uppercase; }
 .client-schedule-scroll {
   overflow-x: auto;
@@ -380,21 +386,45 @@
 .client-schedule-scroll::-webkit-scrollbar-thumb { background: var(--panel-brd-strong); border-radius: 999px; }
 .client-schedule-scroll::-webkit-scrollbar-thumb:hover { background: var(--ink-700); }
 .client-schedule-grid { display: grid; grid-template-columns: minmax(42px, .65fr) repeat(7, minmax(0, 1fr)); border: 1px solid var(--panel-brd); border-radius: var(--r-md); overflow: hidden; }
-.client-schedule-cell { min-width: 0; min-height: 58px; padding: 10px 7px; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); color: var(--ink-500); background: rgba(244,245,247,.018); font-size: .75rem; text-align: center; overflow: hidden; }
+.client-schedule-cell { position: relative; min-width: 0; min-height: 58px; padding: 10px 7px; border-right: 1px solid var(--hair); border-bottom: 1px solid var(--hair); color: var(--ink-500); background: rgba(244,245,247,.018); font-size: .75rem; text-align: center; overflow: hidden; }
 .client-schedule-day { min-height: 50px; color: var(--ink-300); font-size: .72rem; }
 .client-schedule-day span, .client-schedule-day small { display: block; }
 .client-schedule-day, .client-schedule-time { display: grid; place-content: center; background: rgba(244,245,247,.045); font-family: var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
 .client-schedule-day small, .client-schedule-time { color: var(--ink-700); font-size: .68rem; }
 .client-schedule-time { text-align: right; }
-.client-schedule-slot { display: grid; place-content: center; }
-.client-schedule-slot.is-booked { background: var(--panel); border: 1px solid var(--panel-brd-strong); }
-.client-schedule-slot.is-booking-continuation { min-height: 22px; padding: 3px; border-top: 0; opacity: .82; }
-.client-schedule-slot.is-locked-busy { color: var(--ink-700); background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(244,245,247,.025) 8px 9px); border: 1px dashed var(--ghost-brd); }
-.client-schedule-slot.is-locked-available { color: var(--ink-300); cursor: pointer; background: var(--ghost); border: 1px solid var(--panel-brd); font: inherit; }
-.client-schedule-slot.is-locked-available:hover { color: var(--ink-100); background: var(--panel); border-color: var(--panel-brd-strong); }
-.client-schedule-slot strong, .client-schedule-slot small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.client-schedule-slot strong { color: var(--ink-100); font-size: .7rem; }
-.client-schedule-slot small { color: var(--ink-500); font-size: .62rem; }
+.client-schedule-slot { position: relative; display: grid; align-content: center; padding: 0; }
+.client-schedule-slot.is-occupied { padding: 0; overflow: visible; }
+.client-schedule-cell.is-today { background: rgba(244,245,247,.05); }
+.client-schedule-day.is-today { background: rgba(244,245,247,.08); }
+
+.client-schedule-block {
+  position: absolute;
+  inset: 3px 5px;
+  z-index: 2;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+  padding: 5px 7px;
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  border: 1px solid var(--panel-brd-strong);
+  text-align: left;
+  overflow: hidden;
+}
+
+.client-schedule-block.has-continuation { bottom: -1px; border-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.client-schedule-block.is-continuation { top: -1px; border-top: 0; border-top-left-radius: 0; border-top-right-radius: 0; }
+.client-schedule-block.is-pending { background: var(--ghost); border: 1px dashed var(--ghost-brd); }
+.client-schedule-block.is-no-show { background: repeating-linear-gradient(135deg, rgba(244,245,247,.05) 0 2px, transparent 2px 9px); border: 1px dashed var(--ink-500); }
+.client-schedule-block.is-locked-busy { color: var(--ink-700); background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(244,245,247,.025) 8px 9px); border: 1px dashed var(--ghost-brd); }
+.client-schedule-block.is-locked-available { color: var(--ink-300); background: var(--ghost); border: 1px solid var(--panel-brd); }
+.client-schedule-slot.is-locked-available-cell { cursor: pointer; }
+button.client-schedule-slot { cursor: pointer; font: inherit; }
+button.client-schedule-slot:hover .client-schedule-block { color: var(--ink-100); background: var(--panel); border-color: var(--panel-brd-strong); }
+.client-schedule-block strong, .client-schedule-block small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.client-schedule-block strong { color: var(--ink-100); font-size: .72rem; font-weight: 500; }
+.client-schedule-block small { color: var(--ink-500); font-family: var(--font-mono); font-size: .58rem; }
+.client-schedule .legend-mini { margin-bottom: 12px; }
 .client-payment-dialog { width: min(620px, 100%); }
 .client-payment-content { display: grid; gap: 14px; }
 .client-payment-choices, .client-payment-options { display: grid; gap: 8px; }

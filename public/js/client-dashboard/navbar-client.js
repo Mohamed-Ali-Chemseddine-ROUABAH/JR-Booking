@@ -1,4 +1,4 @@
-import { UI_STRINGS } from "../core/strings-fr.js?v=search-retract-20260914";
+import { UI_STRINGS } from "../core/strings-fr.js?v=mockup-parity-b-20260924";
 
 const strings = UI_STRINGS.clientDashboard.navbar;
 
@@ -13,9 +13,12 @@ export function initializeClientNavbar(container, { user, onLogout, onEditProfil
         </div>
         <button class="mobile-menu-trigger" type="button" aria-expanded="false" aria-controls="client-actions-menu" data-mobile-menu>${strings.mobileMenu}</button>
         <div id="client-actions-menu" class="pro-actions">
-            <div class="pro-account">
-                <span class="eyebrow">Compte</span>
-                <span class="pro-account-email"></span>
+            <div class="pro-account nav-user">
+                <span class="nav-user-avatar" aria-hidden="true"></span>
+                <span class="nav-user-text">
+                    <span class="eyebrow">Compte</span>
+                    <span class="pro-account-email"></span>
+                </span>
             </div>
             <div class="navbar-icon-group">
                 <button class="icon-button navbar-icon-action" type="button" data-print aria-label="${strings.print}" title="${strings.print}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5h-2M6 14h12v7H6z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg></button>
@@ -34,6 +37,7 @@ export function initializeClientNavbar(container, { user, onLogout, onEditProfil
     `;
 
     container.querySelector(".pro-account-email").textContent = user.email || user.displayName || "Compte client";
+    container.querySelector(".nav-user-avatar").textContent = (user.displayName || user.email || "?").trim().slice(0, 1).toUpperCase();
     const mobileMenu = container.querySelector("[data-mobile-menu]");
     const closeMobileMenu = () => {
         container.classList.remove("is-mobile-open");

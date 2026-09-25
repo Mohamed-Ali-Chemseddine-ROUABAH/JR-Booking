@@ -2,6 +2,7 @@ import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { normalizeCustomPaymentLinks } from "../core/payment-links.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.paymentInfo;
 const defaultInfo = {
@@ -59,7 +60,7 @@ function createModal() {
         <form class="glass working-hours-dialog payment-info-dialog" aria-labelledby="payment-info-title">
             <div class="working-hours-header">
                 <h2 id="payment-info-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-payment-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-payment-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <section class="working-hours-section">
                 <label class="personal-info-checkbox"><input type="checkbox" name="enabled">${strings.enabledLabel}</label>
@@ -94,6 +95,7 @@ function createModal() {
         </form>
     `;
     document.body.append(modal);
+    attachModalBehavior(modal);
     return modal;
 }
 

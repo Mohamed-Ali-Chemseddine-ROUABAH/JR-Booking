@@ -2,6 +2,7 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.delegatedAccess;
 
@@ -10,8 +11,9 @@ export async function initializeDelegatedAccess({ user }) {
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<section class="glass working-hours-dialog" aria-labelledby="delegated-access-title"><div class="working-hours-header"><h2 id="delegated-access-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-delegates-close>${strings.close}</button></div><p class="admin-panel-help">${strings.help}</p><div data-delegates-list></div><form class="working-hours-fields" data-delegate-form><label class="working-hours-field"><span>${strings.email}</span><input name="email" type="email" required></label><fieldset class="working-hours-field"><legend>${strings.permissions}</legend><label><input type="checkbox" name="manageBookings" checked> ${strings.manageBookings}</label><label><input type="checkbox" name="manageMessages"> ${strings.manageMessages}</label></fieldset><div class="working-hours-actions"><span class="working-hours-feedback" data-delegates-feedback role="status"></span><button class="btn btn-solid" type="submit">${strings.add}</button></div></form></section>`;
+    modal.innerHTML = `<section class="glass working-hours-dialog" aria-labelledby="delegated-access-title"><div class="working-hours-header"><h2 id="delegated-access-title">${strings.title}</h2><button class="icon-button modal-close" type="button" data-delegates-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><p class="admin-panel-help">${strings.help}</p><div data-delegates-list></div><form class="working-hours-fields" data-delegate-form><label class="working-hours-field"><span>${strings.email}</span><input name="email" type="email" required></label><fieldset class="working-hours-field"><legend>${strings.permissions}</legend><label><input type="checkbox" name="manageBookings" checked> ${strings.manageBookings}</label><label><input type="checkbox" name="manageMessages"> ${strings.manageMessages}</label></fieldset><div class="working-hours-actions"><span class="working-hours-feedback" data-delegates-feedback role="status"></span><button class="btn btn-solid" type="submit">${strings.add}</button></div></form></section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     const list = modal.querySelector("[data-delegates-list]");
     const feedback = modal.querySelector("[data-delegates-feedback]");
 

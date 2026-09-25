@@ -1,6 +1,7 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { updateBookingDetails } from "../pro-dashboard/booking-actions.js";
 import { isLocalDateTimeRangeValid, isoToZonedLocal, zonedLocalToIso } from "../core/datetime-utils.mjs";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.clientDashboard.requestChange;
 
@@ -13,7 +14,7 @@ export function initializeRequestChange({ booking, timezone = "Europe/Paris", on
         <form class="glass booking-creation-dialog" aria-labelledby="request-change-title">
             <div class="working-hours-header">
                 <h2 id="request-change-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-request-change-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-request-change-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <div class="working-hours-fields">
                 <label class="working-hours-field"><span>${strings.startLabel}</span><input name="start" type="datetime-local" required></label>
@@ -26,6 +27,7 @@ export function initializeRequestChange({ booking, timezone = "Europe/Paris", on
         </form>
     `;
     document.body.append(modal);
+    attachModalBehavior(modal);
 
     const form = modal.querySelector("form");
     form.start.value = toDateTimeLocal(booking.start, timezone);

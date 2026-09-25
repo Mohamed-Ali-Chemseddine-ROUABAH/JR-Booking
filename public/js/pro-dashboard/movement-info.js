@@ -1,6 +1,7 @@
 import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.movementInfo;
 const defaultInfo = {
@@ -61,7 +62,7 @@ function createModal() {
         <form class="glass working-hours-dialog movement-info-dialog" aria-labelledby="movement-info-title">
             <div class="working-hours-header">
                 <h2 id="movement-info-title">${strings.title}</h2>
-                <button class="btn btn-ghost" type="button" data-movement-close>${strings.close}</button>
+                <button class="icon-button modal-close" type="button" data-movement-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button>
             </div>
             <section class="working-hours-section">
                 <div class="working-hours-fields">
@@ -95,6 +96,7 @@ function createModal() {
         </form>
     `;
     document.body.append(modal);
+    attachModalBehavior(modal);
     return modal;
 }
 

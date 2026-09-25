@@ -1,0 +1,12 @@
+# Working-hours settings architecture
+
+- **Production file:** `public/js/pro-dashboard/working-hours.js`
+- **Purpose:** Phase 5 modal for weekly working days, daily hours, schedule day count, primary timezone, recurring break, date-specific exceptions, repeatable absence periods, and bounded schedule-type settings.
+- **Imports:** Firebase Firestore `getDoc`, `setDoc`, `getFirestoreDb`, and `UI_STRINGS.proDashboard.workingHours`.
+- **DOM owner:** Creates and owns its modal root, including form state and close behavior.
+- **Firestore:** Reads and merges `proProfiles/{uid}.workingHours`; no other fields are overwritten. The dashboard schedule reads the saved `viewDays`, `workingDays`, daily hours, and recurring break to render one to seven day columns with availability states.
+- **Security rules:** `proProfiles/{proId}` read/update requires the authenticated professional to own the document or be an admin.
+- **Feature flag:** Uses the existing professional dashboard gate; booking operations remain disabled.
+- **Buffer behavior:** `workingHours.bufferMinutes` is persisted as an integer from 0 to 120 and is applied by `schedule-render.js` to reserve time around existing non-rejected bookings.
+- **Schedule-type behavior:** `workingHours.scheduleSettings` stores drag or fixed-slot mode, fixed duration, recurrence allowance/cap, multi-slot preference, and permanent/from-date/single-day activation mode. The schedule renderer consumes method, duration, and activation mode.
+- **Mockup references:** Pro settings, working-time configuration, and responsive dashboard behavior in `docs/mockups/IMPLEMENTATION_REFERENCE.md` and `docs/requirements/MASTER_SPECIFICATION.md` Part 6.

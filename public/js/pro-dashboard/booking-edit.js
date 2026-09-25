@@ -3,6 +3,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 import { getFirebaseFunctions } from "../core/firebase-init.js";
 import { initializeBookingContactEditor } from "./booking-contacts.js";
 import { isLocalDateTimeRangeValid, isoToZonedLocal, zonedLocalToIso } from "../core/datetime-utils.mjs";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.sidebar;
 
@@ -13,7 +14,7 @@ export function initializeBookingEdit({ booking, timezone = "Europe/Paris", onSa
     modal.setAttribute("aria-modal", "true");
     modal.innerHTML = `
         <form class="glass booking-creation-dialog" aria-labelledby="booking-edit-title">
-            <div class="working-hours-header"><h2 id="booking-edit-title">${strings.editTitle}</h2><button class="btn btn-ghost" type="button" data-edit-close>Fermer</button></div>
+            <div class="working-hours-header"><h2 id="booking-edit-title">${strings.editTitle}</h2><button class="icon-button modal-close" type="button" data-edit-close aria-label="Fermer" title="Fermer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div>
             <div data-booking-contacts></div>
             <div class="working-hours-fields">
                 <label class="working-hours-field"><span>Début</span><input name="start" type="datetime-local" required></label>
@@ -28,6 +29,7 @@ export function initializeBookingEdit({ booking, timezone = "Europe/Paris", onSa
             <div class="working-hours-actions"><span class="working-hours-feedback" data-edit-feedback role="status" aria-live="polite"></span><button class="btn btn-solid" type="submit">Enregistrer</button></div>
         </form>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     const form = modal.querySelector("form");
     const initialContacts = booking.contacts?.length ? booking.contacts : [{
         name: booking.clientDisplayName || booking.guestName || booking.guestContact?.name || "",

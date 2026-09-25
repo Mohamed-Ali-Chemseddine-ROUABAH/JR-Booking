@@ -151,6 +151,7 @@ function renderSchedule() {
         header.append(document.createElement("span"));
         days.forEach((date) => {
             const heading = document.createElement("strong");
+            if (date.isToday) heading.classList.add("is-today");
             heading.textContent = new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" }).format(date.value);
             header.append(heading);
         });
@@ -167,7 +168,7 @@ function renderSchedule() {
             days.forEach((day) => {
                 const slot = document.createElement("button");
                 slot.type = "button";
-                slot.className = "profile-slot";
+                slot.className = day.isToday ? "profile-slot is-today" : "profile-slot";
                 const active = workingDays.includes(day.weekday) && isPublicDateActive(day.isoDate, scheduleSettings);
                 slot.textContent = !active ? strings.unavailableSlot : isBusy(day.isoDate, start, end, timezone) ? strings.occupiedSlot : strings.emptySlot;
                 slot.dataset.date = day.isoDate;
@@ -237,7 +238,7 @@ function getPublicDays(timezone, offset, count) {
         const value = new Date(base);
         value.setUTCDate(base.getUTCDate() + offset + index);
         const isoDate = value.toISOString().slice(0, 10);
-        return { value, isoDate, weekday: value.getUTCDay() || 7 };
+        return { value, isoDate, isToday: isoDate === current.date, weekday: value.getUTCDay() || 7 };
     });
 }
 

@@ -2,6 +2,7 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 import { collection, getDocs, limit, orderBy, query, updateDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { initializeQuietWidgetToggle } from "./today-widget-toggle.mjs?v=search-retract-20260914";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.today;
 
@@ -32,8 +33,9 @@ export async function initializeNotificationCenter(container, { bookings = [], t
     modal.className = "booking-creation-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<section class="glass booking-creation-dialog" aria-labelledby="notifications-title"><div class="working-hours-header"><h2 id="notifications-title">${strings.notifications}</h2><button class="btn btn-ghost" type="button" data-notifications-close>${strings.close}</button></div><div data-notification-content>${renderNotifications(notifications, timezone)}</div></section>`;
+    modal.innerHTML = `<section class="glass booking-creation-dialog" aria-labelledby="notifications-title"><div class="working-hours-header"><h2 id="notifications-title">${strings.notifications}</h2><button class="icon-button modal-close" type="button" data-notifications-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><div data-notification-content>${renderNotifications(notifications, timezone)}</div></section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     modal.querySelector("[data-notifications-close]").addEventListener("click", () => modal.remove());
     modal.addEventListener("click", (event) => { if (event.target === modal) modal.remove(); });
     modal.querySelectorAll("[data-notification-booking]").forEach((item) => item.addEventListener("click", async () => { if (item.dataset.notificationId && userId) await updateDoc(doc(getFirestoreDb(), "notifications", userId, "items", item.dataset.notificationId), { readAt: serverTimestamp() }); onSelectBooking?.(item.dataset.notificationBooking); modal.remove(); }));

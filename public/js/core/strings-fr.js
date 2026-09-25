@@ -722,6 +722,13 @@ export const UI_STRINGS = {
             batchAction: "Actions groupées",
             selectAll: "Tout sélectionner",
             selectBooking: "Sélectionner cette réservation",
+            detailEmail: "E-mail",
+            detailPhone: "Téléphone",
+            detailService: "Service",
+            detailPrice: "Tarif",
+            detailSeries: "Récurrence",
+            detailSeriesValue: "Réservation récurrente",
+            overlapNote: "Demandes en chevauchement à {times}, numérotées par ordre d'arrivée.",
             selected: "sélectionnée(s)",
             acceptSelected: "Accepter la sélection",
             rejectSelected: "Rejeter la sélection",
@@ -773,12 +780,23 @@ export const UI_STRINGS = {
             previous: "Semaine précédente",
             next: "Semaine suivante",
             sync: "Synchronisation calendrier",
+            syncState: "Google Cal · {count}",
             viewOne: "1 jour",
             viewThree: "3 jours",
             viewSeven: "7 jours",
             emptySlot: "Libre",
             unavailableSlot: "Indisponible",
+            breakSlot: "Pause",
+            externalSource: "Google Calendar",
             bookingLabel: "Réservation",
+            overlap: "{count} demandes en chevauchement sur ce créneau",
+            legend: {
+                accepted: "Confirmée",
+                pending: "En attente",
+                rejected: "Refusée",
+                external: "Externe",
+                brk: "Pause"
+            },
             bookingStatuses: {
                 pending: "En attente",
                 accepted: "Acceptée",
@@ -787,7 +805,8 @@ export const UI_STRINGS = {
                 "no-show": "Absence"
             },
             days: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
-            summary: "Vue {days} jours"
+            summary: "Vue {days} jours",
+            weekNote: "Double-cliquez sur un créneau libre pour créer une réservation. Clic droit sur une réservation pour ouvrir ses actions."
         }
     },
     bookingClaim: {

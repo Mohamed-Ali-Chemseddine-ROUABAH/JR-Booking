@@ -2,6 +2,13 @@ import { UI_STRINGS } from "../core/strings-fr.js";
 
 const strings = UI_STRINGS.proDashboard.navbar;
 
+export function setNavbarUnread(container, count) {
+    const dot = container?.querySelector("[data-unread-dot]");
+    if (!dot) return;
+    dot.hidden = !count;
+    container.querySelector("[data-notifications]")?.setAttribute("aria-label", count ? `${strings.notifications} (${count})` : strings.notifications);
+}
+
 export function initializeProNavbar(container, { user, profiles = [], activeProfileId, canManageSettings = true, onNotifications, onProfileChange, onLogout, onPrint, onSupportRequests, onWorkingHours, onPaymentInfo, onMovementInfo, onServices, onIntake, onQuickReplies, onDelegatedAccess, onDirectLinks, onPersonalInfo, onExportData, onClientDatabase, onStatistics, onNotificationPreferences }) {
     const profileSelector = profiles.length > 1 ? `<label class="pro-profile-selector"><span>${strings.profileLabel}</span><select data-profile-switcher>${profiles.map((profile) => `<option value="${escapeHtml(profile.id)}" ${profile.id === activeProfileId ? "selected" : ""}>${escapeHtml(profile.displayName || profile.name || profile.id)}</option>`).join("")}</select></label>` : "";
     container.innerHTML = `
@@ -15,13 +22,16 @@ export function initializeProNavbar(container, { user, profiles = [], activeProf
         <button class="mobile-menu-trigger" type="button" aria-expanded="false" aria-controls="pro-actions-menu" data-mobile-menu>${strings.mobileMenu}</button>
         <div id="pro-actions-menu" class="pro-actions">
             ${profileSelector}
-            <div class="pro-account">
-                <span class="eyebrow">Compte</span>
-                <span class="pro-account-email"></span>
+            <div class="pro-account nav-user">
+                <span class="nav-user-avatar" aria-hidden="true"></span>
+                <span class="nav-user-text">
+                    <span class="eyebrow">Compte</span>
+                    <span class="pro-account-email"></span>
+                </span>
             </div>
             <div class="navbar-icon-group">
                 <button class="icon-button navbar-icon-action" type="button" data-print aria-label="${strings.print}" title="${strings.print}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6"/></svg></button>
-                <button class="icon-button navbar-icon-action notification-trigger" type="button" data-notifications aria-label="${strings.notifications}" title="${strings.notifications}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8.5 12h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></svg></button>
+                <button class="icon-button navbar-icon-action notification-trigger" type="button" data-notifications aria-label="${strings.notifications}" title="${strings.notifications}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9m-8.5 12h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></svg><span class="badge-dot" data-unread-dot hidden></span></button>
                 ${canManageSettings ? `<div class="settings-menu" data-settings-menu>
                     <button class="icon-button navbar-icon-action" type="button" aria-expanded="false" aria-haspopup="true" data-settings-trigger aria-label="${strings.settings}" title="${strings.settings}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.1 3.5a7.9 7.9 0 0 0-.1-1l2-1.5-2-3.4-2.3.9a8.2 8.2 0 0 0-1.7-1L15.7 3h-4l-.3 3a8.2 8.2 0 0 0-1.7 1l-2.3-.9-2 3.4 2 1.5a7.9 7.9 0 0 0 0 2l-2 1.5 2 3.4 2.3-.9a8.2 8.2 0 0 0 1.7 1l.3 3h4l.3-3a8.2 8.2 0 0 0 1.7-1l2.3.9 2-3.4-2-1.5a7.9 7.9 0 0 0 .1-1Z" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35"/></svg></button>
                     <div class="glass settings-menu-items" role="menu" aria-label="${strings.settingsLabel}">
@@ -34,6 +44,7 @@ export function initializeProNavbar(container, { user, profiles = [], activeProf
     `;
 
     container.querySelector(".pro-account-email").textContent = user.email || user.displayName || "Compte professionnel";
+    container.querySelector(".nav-user-avatar").textContent = (user.displayName || user.email || "?").trim().slice(0, 1).toUpperCase();
     const mobileMenu = container.querySelector("[data-mobile-menu]");
     const closeMobileMenu = () => {
         container.classList.remove("is-mobile-open");

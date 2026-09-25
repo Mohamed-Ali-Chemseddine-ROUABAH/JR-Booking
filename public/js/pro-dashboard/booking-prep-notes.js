@@ -1,6 +1,7 @@
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
 import { getFirebaseFunctions } from "../core/firebase-init.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.prepNotes;
 
@@ -9,8 +10,9 @@ export function initializeBookingPrepNotes({ booking, onSaved }) {
     modal.className = "booking-creation-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<form class="glass booking-creation-dialog" aria-labelledby="prep-notes-title"><div class="working-hours-header"><h2 id="prep-notes-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-prep-notes-close>${strings.close}</button></div><p class="admin-panel-help">${strings.help}</p><label class="working-hours-field"><span>${strings.label}</span><textarea name="prepNotes" rows="8" maxlength="2000"></textarea></label><div class="working-hours-actions"><span class="working-hours-feedback" data-prep-notes-feedback role="status"></span><button class="btn btn-solid" type="submit">${strings.save}</button></div></form>`;
+    modal.innerHTML = `<form class="glass booking-creation-dialog" aria-labelledby="prep-notes-title"><div class="working-hours-header"><h2 id="prep-notes-title">${strings.title}</h2><button class="icon-button modal-close" type="button" data-prep-notes-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><p class="admin-panel-help">${strings.help}</p><label class="working-hours-field"><span>${strings.label}</span><textarea name="prepNotes" rows="8" maxlength="2000"></textarea></label><div class="working-hours-actions"><span class="working-hours-feedback" data-prep-notes-feedback role="status"></span><button class="btn btn-solid" type="submit">${strings.save}</button></div></form>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
 
     const form = modal.querySelector("form");
     const feedback = modal.querySelector("[data-prep-notes-feedback]");

@@ -3,8 +3,9 @@ import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { escapeHtml } from "../core/utils.js";
 import { openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
-import { initializeClientCommunicationHistory } from "./client-communication-history.js";
+import { initializeClientCommunicationHistory } from "./client-communication-history.js?v=mockup-parity-20260924";
 import { filterHistory } from "./client-history-filter.mjs";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.clientDatabase;
 const eraseConfirmationPhrase = "SUPPRIMER CE CLIENT";
@@ -15,8 +16,9 @@ export async function initializeClientDatabase({ user, timezone = "Europe/Paris"
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<section class="glass working-hours-dialog client-database-dialog" aria-labelledby="client-database-title"><div class="working-hours-header"><h2 id="client-database-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-client-database-close>${strings.close}</button></div><label class="working-hours-field"><span>${strings.filterLabel}</span><input type="search" data-client-filter placeholder="${strings.filterPlaceholder}"></label><div data-client-list><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
+    modal.innerHTML = `<section class="glass working-hours-dialog client-database-dialog" aria-labelledby="client-database-title"><div class="working-hours-header"><h2 id="client-database-title">${strings.title}</h2><button class="icon-button modal-close" type="button" data-client-database-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><label class="working-hours-field"><span>${strings.filterLabel}</span><input type="search" data-client-filter placeholder="${strings.filterPlaceholder}"></label><div data-client-list><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     modal.dataset.timezone = timezone;
     const list = modal.querySelector("[data-client-list]");
     try {

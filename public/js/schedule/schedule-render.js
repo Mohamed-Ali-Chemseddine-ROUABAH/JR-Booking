@@ -1,9 +1,18 @@
-import { UI_STRINGS } from "../core/strings-fr.js";
+import { UI_STRINGS } from "../core/strings-fr.js?v=mockup-parity-b-20260924";
 import { normalizeScheduleSettings } from "./schedule-settings.mjs";
 import { buildFixedBookingDetails, toggleFixedSlotSelection } from "./schedule-selection.mjs";
 
 const strings = UI_STRINGS.proDashboard.schedule;
-const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+const DEFAULT_BAND = { start: 8, end: 18 };
+
+/** Hour rows spanning the professional's working day, padded one hour either side like the mockup. */
+function buildHours(workingHours) {
+    const starts = [workingHours.startTime, ...(workingHours.exceptions || []).map((item) => item.start)].filter(Boolean);
+    const ends = [workingHours.endTime, ...(workingHours.exceptions || []).map((item) => item.end)].filter(Boolean);
+    const first = Math.max(0, Math.min(DEFAULT_BAND.start, ...starts.map((value) => Number(String(value).slice(0, 2)))));
+    const last = Math.min(24, Math.max(DEFAULT_BAND.end, ...ends.map((value) => Number(String(value).slice(0, 2)) + 1)));
+    return Array.from({ length: Math.max(1, last - first) }, (_, index) => `${String(first + index).padStart(2, "0")}:00`);
+}
 
 export function initializeSchedule(container, { onExpandSidebar, onCreateBooking, onSelectBooking, onBookingContextMenu, onCalendarSync, onCalendarRangeChange, daysToShow = 7, timezone = "Europe/Paris", workingHours = {}, bookings = [], calendarEvents = [] } = {}) {
     let selectedDays = daysToShow;
@@ -16,11 +25,12 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
                 <div class="schedule-summary">${strings.summary.replace("{days}", visibleDays.length)}</div>
             </div>
             <div class="schedule-tools">
-                <button class="icon-button" type="button" aria-label="${UI_STRINGS.proDashboard.sidebar.expand}" title="${UI_STRINGS.proDashboard.sidebar.expand}" data-sidebar-expand>›</button>
+                <button class="icon-button" type="button" aria-label="${UI_STRINGS.proDashboard.sidebar.expand}" title="${UI_STRINGS.proDashboard.sidebar.expand}" data-sidebar-expand><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5 7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button>
                 <button class="icon-button schedule-nav-button" type="button" data-navigation="previous" aria-label="${strings.previous}" title="${strings.previous}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14 5-7 7 7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button>
                 <button class="chip-button is-active" type="button" data-navigation="today">${strings.today}</button>
                 <button class="icon-button schedule-nav-button" type="button" data-navigation="next" aria-label="${strings.next}" title="${strings.next}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m10 5 7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></svg></button>
                 <button class="chip-button" type="button" data-calendar-sync>${strings.sync}</button>
+                <span class="tag-pill schedule-sync-state" data-calendar-state hidden></span>
                 <div class="schedule-view-switch" role="group" aria-label="${strings.title}">
                     <button class="chip-button${daysToShow === 1 ? " is-active" : ""}" type="button" data-days="1">${strings.viewOne}</button>
                     <button class="chip-button${daysToShow === 3 ? " is-active" : ""}" type="button" data-days="3">${strings.viewThree}</button>
@@ -28,11 +38,19 @@ export function initializeSchedule(container, { onExpandSidebar, onCreateBooking
                 </div>
             </div>
         </div>
+        <div class="legend-mini" aria-hidden="true">
+            <span><i class="legend-swatch acc"></i>${strings.legend.accepted}</span>
+            <span><i class="legend-swatch pen"></i>${strings.legend.pending}</span>
+            <span><i class="legend-swatch rej"></i>${strings.legend.rejected}</span>
+            <span><i class="legend-swatch ext"></i>${strings.legend.external}</span>
+            <span><i class="legend-swatch brk"></i>${strings.legend.brk}</span>
+        </div>
         <div class="schedule-scroll">
             <div class="schedule-grid" role="grid" aria-label="${strings.title}">
                 ${renderGrid(getVisibleDays(selectedDays, weekOffset, timezone), workingHours, bookings, calendarEvents, timezone)}
             </div>
         </div>
+        <p class="week-note"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5m0-8.2v.2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>${strings.weekNote}</p>
     `;
 
     container.querySelector("[data-sidebar-expand]").addEventListener("click", onExpandSidebar);
@@ -79,16 +97,19 @@ function renderScheduleGrid(container, daysToShow, weekOffset, workingHours, boo
     const grid = container.querySelector(".schedule-grid");
     grid.style.setProperty("--schedule-day-count", String(visibleDays.length));
     grid.innerHTML = renderGrid(visibleDays, workingHours, bookings, calendarEvents, timezone);
+    const syncState = container.querySelector("[data-calendar-state]");
+    syncState.hidden = !calendarEvents.length;
+    syncState.textContent = strings.syncState.replace("{count}", calendarEvents.length);
     attachBookingCreation(container, onCreateBooking, onSelectBooking, onBookingContextMenu, normalizeScheduleSettings(workingHours.scheduleSettings));
     container.querySelector(".schedule-summary").textContent = `${strings.summary.replace("{days}", visibleDays.length)} · ${formatDateRange(visibleDays)}`;
 }
 
 function renderGrid(visibleDays, workingHours, bookings, calendarEvents, timezone) {
     const header = [`<div class="schedule-cell schedule-day" role="columnheader"></div>`]
-        .concat(visibleDays.map((day) => `<div class="schedule-cell schedule-day" role="columnheader"><span>${day.label}</span><small>${day.shortDate}</small></div>`))
+        .concat(visibleDays.map((day) => `<div class="schedule-cell schedule-day${day.isToday ? " is-today" : ""}" role="columnheader"><span>${day.label}</span><small>${day.shortDate}</small></div>`))
         .join("");
 
-    const rows = hours.map((hour) => {
+    const rows = buildHours(workingHours).map((hour) => {
         const slots = visibleDays
             .map((day) => renderSlot(hour, day, workingHours, bookings, calendarEvents, timezone))
             .join("");
@@ -118,24 +139,38 @@ function renderSlot(hour, day, workingHours, bookings, calendarEvents, timezone)
         || (scheduleSettings.activationMode === "from-date" && (!scheduleSettings.activationDate || day.isoDate >= scheduleSettings.activationDate))
         || (scheduleSettings.activationMode === "single-day" && day.isoDate === scheduleSettings.activationDate);
     const available = activeOnDate && isWorkingDay && isWithinHours && !isBreak && !absence && !booking && !inBuffer;
+    const todayClass = day.isToday ? " is-today" : "";
     if (booking) {
         const status = ["pending", "accepted", "done", "no-show"].includes(booking.status) ? booking.status : "pending";
         const clientLabel = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || strings.bookingLabel);
         const isStart = isBookingStart(booking, day.isoDate, hour, timezone);
-        return `<div class="schedule-cell schedule-slot schedule-slot-booking schedule-slot-${status}${isStart ? "" : " schedule-slot-booking-continuation"}" role="gridcell" data-booking-id="${escapeHtml(booking.id)}" aria-label="${escapeHtml(isStart ? clientLabel : strings.bookingStatuses[status])}">${isStart ? `<strong>${clientLabel}</strong><small>${strings.bookingStatuses[status]}</small>` : ""}</div>`;
+        const continues = bookingContinuesPastSlot(booking, day.isoDate, hour, timezone);
+        const overlapCount = findBookings(bookings, day.isoDate, hour, timezone).length;
+        const overlapBadge = isStart && overlapCount > 1 ? `<span class="overlap-chip schedule-block-overlap" title="${escapeHtml(strings.overlap.replace("{count}", overlapCount))}">${overlapCount}</span>` : "";
+        const joinClass = `${isStart ? "" : " is-continuation"}${continues ? " has-continuation" : ""}`;
+        return `<div class="schedule-cell schedule-slot schedule-slot-occupied${todayClass}" role="gridcell" data-booking-id="${escapeHtml(booking.id)}" aria-label="${escapeHtml(isStart ? clientLabel : strings.bookingStatuses[status])}" title="${escapeHtml(`${clientLabel} \u00b7 ${strings.bookingStatuses[status]}`)}"><span class="schedule-block schedule-block-${status}${joinClass}">${isStart ? `${overlapBadge}<strong>${clientLabel}</strong><small>${formatSlotRange(booking, timezone)}</small>` : ""}</span></div>`;
     }
     if (calendarEvent) {
-        const eventClass = calendarEvent.presentationMode === "solid" ? "schedule-slot-calendar-solid" : "schedule-slot-calendar-ghost";
-        return `<div class="schedule-cell schedule-slot schedule-slot-unavailable ${eventClass}" role="gridcell" title="${escapeHtml(calendarEvent.title)}"><strong>${escapeHtml(calendarEvent.title)}</strong><small>Google Calendar</small></div>`;
+        const eventClass = calendarEvent.presentationMode === "solid" ? "schedule-block-calendar-solid" : "schedule-block-calendar-ghost";
+        return `<div class="schedule-cell schedule-slot schedule-slot-occupied${todayClass}" role="gridcell" title="${escapeHtml(calendarEvent.title)}"><span class="schedule-block ${eventClass}"><strong>${escapeHtml(calendarEvent.title)}</strong><small>${strings.externalSource}</small></span></div>`;
     }
-    const label = available ? strings.emptySlot : strings.unavailableSlot;
+    if (isBreak && activeOnDate && isWorkingDay && isWithinHours && !absence) {
+        return `<div class="schedule-cell schedule-slot schedule-slot-occupied${todayClass}" role="gridcell" data-schedule-date="${day.isoDate}" data-schedule-hour="${hour}" data-available="false"><span class="schedule-block schedule-block-break">${strings.breakSlot}</span></div>`;
+    }
     const className = available ? "schedule-slot" : "schedule-slot schedule-slot-unavailable";
 
-    return `<div class="schedule-cell ${className}" role="gridcell" data-schedule-date="${day.isoDate}" data-schedule-hour="${hour}" data-available="${available}">${label}</div>`;
+    return `<div class="schedule-cell ${className}${todayClass}" role="gridcell" data-schedule-date="${day.isoDate}" data-schedule-hour="${hour}" data-available="${available}" aria-label="${available ? strings.emptySlot : strings.unavailableSlot}"></div>`;
+}
+
+function bookingContinuesPastSlot(booking, isoDate, hour, timezone) {
+    const end = toDate(booking.end) || toDate(booking.start);
+    if (!end) return false;
+    return toMinuteKey(getZonedParts(end, timezone)) > toSlotKey(isoDate, addHour(hour));
 }
 
 function getVisibleDays(daysToShow, weekOffset, timezone) {
-    const monday = getMonday(new Date(`${getZonedDate(new Date(), timezone)}T00:00:00`));
+    const todayIso = getZonedDate(new Date(), timezone);
+    const monday = getMonday(new Date(`${todayIso}T00:00:00`));
     monday.setDate(monday.getDate() + (weekOffset * 7));
 
     return Array.from({ length: daysToShow }, (_, index) => {
@@ -144,6 +179,7 @@ function getVisibleDays(daysToShow, weekOffset, timezone) {
         return {
             date,
             isoDate: toIsoDate(date),
+            isToday: toIsoDate(date) === todayIso,
             label: strings.days[index],
             shortDate: formatIsoShortDate(toIsoDate(date))
         };
@@ -172,17 +208,38 @@ function formatDateRange(days) {
 }
 
 function findBooking(bookings, isoDate, hour, timezone) {
-    return bookings.find((booking) => {
+    return findBookings(bookings, isoDate, hour, timezone)[0];
+}
+
+function findBookings(bookings, isoDate, hour, timezone) {
+    return bookings.filter((booking) => {
         if (booking.status === "rejected") return false;
         const start = toDate(booking.start);
         const end = toDate(booking.end) || start;
         const startParts = start ? getZonedParts(start, timezone) : null;
         const endParts = end ? getZonedParts(end, timezone) : null;
         if (!startParts || !endParts) return false;
-        const slotKey = toSlotKey(isoDate, hour);
-        return slotKey >= toSlotKey(startParts.date, `${String(startParts.hour).padStart(2, "0")}:00`)
-            && slotKey < toSlotKey(endParts.date, `${String(endParts.hour).padStart(2, "0")}:00`);
+        const slotStart = toSlotKey(isoDate, hour);
+        const slotEnd = toSlotKey(isoDate, addHour(hour));
+        return toMinuteKey(startParts) < slotEnd && toMinuteKey(endParts) > slotStart;
     });
+}
+
+function toMinuteKey(parts) {
+    return `${parts.date}T${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`;
+}
+
+function addHour(hour) {
+    return `${String(Number(hour.slice(0, 2)) + 1).padStart(2, "0")}:${hour.slice(3)}`;
+}
+
+function formatSlotRange(booking, timezone) {
+    const start = toDate(booking.start);
+    const end = toDate(booking.end) || start;
+    if (!start || !end) return "";
+    const startParts = getZonedParts(start, timezone);
+    const endParts = getZonedParts(end, timezone);
+    return `${toMinuteKey(startParts).slice(11)}\u2013${toMinuteKey(endParts).slice(11)}`;
 }
 
 function isBookingStart(booking, isoDate, hour, timezone) {
@@ -378,9 +435,9 @@ function getZonedDate(value, timezone) {
 }
 
 function getZonedParts(value, timezone) {
-    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(value);
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(value);
     const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-    return { date: `${values.year}-${values.month}-${values.day}`, hour: Number(values.hour) };
+    return { date: `${values.year}-${values.month}-${values.day}`, hour: Number(values.hour), minute: Number(values.minute) };
 }
 
 function formatIsoShortDate(isoDate) {

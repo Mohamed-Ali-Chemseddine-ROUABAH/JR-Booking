@@ -1,6 +1,7 @@
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.directLinks;
 
@@ -9,8 +10,9 @@ export async function initializeDirectLinks({ user }) {
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<section class="glass working-hours-dialog direct-links-dialog" aria-labelledby="direct-links-title"><div class="working-hours-header"><h2 id="direct-links-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-direct-links-close>${strings.close}</button></div><p class="admin-panel-help">${strings.help}</p><div data-direct-links-content><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
+    modal.innerHTML = `<section class="glass working-hours-dialog direct-links-dialog" aria-labelledby="direct-links-title"><div class="working-hours-header"><h2 id="direct-links-title">${strings.title}</h2><button class="icon-button modal-close" type="button" data-direct-links-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><p class="admin-panel-help">${strings.help}</p><div data-direct-links-content><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     modal.querySelector("[data-direct-links-close]").addEventListener("click", () => modal.remove());
     modal.addEventListener("click", (event) => { if (event.target === modal) modal.remove(); });
     try {

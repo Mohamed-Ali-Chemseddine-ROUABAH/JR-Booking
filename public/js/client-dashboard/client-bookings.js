@@ -3,6 +3,15 @@ import { escapeHtml } from "../core/utils.js";
 
 const strings = UI_STRINGS.clientDashboard.bookings;
 
+const ICONS = {
+    message: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/></svg>`,
+    accept: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 13 4 4 10-10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg>`,
+    reschedule: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16-1 4 4-1L18 8l-3-3L4 16z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/></svg>`,
+    cancel: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>`,
+    unlink: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 15 4 20m11-11 5-5M10 7l2-2a4 4 0 0 1 5 5l-2 2M14 17l-2 2a4 4 0 0 1-5-5l2-2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>`,
+    share: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 6a2.5 2.5 0 1 0 0-.1M8 12a2.5 2.5 0 1 0 0-.1M16 18a2.5 2.5 0 1 0 0-.1m-5.8-7.3 4.6-2.4m0 7.4-4.6-2.4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg>`
+};
+
 export function initializeClientBookings(container, { userId, timezone = "Europe/Paris", bookings = [], onAccept, onCancel, onRequestChange, onUnlinkClaim, onRequestHistoryShare, onMessages, initialFilter = "pending", onFilterChange } = {}) {
     container.innerHTML = `
         <div class="sidebar-head">
@@ -37,24 +46,26 @@ export function initializeClientBookings(container, { userId, timezone = "Europe
         if (!card) return;
         const booking = bookings.find((item) => item.id === card.dataset.bookingCard);
         if (!booking) return;
+        const action = event.target.closest("[data-accept], [data-cancel], [data-request-change], [data-unlink-claim], [data-share-history], [data-message-booking]");
+        if (!action) return;
 
-        if (event.target.matches("[data-accept]")) {
+        if (action.matches("[data-accept]")) {
             onAccept?.(booking);
         }
-        if (event.target.matches("[data-cancel]")) {
+        if (action.matches("[data-cancel]")) {
             onCancel?.(booking);
         }
-        if (event.target.matches("[data-request-change]")) {
+        if (action.matches("[data-request-change]")) {
             onRequestChange?.(booking);
         }
-        if (event.target.matches("[data-unlink-claim]")) {
+        if (action.matches("[data-unlink-claim]")) {
             const contact = booking.contacts?.find((item) => item.linkedUid === userId);
             if (contact) onUnlinkClaim?.(booking, contact);
         }
-        if (event.target.matches("[data-share-history]")) {
-            onRequestHistoryShare?.(booking, event.target.dataset.shareHistory);
+        if (action.matches("[data-share-history]")) {
+            onRequestHistoryShare?.(booking, action.dataset.shareHistory);
         }
-        if (event.target.matches("[data-message-booking]")) {
+        if (action.matches("[data-message-booking]")) {
             onMessages?.(booking, booking.clientId === userId ? "client" : "shared-client");
         }
     });
@@ -82,24 +93,21 @@ function renderBookings(container, userId, timezone, bookings, activeFilter) {
             : !isOwnBooking
                 ? `<p class="client-booking-notice">${strings.sharedHistoryNotice}</p>`
                 : "";
-        const bookingActions = isProMade
-            ? `<div class="sidebar-booking-actions"><button class="btn btn-solid" type="button" data-accept>${strings.acceptBooking}</button><button class="btn btn-ghost" type="button" data-request-change>${strings.requestChange}</button></div>`
-            : isOwnPending
-                ? `<div class="sidebar-booking-actions"><button class="btn btn-ghost" type="button" data-cancel>${strings.cancelBooking}</button></div>`
-                : "";
-            const messageAction = `<div class="sidebar-booking-actions"><button class="btn btn-ghost" type="button" data-message-booking>${UI_STRINGS.shared.bookingMessages.title}</button></div>`;
-        const linkedContact = booking.contacts?.find((item) => item.linkedUid === userId);
-        const unlinkAction = isOwnBooking && booking.claimState === "claimed" && linkedContact
-            ? `<div class="sidebar-booking-actions"><button class="btn btn-ghost" type="button" data-unlink-claim>${strings.unlinkClaim}</button></div>`
-            : "";
-        const shareTargets = isOwnBooking ? (booking.contacts || []).filter((item) => item.linkedUid && item.linkedUid !== userId) : [];
-        const shareActions = shareTargets.length
-            ? `<div class="sidebar-booking-actions">${shareTargets.map((contact) => `<button class="btn btn-ghost" type="button" data-share-history="${escapeHtml(contact.linkedUid)}" title="${escapeHtml(strings.shareHistory(contact.name || contact.email))}">${escapeHtml(strings.shareHistory(contact.name || contact.email))}</button>`).join("")}</div>`
-            : "";
+        const bookingActions = [
+            `<button class="booking-action-button" type="button" data-message-booking aria-label="${UI_STRINGS.shared.bookingMessages.title}" title="${UI_STRINGS.shared.bookingMessages.title}">${ICONS.message}</button>`,
+            isProMade ? `<button class="booking-action-button" type="button" data-accept aria-label="${strings.acceptBooking}" title="${strings.acceptBooking}">${ICONS.accept}</button>` : "",
+            isProMade ? `<button class="booking-action-button" type="button" data-request-change aria-label="${strings.requestChange}" title="${strings.requestChange}">${ICONS.reschedule}</button>` : "",
+            isOwnPending ? `<button class="booking-action-button" type="button" data-cancel aria-label="${strings.cancelBooking}" title="${strings.cancelBooking}">${ICONS.cancel}</button>` : "",
+            isOwnBooking && booking.claimState === "claimed" && booking.contacts?.some((item) => item.linkedUid === userId)
+                ? `<button class="booking-action-button" type="button" data-unlink-claim aria-label="${strings.unlinkClaim}" title="${strings.unlinkClaim}">${ICONS.unlink}</button>` : "",
+            ...(isOwnBooking ? (booking.contacts || []).filter((item) => item.linkedUid && item.linkedUid !== userId) : [])
+                .map((contact) => `<button class="booking-action-button" type="button" data-share-history="${escapeHtml(contact.linkedUid)}" aria-label="${escapeHtml(strings.shareHistory(contact.name || contact.email))}" title="${escapeHtml(strings.shareHistory(contact.name || contact.email))}">${ICONS.share}</button>`)
+        ].filter(Boolean).join("");
         const movementQuote = booking.movementQuote
             ? `<small>${strings.movementDistance}: ${booking.movementQuote.distanceKm} km · ${strings.movementSurcharge}: ${booking.paymentContext?.surcharge ?? booking.movementQuote.surcharge} €</small>`
             : "";
-        return `<article class="glass-ghost sidebar-booking-card" data-booking-card="${booking.id}"><strong>${name}</strong><span>${strings.bookingDate}: ${date}</span><span>${strings.bookingTime}: ${time}</span><small>${strings.statuses[booking.status] || booking.status}</small>${movementQuote}${notice}${messageAction}${bookingActions}${unlinkAction}${shareActions}</article>`;
+        const statusKey = ["pending", "accepted", "done", "no-show", "rejected"].includes(booking.status) ? booking.status : "pending";
+        return `<article class="glass-ghost sidebar-booking-card status-${statusKey}" data-booking-card="${booking.id}"><div class="booking-card-top"><div><strong class="booking-card-name">${name}</strong><span class="booking-card-time">${date} · ${time}</span></div><span class="booking-status-tag status-${statusKey}">${strings.statuses[booking.status] || booking.status}</span></div>${movementQuote}${notice}<div class="sidebar-booking-actions">${bookingActions}</div></article>`;
     }).join("");
 }
 

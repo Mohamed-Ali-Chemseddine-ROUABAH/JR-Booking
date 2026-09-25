@@ -1,8 +1,8 @@
-import { UI_STRINGS } from "../core/strings-fr.js";
+import { UI_STRINGS } from "../core/strings-fr.js?v=mockup-parity-b-20260924";
 import { escapeHtml } from "../core/utils.js";
 
 const strings = UI_STRINGS.clientDashboard.schedule;
-const hours = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+const hours = Array.from({ length: 10 }, (_, index) => `${String(8 + index).padStart(2, "0")}:00`);
 
 export function initializeClientSchedule(container, { bookings = [], lockedProfessional = null, timezone = "Europe/Paris", onLockedSlotSelect } = {}) {
     let weekOffset = 0;
@@ -21,6 +21,11 @@ export function initializeClientSchedule(container, { bookings = [], lockedProfe
                 </div>
                 <span class="schedule-summary client-schedule-summary">${formatDateRange(visibleDays)}</span>
             </div>
+            <div class="legend-mini" aria-hidden="true">
+                <span><i class="legend-swatch acc"></i>${strings.accepted}</span>
+                <span><i class="legend-swatch pen"></i>${strings.pending}</span>
+                <span><i class="legend-swatch rej"></i>${strings.noShow}</span>
+            </div>
             <div class="client-schedule-scroll">
                 <div class="client-schedule-grid" role="grid" aria-label="${strings.title}">
                     ${renderGrid(visibleDays, bookings, lockedProfessional, timezone)}
@@ -36,25 +41,36 @@ export function initializeClientSchedule(container, { bookings = [], lockedProfe
 }
 
 function renderGrid(days, bookings, lockedProfessional, timezone) {
-    const header = `<div class="client-schedule-cell client-schedule-day"></div>${days.map((day) => `<div class="client-schedule-cell client-schedule-day"><span>${day.label}</span><small>${day.shortDate}</small></div>`).join("")}`;
+    const header = `<div class="client-schedule-cell client-schedule-day"></div>${days.map((day) => `<div class="client-schedule-cell client-schedule-day${day.isToday ? " is-today" : ""}"><span>${day.label}</span><small>${day.shortDate}</small></div>`).join("")}`;
     const rows = hours.map((hour) => `<div class="client-schedule-cell client-schedule-time">${hour}</div>${days.map((day) => renderSlot(day, hour, bookings, lockedProfessional, timezone)).join("")}`).join("");
     return header + rows;
 }
 
 function renderSlot(day, hour, bookings, lockedProfessional, timezone) {
+    const todayClass = day.isToday ? " is-today" : "";
     const booking = bookings.find((item) => isBookingActiveAtHour(item, day.isoDate, hour, timezone));
     if (booking) {
-        const statusLabel = { pending: strings.pending, accepted: strings.accepted, done: strings.done, "no-show": strings.noShow }[booking.status] || strings.pending;
+        const statusKey = ["pending", "accepted", "done", "no-show"].includes(booking.status) ? booking.status : "pending";
+        const statusLabel = { pending: strings.pending, accepted: strings.accepted, done: strings.done, "no-show": strings.noShow }[statusKey];
         const isStart = isBookingStart(booking, day.isoDate, hour, timezone);
-        return `<div class="client-schedule-cell client-schedule-slot is-booked${isStart ? "" : " is-booking-continuation"}" aria-label="${escapeHtml(isStart ? booking.proDisplayName || "Professionnel" : statusLabel)}">${isStart ? `<strong>${escapeHtml(booking.proDisplayName || "Professionnel")}</strong><small>${statusLabel}</small>` : ""}</div>`;
+        const continues = bookingContinuesPastSlot(booking, day.isoDate, hour, timezone);
+        const joinClass = `${isStart ? "" : " is-continuation"}${continues ? " has-continuation" : ""}`;
+        const proLabel = escapeHtml(booking.proDisplayName || "Professionnel");
+        return `<div class="client-schedule-cell client-schedule-slot is-occupied${todayClass}" aria-label="${escapeHtml(isStart ? booking.proDisplayName || "Professionnel" : statusLabel)}" title="${escapeHtml(`${booking.proDisplayName || "Professionnel"} \u00b7 ${statusLabel}`)}"><span class="client-schedule-block is-${statusKey}${joinClass}">${isStart ? `<strong>${proLabel}</strong><small>${formatSlotRange(booking, timezone)}</small>` : ""}</span></div>`;
     }
     if (lockedProfessional && isLockedBusy(day, hour, lockedProfessional.busySlots, timezone)) {
-        return `<div class="client-schedule-cell client-schedule-slot is-locked-busy"><strong>${escapeHtml(lockedProfessional.displayName || "Professionnel")}</strong><small>${strings.locked}</small></div>`;
+        return `<div class="client-schedule-cell client-schedule-slot is-occupied${todayClass}"><span class="client-schedule-block is-locked-busy"><strong>${escapeHtml(lockedProfessional.displayName || "Professionnel")}</strong><small>${strings.locked}</small></span></div>`;
     }
     if (lockedProfessional) {
-        return `<button class="client-schedule-cell client-schedule-slot is-locked-available" type="button" data-locked-slot data-date="${day.isoDate}" data-start="${hour}" data-end="${addMinutesToHour(hour, 60)}"><strong>${strings.available}</strong><small>${escapeHtml(lockedProfessional.displayName || "Professionnel")}</small></button>`;
+        return `<button class="client-schedule-cell client-schedule-slot is-occupied${todayClass}" type="button" data-locked-slot data-date="${day.isoDate}" data-start="${hour}" data-end="${addMinutesToHour(hour, 60)}"><span class="client-schedule-block is-locked-available"><strong>${strings.available}</strong><small>${escapeHtml(lockedProfessional.displayName || "Professionnel")}</small></span></button>`;
     }
-    return `<div class="client-schedule-cell client-schedule-slot"></div>`;
+    return `<div class="client-schedule-cell client-schedule-slot${todayClass}"></div>`;
+}
+
+function bookingContinuesPastSlot(booking, isoDate, hour, timezone) {
+    const end = toDate(booking.end) || toDate(booking.start);
+    if (!end) return false;
+    return toMinuteKey(getZonedParts(end, timezone)) > `${isoDate}T${addMinutesToHour(hour, 60)}`;
 }
 
 function addMinutesToHour(hour, minutes) {
@@ -86,6 +102,7 @@ function getCurrentWeek(timezone, weekOffset = 0) {
         date.setDate(monday.getDate() + index);
         return {
             isoDate: toIsoDate(date),
+            isToday: toIsoDate(date) === now.date,
             label: strings.days[index],
             shortDate: formatIsoShortDate(toIsoDate(date))
         };
@@ -104,9 +121,9 @@ function toDate(value) {
 }
 
 function getZonedParts(value, timezone) {
-    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hourCycle: "h23" }).formatToParts(value);
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(value);
     const values = Object.fromEntries(parts.filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
-    return { date: `${values.year}-${values.month}-${values.day}`, hour: Number(values.hour) };
+    return { date: `${values.year}-${values.month}-${values.day}`, hour: Number(values.hour), minute: Number(values.minute) };
 }
 
 function formatIsoShortDate(isoDate) {
@@ -126,9 +143,20 @@ function isBookingActiveAtHour(booking, isoDate, hour, timezone) {
     const startParts = start ? getZonedParts(start, timezone) : null;
     const endParts = end ? getZonedParts(end, timezone) : null;
     if (!startParts || !endParts) return false;
-    const slotKey = `${isoDate}T${hour}`;
-    return slotKey >= `${startParts.date}T${String(startParts.hour).padStart(2, "0")}:00`
-        && slotKey < `${endParts.date}T${String(endParts.hour).padStart(2, "0")}:00`;
+    const slotStart = `${isoDate}T${hour}`;
+    const slotEnd = `${isoDate}T${addMinutesToHour(hour, 60)}`;
+    return toMinuteKey(startParts) < slotEnd && toMinuteKey(endParts) > slotStart;
+}
+
+function toMinuteKey(parts) {
+    return `${parts.date}T${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`;
+}
+
+function formatSlotRange(booking, timezone) {
+    const start = toDate(booking.start);
+    const end = toDate(booking.end) || start;
+    if (!start || !end) return "";
+    return `${toMinuteKey(getZonedParts(start, timezone)).slice(11)}\u2013${toMinuteKey(getZonedParts(end, timezone)).slice(11)}`;
 }
 
 function isBookingStart(booking, isoDate, hour, timezone) {

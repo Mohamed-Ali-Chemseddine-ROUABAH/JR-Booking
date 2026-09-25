@@ -3,6 +3,7 @@ import { getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js";
 import { openPrintDocument } from "../shared/print-reports.js?v=print-report-20260909";
 import { calculateCategoryBreakdown, calculateReportingHighlights, calculateRevenueSummary, calculateStatisticsMetrics, calculateTrendData, filterCompletedActivityBookings, filterStatisticsBookings, getBookingActivityLabel } from "./statistics-metrics.mjs";
+import { attachModalBehavior } from "../shared/modal-behavior.js?v=modal-a11y-20260924";
 
 const strings = UI_STRINGS.proDashboard.statistics;
 
@@ -11,8 +12,9 @@ export async function initializeStatistics({ user }) {
     modal.className = "working-hours-modal";
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
-    modal.innerHTML = `<section class="glass working-hours-dialog statistics-dialog" aria-labelledby="statistics-title"><div class="working-hours-header"><h2 id="statistics-title">${strings.title}</h2><button class="btn btn-ghost" type="button" data-statistics-close>${strings.close}</button></div><div class="working-hours-fields"><label class="working-hours-field"><span>${strings.from}</span><input data-statistics-from type="date"></label><label class="working-hours-field"><span>${strings.to}</span><input data-statistics-to type="date"></label><label class="working-hours-field"><span>${strings.status}</span><select data-statistics-status><option value="">${strings.allStatuses}</option><option value="pending">${strings.pending}</option><option value="accepted">${strings.accepted}</option><option value="done">${strings.done}</option><option value="rejected">${strings.rejected}</option><option value="no-show">${strings.noShow}</option></select></label><label class="working-hours-field"><span>${strings.activity}</span><select data-statistics-activity><option value="">${strings.allActivities}</option></select></label></div><div data-statistics-content><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
+    modal.innerHTML = `<section class="glass working-hours-dialog statistics-dialog" aria-labelledby="statistics-title"><div class="working-hours-header"><h2 id="statistics-title">${strings.title}</h2><button class="icon-button modal-close" type="button" data-statistics-close aria-label="${strings.close}" title="${strings.close}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></svg></button></div><div class="working-hours-fields"><label class="working-hours-field"><span>${strings.from}</span><input data-statistics-from type="date"></label><label class="working-hours-field"><span>${strings.to}</span><input data-statistics-to type="date"></label><label class="working-hours-field"><span>${strings.status}</span><select data-statistics-status><option value="">${strings.allStatuses}</option><option value="pending">${strings.pending}</option><option value="accepted">${strings.accepted}</option><option value="done">${strings.done}</option><option value="rejected">${strings.rejected}</option><option value="no-show">${strings.noShow}</option></select></label><label class="working-hours-field"><span>${strings.activity}</span><select data-statistics-activity><option value="">${strings.allActivities}</option></select></label></div><div data-statistics-content><p class="working-hours-feedback">${strings.loading}</p></div></section>`;
     document.body.append(modal);
+    attachModalBehavior(modal);
     modal.querySelector("[data-statistics-close]").addEventListener("click", () => modal.remove());
     modal.addEventListener("click", (event) => { if (event.target === modal) modal.remove(); });
     try {

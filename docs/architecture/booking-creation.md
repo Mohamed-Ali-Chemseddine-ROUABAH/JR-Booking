@@ -1,0 +1,12 @@
+# Booking creation architecture
+
+- **Production file:** `public/js/pro-dashboard/booking-creation.js`
+- **Purpose:** Creates a professional-made pending booking from an available schedule cell, either a single double-clicked hour or a drag-selected multi-hour range from `schedule-render.js` (`details.endHour` overrides the default one-hour end time when present). The modal supports one primary and up to nine additional notification contacts.
+- **Datetime contract:** form-local values are interpreted in the active professional profile timezone and converted to absolute ISO timestamps before the trusted callable is invoked.
+- **Firestore:** Calls `createProfessionalBooking`, which creates `bookings/{bookingId}` with `proId`, nullable identity links, normalized contacts, start/end values, `pending` status, creator UID, creation timestamp, and unclaimed state. `guestContact` remains a compatibility mirror of the primary contact while existing readers migrate to `contacts`. Contact emails never grant read access.
+- **Security rules:** Direct professional booking creation is denied. The callable requires a professional/admin Auth claim and ownership of `proProfiles/{proId}`. Direct client creation remains limited to the existing self-owned booking field allow-list and may not include contact, claim, or series fields.
+- **Privacy:** Guest contact details are written to a professional-owned booking and are not rendered on public schedule surfaces.
+- **Linking rule:** A later verified client may claim only a specifically identified booking through a single-use claim flow; matching an email does not automatically merge histories or grant access to other bookings.
+- **Claim conflict rule:** If more than one verified person could plausibly claim a booking, the server leaves identity links unchanged, sets the safe `review-required` state, and records admin-only conflict detail rather than choosing an owner. Only an admin can approve or deny that conflict; the professional may correct the contact and issue a fresh invitation.
+- **Verification:** `tests/booking-contacts.test.cjs` covers contact validation. `tests/booking-contacts-emulator.test.cjs` covers authenticated callable creation/update, stable contact IDs, audit events, the professional-claim requirement, and direct Firestore contact-injection denial.
+- **Mockup references:** Professional double-click schedule creation and pending booking state in `docs/mockups/IMPLEMENTATION_REFERENCE.md` and `docs/mockups/jr-booking-premium-mockup.html`.
