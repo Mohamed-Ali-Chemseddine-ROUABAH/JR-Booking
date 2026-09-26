@@ -908,6 +908,7 @@ exports.bulkReviewProfessionalApplications = onCall(async (request) => {
 
 exports.joinBookingWaitlist = onCall(async (request) => {
     if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Authentication required.");
+    if (request.auth.token.email_verified !== true || !request.auth.token.email) throw new HttpsError("failed-precondition", "A verified client email is required.");
     const proId = String(request.data?.proId || "").trim();
     const start = String(request.data?.start || "").trim();
     const end = String(request.data?.end || "").trim();

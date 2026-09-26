@@ -4,7 +4,7 @@ import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
 import { UI_STRINGS } from "../core/strings-fr.js?v=mockup-parity-b-20260924";
 import { showNotification } from "../shared/notifications.js?v=undo-20260907";
 import { initializeSchedule } from "../schedule/schedule-render.js?v=mockup-parity-b-20260924";
-import { initializeSidebarFeed } from "../sidebar/sidebar-feed.js?v=mockup-parity-b-20260924";
+import { initializeSidebarFeed } from "../sidebar/sidebar-feed.js?v=verified-client-booking-20260926";
 import { initializeProNavbar, setNavbarUnread } from "./navbar-pro.js?v=mockup-parity-b-20260924";
 import { initializeWorkingHours } from "./working-hours.js?v=mockup-parity-20260924";
 import { initializePersonalInfo } from "./personal-info.js?v=mockup-parity-20260924";
@@ -33,7 +33,7 @@ import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/fireba
 import { getIdTokenResult } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { initializeBookingMessages } from "../shared/booking-messages.js?v=mockup-parity-20260924";
 import { initializeBookingPrepNotes } from "./booking-prep-notes.js?v=mockup-parity-20260924";
-import { initializeTodayView, initializeNotificationCenter } from "./today-view.js?v=mockup-parity-20260924";
+import { initializeTodayView, initializeNotificationCenter } from "./today-view.js?v=verified-client-booking-20260926";
 
 const strings = UI_STRINGS.proDashboard;
 const layout = document.querySelector("[data-dashboard-layout]");

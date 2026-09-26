@@ -25,8 +25,8 @@
 | Area / Zone | Mockup behavior / Comportement mockup | Production destination / Destination production |
 | --- | --- | --- |
 | Landing and search / Accueil et recherche | Name/category search, empty results, public profile route | `search/search-professional.js`, `search/search-category.js`, `profile.html`, `category.html` |
-| Public profile / Profil public | Visible profile fields, anonymous occupied slots, 1/3/7-day display | `profile-public/profile-view.js`, `schedule/schedule-render.js`, `busySlots` read model |
-| Auth / Authentification | Login role preview, registration form, password-reset feedback | `login.html`, `register-client.html`, `core/auth-guard.js`, Firebase Auth |
+| Public profile / Profil public | Visible profile fields, anonymous occupied slots, 1/3/7-day display, select an available slot before login, restore only public slot details after verification, explicit final send | `profile-public/profile-view.js`, `schedule/schedule-render.js`, `busySlots` read model |
+| Auth / Authentification | Login role preview, password registration, legal acceptance, Firebase email verification, password-reset feedback, same-origin booking return | `login.html`, `register-client.html`, `core/auth-guard.js`, Firebase Auth |
 | Client dashboard / Tableau client | Own bookings, unavailable anonymous slots, payment selection, timezone/profile panels, accept/change request | `client-dashboard.html`, `client-dashboard/navbar-client.js`, `client-bookings.js`, `client-profile-settings.js`, `client-intake-form.js` |
 | Client dashboard professional search / Recherche professionnel (tableau client) | Search bar above own bookings, lock one professional's anonymous unavailable slots onto own calendar, unlock, save/remove favorites, one locked schedule visible at a time | `client-dashboard.html`, `client-dashboard/client-professional-search.js` |
 | Pro schedule / Planning pro | 1/3/7 days, collapse/resize feed, slots, right-click menu, double-click creation, drag booking preview | `pro-dashboard.html`, `schedule/schedule-render.js`, `schedule-slot-method.js`, `schedule-drag-method.js`, `schedule-recurrence.js`, `schedule-timezone.js` |

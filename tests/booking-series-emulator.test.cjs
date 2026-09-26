@@ -41,6 +41,9 @@ test("trusted recurring booking scope flow", { timeout: 45000 }, async () => {
     const seriesId = `series-${suffix}`;
     const bookingIds = [0, 1, 2].map((index) => `occurrence-${suffix}-${index}`);
     const clientBookingId = `client-booking-${suffix}`;
+    const waitlistStart = "2026-10-05T09:00:00.000Z";
+    const waitlistEnd = "2026-10-05T10:00:00.000Z";
+    const waitlistId = `${client.uid}_${waitlistStart.replace(/[^0-9]/g, "")}`;
 
     try {
         await firestore.collection("proProfiles").doc(uid).set({ owners: [uid], accountStatus: "active" });
@@ -161,6 +164,7 @@ test("trusted recurring booking scope flow", { timeout: 45000 }, async () => {
         const clientBookingResponse = await writeBookingDirect(clientBookingId, client.idToken, {
             proId: uid,
             clientId: client.uid,
+            clientEmail,
             clientAddress: "",
             start: "2026-10-05T09:00",
             end: "2026-10-05T10:00",
@@ -168,7 +172,39 @@ test("trusted recurring booking scope flow", { timeout: 45000 }, async () => {
             createdBy: client.uid,
             createdAt: new Date().toISOString()
         });
-        assert.equal(clientBookingResponse.status, 200);
+        assert.equal(clientBookingResponse.status, 403);
+        await assert.rejects(
+            () => callFunction("joinBookingWaitlist", client.idToken, { proId: uid, start: waitlistStart, end: waitlistEnd }),
+            /FAILED_PRECONDITION|failed-precondition/
+        );
+        await app.auth().updateUser(client.uid, { emailVerified: true });
+        const verifiedClient = await postJson(`http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake-api-key`, { email: clientEmail, password, returnSecureToken: true });
+        const verifiedBookingResponse = await writeBookingDirect(clientBookingId, verifiedClient.idToken, {
+            proId: uid,
+            clientId: client.uid,
+            clientEmail,
+            clientAddress: "",
+            start: "2026-10-05T09:00",
+            end: "2026-10-05T10:00",
+            status: "pending",
+            createdBy: client.uid,
+            createdAt: new Date().toISOString()
+        });
+        assert.equal(verifiedBookingResponse.status, 200);
+        const forgedEmailResponse = await writeBookingDirect(`forged-email-${suffix}`, verifiedClient.idToken, {
+            proId: uid,
+            clientId: client.uid,
+            clientEmail: otherClientEmail,
+            clientAddress: "",
+            start: "2026-10-05T11:00",
+            end: "2026-10-05T12:00",
+            status: "pending",
+            createdBy: client.uid,
+            createdAt: new Date().toISOString()
+        });
+        assert.equal(forgedEmailResponse.status, 403);
+        const verifiedWaitlist = await callFunction("joinBookingWaitlist", verifiedClient.idToken, { proId: uid, start: waitlistStart, end: waitlistEnd });
+        assert.equal(verifiedWaitlist.status, "waiting");
         assert.equal((await patchBookingDirect(clientBookingId, client.idToken, { status: "rejected" }, ["status"])).status, 200);
         assert.equal((await patchBookingDirect(clientBookingId, client.idToken, { start: "2026-10-05T11:00" }, ["start"])).status, 403);
     } finally {
@@ -178,6 +214,8 @@ test("trusted recurring booking scope flow", { timeout: 45000 }, async () => {
             await firestore.collection("bookings").doc(bookingId).delete();
         }));
         await firestore.collection("bookings").doc(clientBookingId).delete().catch(() => {});
+        await firestore.collection("bookings").doc(`forged-email-${suffix}`).delete().catch(() => {});
+        await firestore.collection("waitlistEntries").doc(uid).collection("entries").doc(waitlistId).delete().catch(() => {});
         await firestore.collection("bookings").doc(bookingIds[0]).collection("messages").doc("message-1").delete().catch(() => {});
         const logs = await firestore.collection("logs").where("bookingId", "in", bookingIds).get();
         await Promise.all(logs.docs.map((document) => document.ref.delete()));

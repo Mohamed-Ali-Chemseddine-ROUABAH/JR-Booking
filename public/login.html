@@ -57,7 +57,8 @@
 </main>
 
 <script type="module">
-  import { UI_STRINGS } from './js/core/strings-fr.js';
+  import { UI_STRINGS } from './js/core/strings-fr.js?v=verified-booking-20260926';
+  import { sanitizeAuthReturnTo } from './js/core/email-link-utils.mjs?v=verified-booking-20260926';
   import {
     completeMagicLinkSignIn,
     getAuthErrorMessage,
@@ -67,7 +68,7 @@
     sendMagicLink,
     sendResetLink,
     signInWithEmail
-  } from './js/core/auth-guard.js';
+  } from './js/core/auth-guard.js?v=verified-booking-20260926';
   import { showNotification } from './js/shared/notifications.js';
 
   const strings = UI_STRINGS.auth;
@@ -98,6 +99,12 @@
   }
 
   const urlParams = new URLSearchParams(window.location.search);
+  const bookingReturnTo = sanitizeAuthReturnTo(urlParams.get('returnTo'), window.location.origin);
+  if (bookingReturnTo) {
+    const registerUrl = new URL('register-client.html', window.location.href);
+    registerUrl.searchParams.set('returnTo', bookingReturnTo);
+    document.querySelector('[data-ui="register-client"]').href = `${registerUrl.pathname.slice(1)}${registerUrl.search}`;
+  }
   const isMagicLinkFlow = urlParams.get('mode') === 'email-link' || urlParams.has('oobCode');
   const isOobLinkFlow = urlParams.has('oobCode');
   if (isMagicLinkFlow && !isOobLinkFlow) {
@@ -127,8 +134,7 @@
       const role = await getUserRole(credential.user);
       status.textContent = strings.login.success(roleLabel);
       showNotification(status.textContent, 'success');
-      const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-      const safeReturnTo = returnTo && /^[-a-z0-9_/]+\.html$/i.test(returnTo) ? returnTo : null;
+      const safeReturnTo = sanitizeAuthReturnTo(urlParams.get('returnTo'), window.location.origin);
       window.location.assign(safeReturnTo || getRoleHomePath(role));
     } catch (error) {
       status.textContent = getAuthErrorMessage(error);
@@ -156,8 +162,7 @@
           ? strings.login.professionalRole.toLocaleLowerCase('fr-FR')
           : strings.login.clientRole.toLocaleLowerCase('fr-FR');
         status.textContent = strings.login.success(roleLabel);
-        const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-        const safeReturnTo = returnTo && /^[-a-z0-9_/]+\.html$/i.test(returnTo) ? returnTo : null;
+        const safeReturnTo = sanitizeAuthReturnTo(urlParams.get('returnTo'), window.location.origin);
         window.location.assign(safeReturnTo || getRoleHomePath(role));
       } catch (error) {
         status.textContent = getAuthErrorMessage(error);

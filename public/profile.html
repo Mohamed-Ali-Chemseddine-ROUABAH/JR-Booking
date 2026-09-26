@@ -33,6 +33,11 @@
           <p data-profile-schedule-help></p>
         </div>
         <div class="profile-schedule" data-profile-schedule></div>
+        <p class="profile-feedback" data-profile-selected-slot hidden></p>
+        <div class="profile-auth-prompt" data-profile-verification-prompt hidden>
+          <p data-profile-verification-message role="status" aria-live="polite"></p>
+          <button class="btn btn-ghost" type="button" data-profile-resend-verification></button>
+        </div>
         <form class="profile-request-form" data-profile-form hidden>
           <h3 data-profile-request-title></h3>
           <label><span data-profile-service-label></span><select name="serviceId" data-profile-services></select></label>
@@ -55,6 +60,6 @@
     </section>
   </div>
 </main>
-<script type="module" src="js/profile-public/profile-view.js?v=mockup-parity-b-20260924"></script>
+<script type="module" src="js/profile-public/profile-view.js?v=verified-booking-20260926"></script>
 </body>
 </html>

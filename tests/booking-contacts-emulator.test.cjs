@@ -43,6 +43,7 @@ test("trusted professional booking contact flow", { timeout: 30000 }, async () =
             contacts: [{ name: "Client Test", email: "client@example.com", role: "primary", notify: true }]
         }), /PERMISSION_DENIED|permission-denied/);
         await app.auth().setCustomUserClaims(uid, { professional: true, role: "professional" });
+        await app.auth().updateUser(uid, { emailVerified: true });
         auth = await postJson(`http://${authHost}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake-api-key`, {
             email,
             password,
@@ -100,6 +101,7 @@ test("trusted professional booking contact flow", { timeout: 30000 }, async () =
         const allowedDirectResponse = await writeBookingDirect(allowedDirectId, auth.idToken, {
             proId: uid,
             clientId: uid,
+            clientEmail: email,
             clientAddress: "",
             start: "2026-09-16T09:00",
             end: "2026-09-16T10:00",

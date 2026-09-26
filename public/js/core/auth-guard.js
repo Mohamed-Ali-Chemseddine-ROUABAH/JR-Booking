@@ -3,6 +3,7 @@ import {
     deleteUser,
     getIdTokenResult,
     onAuthStateChanged,
+    sendEmailVerification,
     sendPasswordResetEmail,
     sendSignInLinkToEmail,
     signInWithEmailAndPassword,
@@ -11,7 +12,7 @@ import {
     updateProfile
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import { getFirebaseAuth, isFirebaseConfigured, isUsingLocalFirebaseEmulators } from "./firebase-init.js";
-import { buildEmailLinkContinuationUrl, normalizeEmailAddress } from "./email-link-utils.mjs";
+import { buildEmailLinkContinuationUrl, normalizeEmailAddress, sanitizeAuthReturnTo } from "./email-link-utils.mjs?v=verified-booking-20260926";
 import { UI_STRINGS } from "./strings-fr.js";
 
 const ROLE_HOME_PATHS = {
@@ -156,4 +157,21 @@ function requireConfiguredAuth() {
     }
 
     return auth;
+}
+
+export async function sendClientVerificationEmail(user, returnTo) {
+    const auth = requireConfiguredAuth();
+    if (!user || auth.currentUser?.uid !== user.uid || !user.email) throw new Error("A signed-in client email is required.");
+    const origin = window.location.origin;
+    const safeReturnTo = sanitizeAuthReturnTo(returnTo, origin) || "login.html";
+    const continueUrl = new URL(safeReturnTo, origin).toString();
+    await sendEmailVerification(user, { url: continueUrl, handleCodeInApp: false });
+    return { email: user.email };
+}
+
+export async function refreshClientEmailVerification(user) {
+    if (!user) return false;
+    await user.reload();
+    await user.getIdToken(true);
+    return user.emailVerified === true && Boolean(user.email);
 }

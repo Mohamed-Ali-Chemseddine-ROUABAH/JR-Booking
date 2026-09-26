@@ -1,23 +1,32 @@
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 import { httpsCallable } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js";
-import { watchAuthState } from "../core/auth-guard.js";
+import { refreshClientEmailVerification, sendClientVerificationEmail, watchAuthState } from "../core/auth-guard.js?v=verified-booking-20260926";
+import { buildPublicProfileReturnTo, sanitizeAuthReturnTo } from "../core/email-link-utils.mjs?v=verified-booking-20260926";
 import { getFirebaseFunctions, getFirestoreDb } from "../core/firebase-init.js";
-import { UI_STRINGS } from "../core/strings-fr.js";
+import { UI_STRINGS } from "../core/strings-fr.js?v=verified-booking-20260926";
 import { normalizeScheduleSettings } from "../schedule/schedule-settings.mjs";
 import { isLocalDateTimeRangeValid, zonedLocalToIso } from "../core/datetime-utils.mjs";
 
 const strings = UI_STRINGS.publicProfile;
-const profileId = new URLSearchParams(window.location.search).get("pro");
-const requestedService = new URLSearchParams(window.location.search).get("service");
-const requestedDate = new URLSearchParams(window.location.search).get("requestedDate");
-const requestedStart = new URLSearchParams(window.location.search).get("requestedStart");
+const safeProfileReturnTo = sanitizeAuthReturnTo(`${window.location.pathname}${window.location.search}`, window.location.origin);
+const profileParams = safeProfileReturnTo ? new URL(safeProfileReturnTo, window.location.origin).searchParams : new URLSearchParams();
+const profileId = profileParams.get("pro");
+const requestedService = profileParams.get("service");
+const requestedDate = profileParams.get("requestedDate");
+const requestedStart = profileParams.get("requestedStart");
 const status = document.querySelector("[data-profile-status]");
 const content = document.querySelector("[data-profile-content]");
 const form = document.querySelector("[data-profile-form]");
 const authPrompt = document.querySelector("[data-profile-auth-prompt]");
+const verificationPrompt = document.querySelector("[data-profile-verification-prompt]");
+const verificationMessage = document.querySelector("[data-profile-verification-message]");
+const resendVerificationButton = document.querySelector("[data-profile-resend-verification]");
+const selectedSlotSummary = document.querySelector("[data-profile-selected-slot]");
 let profile;
 let busySlots = [];
 let currentUser = null;
+let hasSelectedSlot = Boolean(requestedDate && requestedStart);
+let authStateRevision = 0;
 
 initializePage();
 
@@ -41,11 +50,16 @@ async function initializePage() {
         const slotsSnapshot = await getDocs(collection(database, "busySlots", profileId, "slots"));
         busySlots = slotsSnapshot.docs.map((slot) => slot.data());
         renderProfile();
-        watchAuthState((user) => {
-            currentUser = user;
-            form.hidden = !user;
-            authPrompt.hidden = Boolean(user);
+        updateBookingSelection();
+        form.elements.serviceId.addEventListener("change", () => {
+            if (hasSelectedSlot) updateEndForSelectedService();
+            updateBookingSelection();
         });
+        for (const field of [form.elements.date, form.elements.start, form.elements.end]) {
+            field.addEventListener("input", updateBookingSelection);
+        }
+        resendVerificationButton.addEventListener("click", resendVerificationEmail);
+        watchAuthState((user) => { void updateBookingAuthState(user); });
     } catch {
         status.textContent = strings.unavailable;
     }
@@ -65,7 +79,7 @@ function renderProfile() {
     document.querySelector("[data-profile-date-label]").textContent = strings.dateLabel;
     document.querySelector("[data-profile-start-label]").textContent = strings.startLabel;
     document.querySelector("[data-profile-end-label]").textContent = strings.endLabel;
-    document.querySelector("[data-profile-request]").textContent = strings.request;
+    document.querySelector("[data-profile-request]").textContent = strings.confirmRequest;
     document.querySelector("[data-profile-waitlist]").textContent = strings.waitlist;
     const services = document.querySelector("[data-profile-services]");
     services.replaceChildren(new Option(strings.noService, ""), ...(profile.services || []).map((service, index) => new Option(`${service.name} · ${service.durationMinutes || service.duration} min · ${Number(service.price).toFixed(2)} €`, String(index))));
@@ -90,7 +104,7 @@ function renderProfile() {
     dateInput.value = requestedDate || toIsoDate(new Date(Date.now() + 86400000));
     if (requestedStart && /^\d{2}:\d{2}$/.test(requestedStart)) {
         form.elements.start.value = requestedStart;
-        form.elements.end.value = addMinutes(requestedStart, 60);
+        updateEndForSelectedService();
     }
 }
 
@@ -200,11 +214,83 @@ function renderSchedule() {
 function selectSlot(slot) {
     form.elements.date.value = slot.dataset.date;
     form.elements.start.value = slot.dataset.start;
-    const selectedService = profile.services?.[Number(form.elements.serviceId.value)];
-    const durationMinutes = selectedService?.durationMinutes || selectedService?.duration || 0;
-    form.elements.end.value = durationMinutes ? addMinutes(slot.dataset.start, durationMinutes) : slot.dataset.end;
+    hasSelectedSlot = true;
+    updateEndForSelectedService(slot.dataset.end);
+    updateBookingSelection();
     form.scrollIntoView({ behavior: "smooth", block: "nearest" });
     form.querySelector("[data-profile-waitlist]").hidden = !slot.classList.contains("is-busy");
+}
+
+function updateEndForSelectedService(fallbackEnd = "") {
+    const serviceId = form.elements.serviceId.value;
+    const selectedService = serviceId === "" ? null : profile.services?.[Number(serviceId)];
+    const durationMinutes = selectedService?.durationMinutes || selectedService?.duration || 0;
+    if (durationMinutes && form.elements.start.value) {
+        form.elements.end.value = addMinutes(form.elements.start.value, durationMinutes);
+    } else if (fallbackEnd) {
+        form.elements.end.value = fallbackEnd;
+    }
+}
+
+function getBookingReturnTo() {
+    return buildPublicProfileReturnTo({
+        origin: window.location.origin,
+        profileId,
+        serviceId: form.elements.serviceId.value,
+        date: hasSelectedSlot ? form.elements.date.value : "",
+        start: hasSelectedSlot ? form.elements.start.value : ""
+    });
+}
+
+function updateBookingSelection() {
+    const serviceId = form.elements.serviceId.value;
+    const selectedService = serviceId === "" ? null : profile?.services?.[Number(serviceId)];
+    const hasValidSelection = hasSelectedSlot && Boolean(form.elements.date.value) && /^\d{2}:\d{2}$/.test(form.elements.start.value);
+    selectedSlotSummary.hidden = !hasValidSelection;
+    if (hasValidSelection) {
+        selectedSlotSummary.textContent = strings.selectionSummary(form.elements.date.value, form.elements.start.value, selectedService?.name || "");
+    }
+
+    const returnTo = getBookingReturnTo();
+    for (const [selector, path] of [["[data-profile-sign-in]", "login.html"], ["[data-profile-register]", "register-client.html"]]) {
+        const link = document.querySelector(selector);
+        const target = new URL(path, window.location.href);
+        if (returnTo) target.searchParams.set("returnTo", returnTo);
+        link.href = `${target.pathname.slice(1)}${target.search}`;
+    }
+}
+
+async function updateBookingAuthState(user) {
+    const revision = ++authStateRevision;
+    currentUser = user;
+    authPrompt.hidden = Boolean(user);
+    verificationPrompt.hidden = !user;
+    form.hidden = true;
+    resendVerificationButton.textContent = strings.resendVerification;
+    if (!user) return;
+
+    verificationMessage.textContent = strings.emailVerificationRequired(user.email || "");
+    try {
+        const verified = await refreshClientEmailVerification(user);
+        if (revision !== authStateRevision) return;
+        form.hidden = !verified;
+        verificationPrompt.hidden = verified;
+    } catch {
+        if (revision === authStateRevision) verificationMessage.textContent = strings.emailVerificationRefreshError;
+    }
+}
+
+async function resendVerificationEmail() {
+    if (!currentUser) return;
+    resendVerificationButton.disabled = true;
+    try {
+        await sendClientVerificationEmail(currentUser, getBookingReturnTo() || "login.html");
+        verificationMessage.textContent = strings.emailVerificationSent;
+    } catch {
+        verificationMessage.textContent = strings.emailVerificationError;
+    } finally {
+        resendVerificationButton.disabled = false;
+    }
 }
 
 function isPublicDateActive(date, settings) {
@@ -244,14 +330,34 @@ function getPublicDays(timezone, offset, count) {
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const feedback = document.querySelector("[data-profile-feedback]");
+    if (!currentUser) {
+        authPrompt.hidden = false;
+        form.hidden = true;
+        return;
+    }
+    let emailVerified = false;
+    try {
+        emailVerified = await refreshClientEmailVerification(currentUser);
+    } catch {
+        form.hidden = true;
+        verificationPrompt.hidden = false;
+        verificationMessage.textContent = strings.emailVerificationRefreshError;
+        return;
+    }
+    if (!emailVerified) {
+        feedback.textContent = strings.emailVerificationRequired(currentUser.email || "");
+        await updateBookingAuthState(currentUser);
+        return;
+    }
     const formData = new FormData(form);
-    const selectedService = profile.services?.[Number(formData.get("serviceId"))];
+    const serviceId = formData.get("serviceId");
+    const selectedService = serviceId === "" ? null : profile.services?.[Number(serviceId)];
     const intakeAnswers = Object.fromEntries([...form.elements].filter((element) => element.name.startsWith("intake_")).map((element) => [element.name, element.value.trim()]));
     const date = formData.get("date");
     const localStart = `${date}T${formData.get("start")}`;
     const localEnd = `${date}T${formData.get("end")}`;
     const timezone = profile.scheduleAvailability?.timezone || profile.timezone || "Europe/Paris";
-    const feedback = document.querySelector("[data-profile-feedback]");
     if (!isLocalDateTimeRangeValid(localStart, localEnd)) {
         feedback.textContent = strings.invalidRange;
         return;
@@ -265,11 +371,14 @@ form.addEventListener("submit", async (event) => {
         feedback.textContent = strings.occupied;
         return;
     }
+    const submitButton = form.querySelector("[data-profile-request]");
+    submitButton.disabled = true;
     try {
         const clientSnapshot = await getDoc(doc(getFirestoreDb(), "clientAccounts", currentUser.uid));
         await addDoc(collection(getFirestoreDb(), "bookings"), {
             proId: profileId,
             clientId: currentUser.uid,
+            clientEmail: currentUser.email,
             clientAddress: clientSnapshot.data()?.address || "",
             start: zonedLocalToIso(localStart, timezone),
             end: zonedLocalToIso(localEnd, timezone),
@@ -281,8 +390,13 @@ form.addEventListener("submit", async (event) => {
         });
         feedback.textContent = strings.saved;
         form.reset();
+        hasSelectedSlot = false;
+        selectedSlotSummary.hidden = true;
+        updateBookingSelection();
     } catch {
         feedback.textContent = strings.error;
+    } finally {
+        submitButton.disabled = false;
     }
 });
 

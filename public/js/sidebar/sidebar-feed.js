@@ -69,7 +69,7 @@ function renderBookings(container, bookings, onStatusChange, onBatchStatus, onEd
 
     container.innerHTML = `${activeFilter === "pending" && onBatchStatus ? `<div class="batch-toolbar"><label><input type="checkbox" data-select-all> ${strings.selectAll}</label><span data-batch-count>0</span><button class="btn btn-solid" type="button" data-batch-action="accepted" disabled>${strings.acceptSelected}</button><button class="btn btn-ghost" type="button" data-batch-action="rejected" disabled>${strings.rejectSelected}</button></div>` : ""}${visibleBookings.map((booking) => {
         const start = toDate(booking.start);
-        const name = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || strings.bookingFallbackName);
+        const name = escapeHtml(booking.clientDisplayName || booking.guestName || booking.guestContact?.name || booking.clientEmail || strings.bookingFallbackName);
         const date = start ? new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(start) : "";
         const time = start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
         const editAction = onEditBooking ? bookingActionButton(strings.editBooking, "data-edit-booking", ICONS.edit) : "";

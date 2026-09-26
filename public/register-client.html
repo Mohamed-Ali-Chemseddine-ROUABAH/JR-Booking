@@ -66,8 +66,9 @@
 </main>
 
 <script type="module">
-  import { UI_STRINGS } from './js/core/strings-fr.js';
-  import { deleteCurrentUser, getAuthErrorMessage, isAuthConfigured, registerClientAccount } from './js/core/auth-guard.js';
+  import { UI_STRINGS } from './js/core/strings-fr.js?v=verified-booking-20260926';
+  import { sanitizeAuthReturnTo } from './js/core/email-link-utils.mjs?v=verified-booking-20260926';
+  import { deleteCurrentUser, getAuthErrorMessage, isAuthConfigured, registerClientAccount, sendClientVerificationEmail } from './js/core/auth-guard.js?v=verified-booking-20260926';
   import { getFirebaseFunctions } from './js/core/firebase-init.js';
   import { httpsCallable } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js';
   import { showNotification } from './js/shared/notifications.js';
@@ -76,6 +77,7 @@
   const form = document.querySelector('#register-form');
   const status = document.querySelector('#auth-status');
   const submitButton = form.querySelector('button[type="submit"]');
+  const returnTo = sanitizeAuthReturnTo(new URLSearchParams(window.location.search).get('returnTo'), window.location.origin);
 
   document.title = strings.register.pageTitle;
   document.querySelector('[data-ui="eyebrow"]').textContent = strings.register.eyebrow;
@@ -92,6 +94,16 @@
   document.querySelector('[data-ui="submit"]').textContent = strings.register.submit;
   document.querySelector('[data-ui="login-link"]').textContent = strings.register.loginLink;
   document.querySelector('[data-ui="back-home"]').textContent = strings.shared.backHome;
+  if (returnTo) {
+    const loginUrl = new URL('login.html', window.location.href);
+    loginUrl.searchParams.set('returnTo', returnTo);
+    document.querySelector('[data-ui="login-link"]').href = `${loginUrl.pathname.slice(1)}${loginUrl.search}`;
+  }
+  if (returnTo) {
+    const loginUrl = new URL('login.html', window.location.href);
+    loginUrl.searchParams.set('returnTo', returnTo);
+    document.querySelector('[data-ui="login-link"]').href = `${loginUrl.pathname.slice(1)}${loginUrl.search}`;
+  }
 
   if (!isAuthConfigured()) {
     status.textContent = strings.shared.firebasePending;
@@ -113,14 +125,21 @@
     submitButton.disabled = true;
     status.textContent = strings.shared.submitting;
 
-    let accountCreated = false;
+    let credential;
     try {
-      await registerClientAccount({
+      credential = await registerClientAccount({
         displayName: formData.get('displayName'),
         email: formData.get('email'),
         password: formData.get('password')
       });
-      accountCreated = true;
+    } catch (error) {
+      status.textContent = getAuthErrorMessage(error);
+      showNotification(status.textContent, 'error');
+      submitButton.disabled = false;
+      return;
+    }
+
+    try {
       const getLegalVersions = httpsCallable(getFirebaseFunctions(), 'getCurrentLegalVersions');
       const { data: legal } = await getLegalVersions({});
       await httpsCallable(getFirebaseFunctions(), 'recordLegalAcceptance')({
@@ -128,15 +147,28 @@
         privacyVersion: legal.privacyVersion,
         sourceFlow: 'client-registration'
       });
-      status.textContent = strings.register.success;
-      showNotification(status.textContent, 'success');
     } catch (error) {
-      if (accountCreated) await deleteCurrentUser().catch(() => {});
-      status.textContent = accountCreated ? strings.register.legalError : getAuthErrorMessage(error);
+      await deleteCurrentUser().catch(() => {});
+      status.textContent = strings.register.legalError;
       showNotification(status.textContent, 'error');
-    } finally {
       submitButton.disabled = false;
+      return;
     }
+
+    try {
+      await sendClientVerificationEmail(credential.user, returnTo || 'login.html');
+    } catch {
+      status.textContent = strings.register.verificationError;
+      showNotification(status.textContent, 'error');
+      submitButton.disabled = false;
+      if (returnTo) window.location.assign(returnTo);
+      return;
+    }
+
+    status.textContent = strings.register.verificationSent;
+    showNotification(status.textContent, 'success');
+    if (returnTo) window.location.assign(returnTo);
+    submitButton.disabled = false;
   });
 </script>
 </body>
